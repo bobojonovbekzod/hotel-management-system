@@ -1,0 +1,365 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Kompaniyalar (SaaS mijozlari)
+model Company {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  subscriptionEndsAt DateTime?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  users              User[]
+  branches           Branch[]
+  rooms              Room[]
+  bookings           Booking[]
+  shifts             Shift[]
+  expenses           Expense[]
+  expenseCategories  ExpenseCategory[]
+  attendance         Attendance[]
+  devices            Device[]
+  guests             Guest[]
+  payrollTransactions PayrollTransaction[]
+
+  @@map("companies")
+}
+
+// Filialar
+model Branch {
+  id         Int      @id @default(autoincrement())
+  companyId  Int
+  name       String
+  address    String?
+  phone      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company    Company  @relation(fields: [companyId], references: [id])
+  users      User[]
+  rooms      Room[]
+  bookings   Booking[]
+  shifts     Shift[]
+  expenses   Expense[]
+  attendance Attendance[]
+  devices    Device[]
+  payrollTransactions PayrollTransaction[]
+
+  @@map("branches")
+}
+
+// Foydalanuvchilar (Rollar bilan)
+model User {
+  id        Int      @id @default(autoincrement())
+  companyId Int?     // Null bo'lishi mumkin (Super Admin uchun)
+  branchId  Int?
+  name      String
+  username  String   @unique
+  password  String
+  role      Role
+  phone          String?
+  salary         Float?         @default(0)
+  salaryType     SalaryType     @default(static)
+  kpiPercentage  Float?         @default(0) // Kassadan tushadigan ulush foizi (masalan, 5%)
+  isActive       Boolean        @default(true)
+  photoUrl  String?
+  isFaceRegistered Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company?  @relation(fields: [companyId], references: [id])
+  branch    Branch?   @relation(fields: [branchId], references: [id])
+  bookings  Booking[]
+  shifts    Shift[]
+  expenses  Expense[]
+  attendance Attendance[]
+  payrollTransactions PayrollTransaction[] @relation("UserPayroll")
+  givenTransactions   PayrollTransaction[] @relation("AdminPayroll")
+
+  @@map("users")
+}
+
+enum SalaryType {
+  static
+  per_shift
+}
+
+enum Role {
+  superadmin
+  owner
+  director
+  supervisor
+  admin
+  cleaner
+}
+
+// Xonalar
+model Room {
+  id             Int        @id @default(autoincrement())
+  companyId      Int
+  branchId       Int
+  roomNumber     String
+  roomType       RoomType   @default(standard_1)
+  floor          Int        @default(1)
+  capacity       Int        @default(2)
+  pricePerNight  Float
+  status         RoomStatus @default(available)
+  description    String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  branch    Branch    @relation(fields: [branchId], references: [id])
+  bookings  Booking[]
+
+  @@unique([branchId, roomNumber])
+  @@map("rooms")
+}
+
+enum RoomType {
+  lux_2
+  semi_lux_2
+  standard_1
+  semi_lux_3
+}
+
+enum RoomStatus {
+  available
+  occupied
+  cleaning
+  maintenance
+}
+
+// Mehmonlar
+model Guest {
+  id             Int      @id @default(autoincrement())
+  companyId      Int
+  firstName      String
+  lastName       String
+  phone          String?
+  passportNumber String?
+  nationality    String   @default("UZ")
+  createdAt      DateTime @default(now())
+
+  company          Company        @relation(fields: [companyId], references: [id])
+  primaryBookings  Booking[]      @relation("PrimaryGuest")
+  bookingGuests    BookingGuest[]
+
+  @@map("guests")
+}
+
+// Band qilishlar (Booking / Check-in)
+model Booking {
+  id                Int           @id @default(autoincrement())
+  companyId         Int
+  branchId          Int
+  roomId            Int
+  primaryGuestId    Int
+  adminId           Int
+  shiftId           Int?
+  checkIn           DateTime
+  checkOutExpected  DateTime
+  checkOutActual    DateTime?
+  totalPrice        Float
+  paidAmount        Float         @default(0)
+  paymentMethod     PaymentMethod?
+  status            BookingStatus @default(active)
+  shiftType         ShiftType?
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id])
+  branch        Branch         @relation(fields: [branchId], references: [id])
+  room          Room           @relation(fields: [roomId], references: [id])
+  primaryGuest  Guest          @relation("PrimaryGuest", fields: [primaryGuestId], references: [id])
+  admin         User           @relation(fields: [adminId], references: [id])
+  shift         Shift?         @relation(fields: [shiftId], references: [id])
+  additionalGuests BookingGuest[]
+  payments      Payment[]
+
+  @@map("bookings")
+}
+
+model BookingGuest {
+  id        Int  @id @default(autoincrement())
+  bookingId Int
+  guestId   Int
+
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  guest     Guest   @relation(fields: [guestId], references: [id])
+
+  @@map("booking_guests")
+}
+
+enum PaymentMethod {
+  cash
+  qrcode
+  terminal
+  mixed
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+  bookingId     Int
+  amount        Float
+  method        PaymentMethod
+  createdAt     DateTime      @default(now())
+
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+
+  @@map("payments")
+}
+
+enum BookingStatus {
+  active
+  checked_out
+  cancelled
+}
+
+enum ShiftType {
+  morning
+  night
+}
+
+// Smenalar
+model Shift {
+  id            Int        @id @default(autoincrement())
+  companyId     Int
+  branchId      Int
+  adminId       Int
+  shiftType     ShiftType
+  startTime     DateTime
+  endTime       DateTime?
+  totalIncome   Float      @default(0)
+  totalBookings Int        @default(0)
+  notes         String?
+  status        ShiftStatus @default(active)
+  createdAt     DateTime   @default(now())
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  branch    Branch    @relation(fields: [branchId], references: [id])
+  admin     User      @relation(fields: [adminId], references: [id])
+  bookings  Booking[]
+  expenses  Expense[]
+
+  @@map("shifts")
+}
+
+enum ShiftStatus {
+  active
+  closed
+}
+
+// Xarajatlar
+model Expense {
+  id           Int             @id @default(autoincrement())
+  companyId    Int
+  branchId     Int
+  adminId      Int
+  shiftId      Int?
+  categoryId   Int
+  amount       Float
+  description  String?
+  expenseDate  DateTime        @default(now())
+  createdAt    DateTime        @default(now())
+
+  company  Company         @relation(fields: [companyId], references: [id])
+  branch   Branch          @relation(fields: [branchId], references: [id])
+  admin    User            @relation(fields: [adminId], references: [id])
+  shift    Shift?          @relation(fields: [shiftId], references: [id])
+  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@map("expenses")
+}
+
+model ExpenseCategory {
+  id        Int       @id @default(autoincrement())
+  companyId Int
+  name      String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  expenses  Expense[]
+
+  @@map("expense_categories")
+}
+
+// Xodimlar Ish Haqi va Jarimalari (Payroll)
+model PayrollTransaction {
+  id          Int             @id @default(autoincrement())
+  companyId   Int
+  branchId    Int
+  userId      Int
+  adminId     Int
+  type        TransactionType
+  amount      Float
+  description String?
+  date        DateTime        @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  user    User    @relation("UserPayroll", fields: [userId], references: [id])
+  admin   User    @relation("AdminPayroll", fields: [adminId], references: [id])
+
+  @@map("payroll_transactions")
+}
+
+enum TransactionType {
+  advance
+  penalty
+  bonus
+  salary_payment
+  shift_earnings
+}
+
+// Xodimlar davomati (Face ID uchun)
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  userId    Int
+  branchId  Int
+  checkIn   DateTime?
+  checkOut  DateTime?
+  workDate  DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("attendance")
+}
+
+// Face ID qurilmalari
+model Device {
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  branchId    Int
+  name        String
+  ipAddress   String
+  port        Int      @default(80)
+  username    String
+  password    String
+  deviceType  String   @default("hikvision")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  branch  Branch  @relation(fields: [branchId], references: [id])
+
+  @@map("devices")
+}

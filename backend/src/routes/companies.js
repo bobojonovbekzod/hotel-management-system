@@ -1,0 +1,90 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const { PrismaClient } = require('@prisma/client');
+const { authenticate, authorize } = require('../middleware/auth');
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// GET /api/companies - Get all companies (SuperAdmin only)
+router.get('/', authenticate, authorize('superadmin'), async (req, res) => {
+  try {
+    const companies = await prisma.company.findMany({
+      include: {
+        _count: {
+          select: { branches: true, users: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, data: companies });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
+// POST /api/companies - Create a new company and its owner (SuperAdmin only)
+router.post('/', authenticate, authorize('superadmin'), async (req, res) => {
+  try {
+    const { companyName, ownerName, ownerUsername, ownerPassword, ownerPhone } = req.body;
+
+    const existingUser = await prisma.user.findUnique({ where: { username: ownerUsername } });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'Bu username band.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(ownerPassword, 10);
+
+    const newCompany = await prisma.company.create({
+      data: {
+        name: companyName,
+        users: {
+          create: {
+            name: ownerName,
+            username: ownerUsername,
+            password: hashedPassword,
+            phone: ownerPhone,
+            role: 'owner'
+          }
+        }
+      },
+      include: {
+        users: true
+      }
+    });
+
+    res.status(201).json({ success: true, data: newCompany, message: 'Kompaniya va Owner yaratildi.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
+// PUT /api/companies/:id - Update company status and subscription (SuperAdmin only)
+router.put('/:id', authenticate, authorize('superadmin'), async (req, res) => {
+  try {
+    const { name, isActive, subscriptionEndsAt } = req.body;
+    const companyId = parseInt(req.params.id);
+
+    const updatedCompany = await prisma.company.update({
+      where: { id: companyId },
+      data: {
+        name,
+        isActive,
+        subscriptionEndsAt: subscriptionEndsAt ? new Date(subscriptionEndsAt) : null,
+      },
+      include: {
+        _count: {
+          select: { branches: true, users: true }
+        }
+      }
+    });
+
+    res.json({ success: true, data: updatedCompany, message: 'Kompaniya ma\'lumotlari yangilandi.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
+module.exports = router;

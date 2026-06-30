@@ -1,0 +1,12 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": [
+    "src/**/*.spec.js",
+    "node_modules",
+    "prisma/*.db",
+    "prisma/*.db-journal",
+    ".system_generated",
+    "brain"
+  ]
+}
