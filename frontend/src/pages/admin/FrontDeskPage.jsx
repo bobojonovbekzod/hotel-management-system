@@ -12,6 +12,7 @@ const statusConfig = {
   available: { label: "Bo'sh", border: 'border-emerald-500/50', bg: 'bg-emerald-500/10', dot: 'bg-emerald-400', icon: CheckCircle2 },
   occupied: { label: "Band", border: 'border-blue-500/50', bg: 'bg-blue-500/10', dot: 'bg-blue-400', icon: User },
   overstay: { label: "Vaqti o'tgan", border: 'border-red-500/80', bg: 'bg-red-500/20', dot: 'bg-red-500 animate-pulse', icon: Clock },
+  reserved: { label: "Bron qilingan", border: 'border-orange-500/50', bg: 'bg-orange-500/10', dot: 'bg-orange-500', icon: Clock },
   cleaning: { label: "Tozalanmoqda", border: 'border-yellow-500/50', bg: 'bg-yellow-500/10', dot: 'bg-yellow-400', icon: Sparkles },
   maintenance: { label: "Ta'mirlashda", border: 'border-slate-500/50', bg: 'bg-slate-500/10', dot: 'bg-slate-400', icon: Wrench },
 };
@@ -28,16 +29,23 @@ export default function FrontDeskPage() {
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, action: null, message: '', title: '' });
 
   const [activeBookings, setActiveBookings] = useState([]);
+  const [reservedBookings, setReservedBookings] = useState([]);
 
   const fetchRooms = useCallback(async () => {
     try {
-      const [res, bookRes] = await Promise.all([
-        api.get('/rooms'),
-        api.get('/bookings', { params: { status: 'active' } })
-      ]);
+      const res = await api.get('/rooms');
       setRooms(res.data.data);
-      setActiveBookings(bookRes.data.data);
-    } catch {
+
+      const bRes = await api.get('/bookings', { params: { status: 'active' } });
+      const now = new Date();
+      setActiveBookings(bRes.data.data.map(b => ({
+        ...b,
+        isOverstay: new Date(b.checkOutExpected) < now
+      })));
+
+      const rRes = await api.get('/bookings', { params: { status: 'reserved' } });
+      setReservedBookings(rRes.data.data);
+    } catch (err) {
       toast.error('Ma\'lumotlarni yuklashda xato');
     } finally {
       setLoading(false);
@@ -139,6 +147,28 @@ export default function FrontDeskPage() {
           }
         }
       });
+    } else if (room.status === 'reserved') {
+      // It's a mapped status for reservations
+      const rb = reservedBookings.find(bk => bk.roomId === room.id);
+      if (rb) {
+        setConfirmDialog({
+          isOpen: true,
+          title: "Bronni tasdiqlash",
+          message: "Mehmon keldimi? Xonani band qilishni tasdiqlaysizmi?",
+          action: async () => {
+            try {
+              await api.put(`/bookings/${rb.id}/confirm-reservation`);
+              toast.success("Xonaga kiritildi!");
+              fetchRooms();
+              fetchActiveShift();
+            } catch (err) {
+              toast.error("Xatolik");
+            } finally {
+              setConfirmDialog({ isOpen: false });
+            }
+          }
+        });
+      }
     }
   };
 
@@ -186,6 +216,15 @@ export default function FrontDeskPage() {
                 statusKey = 'overstay';
                 blinkClass = 'animate-pulse';
               }
+            } else if (room.status === 'available') {
+              // Check if there is a reservation for today
+              const today = new Date().toDateString();
+              const rb = reservedBookings.find(bk => bk.roomId === room.id && new Date(bk.checkIn).toDateString() === today);
+              if (rb) {
+                statusKey = 'reserved';
+                room.status = 'reserved'; // fake status for handleRoomClick
+                blinkClass = 'animate-pulse';
+              }
             }
 
             const status = statusConfig[statusKey];
@@ -198,7 +237,7 @@ export default function FrontDeskPage() {
                 className={`relative overflow-hidden group flex flex-col items-center justify-center p-6 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${status.border} ${status.bg} backdrop-blur-sm ${blinkClass}`}
               >
                 <div className={`absolute top-3 right-3 w-3 h-3 rounded-full ${status.dot}`} />
-                <Icon size={40} className={`mb-3 ${statusKey === 'available' ? 'text-emerald-400' : statusKey === 'overstay' ? 'text-red-500' : statusKey === 'occupied' ? 'text-blue-400' : statusKey === 'cleaning' ? 'text-yellow-400' : 'text-slate-400'}`} />
+                <Icon size={40} className={`mb-3 ${statusKey === 'available' ? 'text-emerald-400' : statusKey === 'overstay' ? 'text-red-500' : statusKey === 'reserved' ? 'text-orange-400' : statusKey === 'occupied' ? 'text-blue-400' : statusKey === 'cleaning' ? 'text-yellow-400' : 'text-slate-400'}`} />
                 <span className="text-2xl font-black text-white">{room.roomNumber}</span>
                 <span className="text-xs font-medium text-slate-400 mt-1 capitalize">{room.roomType.replace('_', ' ')}</span>
               </button>

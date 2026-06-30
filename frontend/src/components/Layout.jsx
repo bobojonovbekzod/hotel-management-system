@@ -38,6 +38,7 @@ const superadminNav = [
 const adminNav = [
   { path: '/admin/front-desk', icon: Key, label: 'Qabul (Shahmatka)' },
   { path: '/admin/renters', icon: CalendarDays, label: 'Ijarachilar' },
+  { path: '/admin/reservations', icon: CalendarClock, label: 'Oldindan Bronlar' },
   { path: '/admin/expenses', icon: Wallet, label: 'Xarajatlar' },
   { path: '/admin/salary', icon: UserCheck, label: 'Mening Oyligim' },
 ];
@@ -46,6 +47,7 @@ const directorNav = [
   { path: '/director/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/director/rooms', icon: Key, label: 'Qabul (Shahmatka)' },
   { path: '/director/renters', icon: CalendarDays, label: 'Ijarachilar' },
+  { path: '/director/reservations', icon: CalendarClock, label: 'Oldindan Bronlar' },
   { path: '/director/bookings', icon: ClipboardList, label: 'Bronlar' },
   { path: '/director/expenses', icon: Wallet, label: 'Xarajatlar' },
   { path: '/director/staff', icon: Users, label: 'Xodimlar' },

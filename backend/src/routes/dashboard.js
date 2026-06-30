@@ -124,14 +124,24 @@ router.get('/summary', authenticate, async (req, res) => {
     });
 
     // Xarajatlar toifasi bo'yicha
-    const expensesByCategory = await prisma.expense.groupBy({
-      by: ['category'],
+    const expensesByCategoryRaw = await prisma.expense.groupBy({
+      by: ['categoryId'],
       where: {
         ...branchFilter,
         expenseDate: { gte: startDate, lte: endDate },
       },
       _sum: { amount: true },
     });
+
+    const expenseCategoryIds = expensesByCategoryRaw.map(e => e.categoryId);
+    const expenseCategories = await prisma.expenseCategory.findMany({
+      where: { id: { in: expenseCategoryIds } }
+    });
+
+    const expensesByCategory = expensesByCategoryRaw.map(e => ({
+      category: expenseCategories.find(c => c.id === e.categoryId)?.name || 'Boshqa',
+      _sum: e._sum
+    }));
 
     // Top 5 Adminlar
     let topAdmins = [];

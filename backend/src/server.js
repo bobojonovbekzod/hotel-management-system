@@ -20,11 +20,11 @@ const attendanceRoutes = require('./routes/attendance');
 const companiesRoutes = require('./routes/companies');
 const payrollRoutes = require('./routes/payroll');
 const profileRoutes = require('./routes/profile');
+const setupBot = require('./bot/telegramBot');
 const initAutoCheckout = require('./cron/autoCheckout');
 
 const app = express();
 const server = http.createServer(app);
-
 const io = new Server(server, {
   cors: {
     origin: true,
@@ -32,6 +32,9 @@ const io = new Server(server, {
     credentials: true,
   },
 });
+
+// Start Telegram Bot
+setupBot();
 
 // Middleware
 app.use(cors({

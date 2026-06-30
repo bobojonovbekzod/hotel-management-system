@@ -85,23 +85,23 @@ export default function OwnerDashboard() {
 
   const kpis = [
     {
-      label: 'Oylik tushum', value: ov?.totalIncome?.toLocaleString(), unit: "so'm",
+      label: 'Oylik tushum', value: (ov?.totalIncome || 0).toLocaleString(), unit: "so'm",
       icon: DollarSign, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20',
     },
     {
-      label: 'Oylik xarajat', value: ov?.totalExpenses?.toLocaleString(), unit: "so'm",
+      label: 'Oylik xarajat', value: (ov?.totalExpenses || 0).toLocaleString(), unit: "so'm",
       icon: LogOut, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20',
     },
     {
-      label: 'Sof foyda', value: ov?.netProfit?.toLocaleString(), unit: "so'm",
+      label: 'Sof foyda', value: (ov?.netProfit || 0).toLocaleString(), unit: "so'm",
       icon: TrendingUp, color: 'text-primary-400', bg: 'bg-primary-500/10', border: 'border-primary-500/20',
     },
     {
-      label: 'Kassa (Naqd)', value: ov?.cashBalance?.toLocaleString(), unit: "so'm",
+      label: 'Kassa (Naqd)', value: (ov?.cashBalance || 0).toLocaleString(), unit: "so'm",
       icon: Wallet, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20',
     },
     {
-      label: 'Bandlik darajasi', value: `${ov?.occupancyRate}%`, unit: `${ov?.occupiedRooms}/${ov?.totalRooms} xona`,
+      label: 'Bandlik darajasi', value: `${ov?.occupancyRate || 0}%`, unit: `${ov?.occupiedRooms || 0}/${ov?.totalRooms || 0} xona`,
       icon: Bed, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20',
     },
   ];
@@ -436,8 +436,8 @@ export default function OwnerDashboard() {
           </div>
 
           {/* Branch Bar Chart */}
-          <div className="mt-8 h-56">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="mt-8 h-56 w-full min-w-0">
+            <ResponsiveContainer width="100%" height={224}>
               <BarChart data={data.branchStats.map((bs) => ({ name: bs.branch.name.split(' ')[1] || bs.branch.name, tushum: bs.monthlyIncome }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />

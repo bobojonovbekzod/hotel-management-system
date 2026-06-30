@@ -21,6 +21,8 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
   
   // Transfer state
   const [freeRooms, setFreeRooms] = useState([]);
+  const [selectedRoomId, setSelectedRoomId] = useState('');
+  const [additionalPrice, setAdditionalPrice] = useState('');
   // Extend state
   const [extendDate, setExtendDate] = useState('');
   const [extendPrice, setExtendPrice] = useState('');
@@ -29,6 +31,11 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
 
   // Companion state
   const [companion, setCompanion] = useState({ firstName: '', lastName: '', phone: '', passportNumber: '' });
+
+  // Penalty state
+  const [penaltyAmount, setPenaltyAmount] = useState('');
+  const [penaltyDescription, setPenaltyDescription] = useState('');
+  const [penaltyMethod, setPenaltyMethod] = useState('cash');
 
   useEffect(() => {
     fetchBooking();
@@ -42,15 +49,17 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
         const roomsRes = await api.get('/rooms');
         setFreeRooms(roomsRes.data.data.filter(r => r.status === 'available' && r.branchId === res.data.data.branchId));
       }
-    } catch (err) {
-      toast.error('Ma\'lumot yuklanmadi');
-      onClose();
-    } finally {
       if (res.data.data.checkOutExpected) {
         const d = new Date(res.data.data.checkOutExpected);
         d.setDate(d.getDate() + 1);
         setExtendDate(d.toISOString().slice(0, 16));
       }
+    } catch (err) {
+      toast.error('Ma\'lumot yuklanmadi');
+      onClose();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCheckOut = async () => {
@@ -124,6 +133,24 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
     }
   };
 
+  const handlePenalty = async (e) => {
+    e.preventDefault();
+    if (!penaltyAmount) return;
+    try {
+      await api.post(`/bookings/${bookingId}/penalty`, {
+        amount: penaltyAmount,
+        description: penaltyDescription,
+        method: penaltyMethod
+      });
+      toast.success('Jarima qabul qilindi');
+      setPenaltyAmount('');
+      setPenaltyDescription('');
+      fetchBooking();
+    } catch (err) {
+      toast.error('Xatolik');
+    }
+  };
+
   if (loading || !booking) return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="w-12 h-12 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
@@ -148,6 +175,7 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
           <button onClick={() => setActiveTab('extend')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'extend' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>Muddatni uzaytirish</button>
           <button onClick={() => setActiveTab('transfer')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'transfer' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>Xona ko'chirish</button>
           <button onClick={() => setActiveTab('companion')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'companion' ? 'bg-primary-500 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>Hamroh qo'shish</button>
+          <button onClick={() => setActiveTab('penalty')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'penalty' ? 'bg-red-500 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>Jarima / Qo'shimcha</button>
         </div>
 
         {/* Tab Content */}
@@ -293,6 +321,30 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 ))}
               </div>
             )}
+          </form>
+        )}
+
+        {activeTab === 'penalty' && (
+          <form onSubmit={handlePenalty} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Jarima / Xizmat summasi</label>
+              <input type="number" required value={penaltyAmount} onChange={e => setPenaltyAmount(e.target.value)} className="input-field" placeholder="Masalan: 50000" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Sabab / Izoh (Ixtiyoriy)</label>
+              <input type="text" value={penaltyDescription} onChange={e => setPenaltyDescription(e.target.value)} className="input-field" placeholder="Masalan: Choynak sindirdi" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">To'lov usuli</label>
+              <div className="grid grid-cols-3 gap-2">
+                {paymentMethods.map(m => (
+                  <button key={m.value} type="button" onClick={() => setPenaltyMethod(m.value)} className={`p-2 rounded-lg border text-sm font-medium transition-colors ${penaltyMethod === m.value ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button type="submit" className="w-full btn-primary bg-red-500 hover:bg-red-600 shadow-red-500/20 py-3 mt-4">Jarimani kiritish</button>
           </form>
         )}
       </div>

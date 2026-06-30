@@ -9,6 +9,11 @@ import AdminExpensesPage from './pages/admin/ExpensesPage';
 import FrontDeskPage from './pages/admin/FrontDeskPage';
 import MySalaryPage from './pages/admin/MySalaryPage';
 import RentersPage from './pages/admin/RentersPage';
+import ReservationsPage from './pages/admin/ReservationsPage';
+import AdminBookingsPage from './pages/admin/BookingsPage';
+import AdminShiftPage from './pages/admin/ShiftPage';
+import AdminRoomsPage from './pages/admin/RoomsPage';
+import CheckInsPage from './pages/admin/CheckInsPage';
 
 // Owner/Director/Admin pages
 import CompaniesPage from './pages/superadmin/CompaniesPage';
@@ -70,6 +75,11 @@ function AppRoutes() {
           <RentersPage />
         </ProtectedRoute>
       } />
+      <Route path="/admin/reservations" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <ReservationsPage />
+        </ProtectedRoute>
+      } />
       <Route path="/admin/expenses" element={
         <ProtectedRoute allowedRoles={['admin', 'director', 'owner']}>
           <AdminExpensesPage />
@@ -95,6 +105,11 @@ function AppRoutes() {
       <Route path="/director/renters" element={
         <ProtectedRoute allowedRoles={['director', 'owner']}>
           <RentersPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/director/reservations" element={
+        <ProtectedRoute allowedRoles={['director', 'owner']}>
+          <ReservationsPage />
         </ProtectedRoute>
       } />
       <Route path="/director/bookings" element={

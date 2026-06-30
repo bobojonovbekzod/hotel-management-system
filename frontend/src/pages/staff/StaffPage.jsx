@@ -3,6 +3,7 @@ import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, User, Printer, ScanFace, Upload, Eye, EyeOff, Wallet, TrendingUp, TrendingDown, Clock, CreditCard, X, Trash2 } from 'lucide-react';
+import ConfirmModal from '../../components/ConfirmModal';
 import FullScreenLoader from '../../components/common/FullScreenLoader';
 
 const roleConfig = {
