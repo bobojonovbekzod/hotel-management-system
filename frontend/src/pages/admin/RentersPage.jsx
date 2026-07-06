@@ -55,17 +55,15 @@ export default function RentersPage() {
               <thead>
                 <tr>
                   <th className="table-th">Xona / Mijoz</th>
-                  <th className="table-th">Yashash davri</th>
-                  <th className="table-th text-right">Umumiy hisob</th>
-                  <th className="table-th text-right">To'langan</th>
-                  <th className="table-th text-right">Qarz</th>
+                  <th className="table-th">To'langan muddat (Paid until)</th>
+                  <th className="table-th text-right">Oylik ijara narxi</th>
+                  <th className="table-th text-right">Jami To'langan</th>
                   <th className="table-th text-center">Holat</th>
                   <th className="table-th"></th>
                 </tr>
               </thead>
               <tbody>
                 {renters.map(r => {
-                  const remaining = r.totalPrice - r.paidAmount;
                   return (
                     <tr key={r.id} className="table-row">
                       <td className="table-td">
@@ -81,38 +79,25 @@ export default function RentersPage() {
                       </td>
                       <td className="table-td">
                         <div className="flex items-center gap-2 text-sm text-slate-300">
-                          <span>{format(new Date(r.checkIn), 'dd.MM.yy')}</span>
-                          <ArrowRight size={14} className="text-slate-500" />
-                          <span className={r.isOverstay ? 'text-red-400 font-bold' : ''}>
-                            {format(new Date(r.checkOutExpected), 'dd.MM.yy')}
+                          <span className={r.isOverstay ? 'text-red-400 font-bold' : 'text-emerald-400 font-medium'}>
+                            {format(new Date(r.checkOutExpected), 'dd.MM.yyyy')}
                           </span>
                         </div>
                       </td>
                       <td className="table-td text-right font-medium text-slate-300">
-                        {r.totalPrice.toLocaleString()} <span className="text-xs text-slate-500">so'm</span>
+                        {r.monthlyFee ? r.monthlyFee.toLocaleString() : (r.room?.pricePerNight * 30 || 0).toLocaleString()} <span className="text-xs text-slate-500">so'm</span>
                       </td>
                       <td className="table-td text-right font-medium text-emerald-400">
                         {r.paidAmount.toLocaleString()} <span className="text-xs text-slate-500 text-emerald-400/50">so'm</span>
                       </td>
-                      <td className="table-td text-right font-bold">
-                        {remaining > 0 ? (
-                          <span className="text-red-400">{remaining.toLocaleString()}</span>
-                        ) : (
-                          <span className="text-slate-500">0</span>
-                        )}
-                      </td>
                       <td className="table-td text-center">
                         {r.isOverstay ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
-                            <AlertTriangle size={12} /> Vaqti o'tdi
-                          </span>
-                        ) : remaining > 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                            Qarzdor
+                            <AlertTriangle size={12} /> To'lov muddati o'tgan
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            Aktiv
+                            Aktiv (To'langan)
                           </span>
                         )}
                       </td>

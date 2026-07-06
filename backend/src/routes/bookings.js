@@ -57,7 +57,7 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
   try {
     const {
       roomId, checkIn, checkOutExpected, totalPrice, notes, shiftId,
-      primaryGuest, additionalGuests, payments, bookingType // daily or monthly
+      primaryGuest, additionalGuests, payments, bookingType, monthlyFee
     } = req.body;
 
     // Xonani tekshirish
@@ -102,6 +102,7 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
         checkIn: new Date(checkIn),
         checkOutExpected: new Date(checkOutExpected),
         totalPrice: parseFloat(totalPrice),
+        monthlyFee: monthlyFee ? parseFloat(monthlyFee) : null,
         paidAmount: totalPaid,
         paymentMethod: mainPaymentMethod,
         shiftType,
@@ -117,7 +118,9 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
           data: {
             bookingId: booking.id,
             amount: parseFloat(p.amount),
-            method: p.method
+            method: p.method,
+            periodStart: p.periodStart ? new Date(p.periodStart) : null,
+            periodEnd: p.periodEnd ? new Date(p.periodEnd) : null,
           }
         });
       }
@@ -252,7 +255,7 @@ router.post('/reserve', authenticate, authorize('admin', 'director', 'owner'), a
 router.post('/:id/payments', authenticate, authorize('admin', 'director', 'owner'), async (req, res) => {
   try {
     const bookingId = parseInt(req.params.id);
-    const { amount, method } = req.body;
+    const { amount, method, periodStart, periodEnd } = req.body;
     
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) return res.status(404).json({ success: false, message: 'Bron topilmadi' });
@@ -261,16 +264,29 @@ router.post('/:id/payments', authenticate, authorize('admin', 'director', 'owner
       data: {
         bookingId,
         amount: parseFloat(amount),
-        method
+        method,
+        periodStart: periodStart ? new Date(periodStart) : null,
+        periodEnd: periodEnd ? new Date(periodEnd) : null,
       }
     });
 
+    const updateData = {
+      paidAmount: { increment: parseFloat(amount) },
+      paymentMethod: booking.paidAmount > 0 && booking.paymentMethod !== method ? 'mixed' : method
+    };
+
+    if (periodEnd && booking.bookingType === 'monthly') {
+      // Agar oylik ijara bo'lsa va to'lov qilingan davr oxiri bo'lsa, checkOutExpected ni suramiz
+      // Avvalroq to'langan davrdan uzoqroq bo'lsa almashtiramiz
+      const newEndDate = new Date(periodEnd);
+      if (!booking.checkOutExpected || newEndDate > booking.checkOutExpected) {
+        updateData.checkOutExpected = newEndDate;
+      }
+    }
+
     const updatedBooking = await prisma.booking.update({
       where: { id: bookingId },
-      data: {
-        paidAmount: { increment: parseFloat(amount) },
-        paymentMethod: booking.paidAmount > 0 && booking.paymentMethod !== method ? 'mixed' : method
-      }
+      data: updateData
     });
 
     // Update shift income

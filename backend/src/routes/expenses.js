@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 // GET /api/expenses
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { branchId, category, month, year } = req.query;
+    const { branchId, categoryId, month, year } = req.query;
     const where = { companyId: req.user.companyId };
 
     if (req.user.role === 'admin') {

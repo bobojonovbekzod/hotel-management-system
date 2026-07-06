@@ -1,0 +1,29 @@
+=========================================
+HOTELBASE - LOKAL AGENT O'RNATISH QO'LLANMASI
+=========================================
+
+1-QADAM: Qurilmani serverga qo'shish
+1. hotelbase.uz saytiga kiring.
+2. "Qurilmalar" bo'limidan yuz aniqlash (FaceID) qurilmangizni qo'shing.
+   - IP manzil: Qurilmaning lokal IP manzili (masalan: 192.168.1.100)
+   - Filial: Qurilma turgan filialni tanlash esdan chiqmasin!
+
+2-QADAM: Sozlamalarni kiritish
+1. Ushbu papkadagi ".env.example" faylining nomini o'zgartirib, faqat ".env" qilib saqlang.
+2. ".env" faylini oching va filial raqami (BRANCH_ID) hamda token (AGENT_TOKEN) ni yozing.
+   Masalan: 
+   BRANCH_ID=1 (Saytdagi filial kartasidan qaraysiz)
+   AGENT_TOKEN=hotelbase_maxfiy_agent_123 (Shu so'zni o'zgarishsiz kiritasiz)
+
+3-QADAM: Dasturni avtomatik ishga tushadigan qilish (Muhim!)
+Biz dasturni kompyuter yonganda o'zi yashirin (qora oynasiz) yonadigan qilib sozlashimiz kerak:
+1. Klaviaturada "Windows" va "R" tugmalarini birga bosing.
+2. Ochilgan mitti oynaga "shell:startup" deb yozing va Enter bosing. Startup papkasi ochiladi.
+3. Bizning papkamiz ichidagi "start.vbs" fayli ustiga o'ng tugmani bosing va "Create shortcut" (Yorliq yaratish) qiling.
+4. Yaratilgan "start - Shortcut" faylini boyagi ochilgan Startup papkasining ichiga tashlab qo'ying.
+
+4-QADAM: Dasturni yoqish
+Endi shunchaki "start.vbs" faylining ustiga ikki marta bosing. Hech qanday oyna ochilmaydi, lekin dastur orqa fonda ishlab, serverdan keladigan rasmlarni qabul qilishni boshlaydi!
+
+Dasturni o'chirish kerak bo'lsa:
+Task Manager (Ctrl+Shift+Esc) ni oching, ro'yxatdan "HotelBase-Agent.exe" ni topib "End Task" tugmasini bosing.

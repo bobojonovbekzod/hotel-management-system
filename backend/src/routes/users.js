@@ -105,8 +105,31 @@ router.post('/:id/face', authenticate, authorize('owner', 'director'), async (re
     const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
     const imageBuffer = Buffer.from(base64Data, 'base64');
 
-    const hikvision = new HikvisionService(device);
-    await hikvision.addFace(user.id.toString(), user.name, imageBuffer);
+    const branchIdStr = device.branchId.toString();
+    const socketId = req.connectedAgents.get(branchIdStr);
+
+    if (socketId) {
+      const agentSocket = req.agentNamespace.sockets.get(socketId);
+      if (agentSocket) {
+        const agentResponse = await new Promise((resolve) => {
+          agentSocket.emit('ADD_FACE', {
+            userId: user.id.toString(),
+            name: user.name,
+            device,
+            image: imageBuffer
+          }, (res) => resolve(res));
+          setTimeout(() => resolve({ success: false, message: 'Agentdan javob kutilmadi (Timeout)' }), 20000);
+        });
+
+        if (!agentResponse.success) {
+          throw new Error(agentResponse.message || 'Agent orqali rasm yuklashda xatolik');
+        }
+      } else {
+        throw new Error("Filial agenti tarmoqdan uzilgan.");
+      }
+    } else {
+      throw new Error(`Filial (${device.branchId}) agenti onlayn emas. Avval resepshndagi Agent dasturini ishga tushiring.`);
+    }
 
     // Rasmni server diskida saqlash
     const uploadDir = path.join(__dirname, '../../uploads/faces');
@@ -116,7 +139,7 @@ router.post('/:id/face', authenticate, authorize('owner', 'director'), async (re
     const filename = `${userId}_${Date.now()}.jpg`;
     const filePath = path.join(uploadDir, filename);
     await fs.promises.writeFile(filePath, imageBuffer);
-    const photoUrlPath = `/uploads/faces/${filename}`;
+    const photoUrlPath = `/api/uploads/faces/${filename}`;
 
     // Tizim bazasida belgilash
     await prisma.user.update({
@@ -128,6 +151,42 @@ router.post('/:id/face', authenticate, authorize('owner', 'director'), async (re
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message || 'Server xatosi' });
+  }
+});
+
+// DELETE /api/users/:id/face
+router.delete('/:id/face', authenticate, authorize('owner', 'director', 'supervisor', 'admin'), async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ success: false, message: 'Xodim topilmadi.' });
+
+    // Hamma qurilmalarni topamiz
+    const devices = await prisma.device.findMany({ where: { companyId: user.companyId } });
+    
+    for (let device of devices) {
+      const branchIdStr = device.branchId.toString();
+      const socketId = req.connectedAgents.get(branchIdStr);
+      if (socketId) {
+        const agentSocket = req.agentNamespace.sockets.get(socketId);
+        if (agentSocket) {
+          agentSocket.emit('DELETE_FACE', {
+            userId: user.id.toString(),
+            device
+          });
+        }
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isFaceRegistered: false, photoUrl: null }
+    });
+
+    res.json({ success: true, message: 'Yuz o\'chirildi.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
   }
 });
 

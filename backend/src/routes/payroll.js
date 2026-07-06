@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 const canManagePayroll = (role) => ['owner', 'director', 'supervisor'].includes(role);
 
 // GET /api/payroll - Filial bo'yicha barcha xodimlarning maosh hisobotini olish
-router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+router.get('/', authenticate, authorize('owner'), async (req, res) => {
   try {
     const { branchId, month } = req.query; // month formati: 'YYYY-MM'
     
@@ -17,9 +17,10 @@ router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), asyn
     if (req.user.role === 'director') targetBranchId = req.user.branchId;
 
     const whereUser = { companyId: req.user.companyId, isActive: true };
-    if (targetBranchId) whereUser.branchId = targetBranchId;
+    // We don't filter users by branchId here anymore, because a user from another branch might have worked here.
+    // Instead, we will filter the actual work records by targetBranchId.
 
-    const users = await prisma.user.findMany({
+    const allUsers = await prisma.user.findMany({
       where: whereUser,
       include: { branch: { select: { name: true } } }
     });
@@ -41,11 +42,12 @@ router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), asyn
 
     const report = [];
 
-    for (const user of users) {
-      // Smenalarni topish (oy oralig'ida)
+    for (const user of allUsers) {
+      // Smenalarni topish (oy oralig'ida va faqat tanlangan filial uchun)
       const shifts = await prisma.shift.findMany({
         where: {
           adminId: user.id,
+          branchId: targetBranchId ? targetBranchId : undefined,
           status: 'closed',
           createdAt: { gte: startDate, lte: endDate }
         }
@@ -55,10 +57,11 @@ router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), asyn
       const nightShifts = shifts.filter(s => s.shiftType === 'night').length;
       const totalShiftIncome = shifts.reduce((sum, s) => sum + (s.totalIncome || 0), 0);
 
-      // Davomatlarni topish (cleanerlar uchun)
+      // Davomatlarni topish (cleanerlar uchun, filial bo'yicha)
       const attendances = await prisma.attendance.count({
         where: {
           userId: user.id,
+          branchId: targetBranchId ? targetBranchId : undefined,
           checkIn: { not: null },
           workDate: { gte: startDate, lte: endDate }
         }
@@ -81,10 +84,11 @@ router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), asyn
 
       const baseSalary = user.salaryType === 'static' ? (user.salary || 0) : shiftEarnings;
 
-      // Tranzaksiyalar
+      // Tranzaksiyalar (avans, jarima, bonus - tanlangan filial bo'yicha)
       const transactions = await prisma.payrollTransaction.findMany({
         where: {
           userId: user.id,
+          branchId: targetBranchId ? targetBranchId : undefined,
           date: { gte: startDate, lte: endDate }
         }
       });
@@ -102,6 +106,13 @@ router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), asyn
       });
 
       const totalPayable = baseSalary + kpiEarnings + totalBonuses - totalAdvances - totalPenalties - totalPaid;
+
+      // Agar xodim shu filialda umuman ishlamagan bo'lsa (smena, davomat yoki tranzaksiya yo'q), uni hisobotga qo'shmaymiz
+      // Lekin agar xodimning ASOSIY filiali shu filial bo'lsa, uni nol oylik bilan bo'lsa ham ro'yxatda chiqaramiz
+      const hasWorkInBranch = dayShifts > 0 || nightShifts > 0 || attendances > 0 || transactions.length > 0;
+      if (targetBranchId && user.branchId !== targetBranchId && !hasWorkInBranch) {
+        continue;
+      }
 
       report.push({
         user: { id: user.id, name: user.name, role: user.role, branchName: user.branch?.name, salaryType: user.salaryType, salary: user.salary, kpiPercentage: user.kpiPercentage },

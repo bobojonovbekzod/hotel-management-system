@@ -18,6 +18,8 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
   // Payment state
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentPeriodStart, setPaymentPeriodStart] = useState('');
+  const [paymentPeriodEnd, setPaymentPeriodEnd] = useState('');
   
   // Transfer state
   const [freeRooms, setFreeRooms] = useState([]);
@@ -78,7 +80,9 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
     try {
       await api.post(`/bookings/${bookingId}/payments`, {
         amount: paymentAmount,
-        method: paymentMethod
+        method: paymentMethod,
+        periodStart: paymentPeriodStart || undefined,
+        periodEnd: paymentPeriodEnd || undefined
       });
       toast.success('To\'lov qabul qilindi');
       fetchBooking();
@@ -186,15 +190,25 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 <p className="text-slate-400 mb-1">Mehmon:</p>
                 <p className="text-white font-medium">{booking.primaryGuest?.firstName} {booking.primaryGuest?.lastName}</p>
               </div>
-              <div className="bg-slate-800/50 p-3 rounded-lg">
-                <p className="text-slate-400 mb-1">Qarz (Qoldiq):</p>
-                <p className={`font-bold ${remaining > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                  {remaining > 0 ? remaining.toLocaleString() + " so'm" : 'Yo\'q'}
-                </p>
-              </div>
+              {booking.bookingType === 'monthly' ? (
+                <div className={`p-3 border rounded-lg ${new Date() > new Date(booking.checkOutExpected) ? 'bg-red-500/10 border-red-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
+                  <p className="text-sm font-medium mb-1 text-slate-400">To'langan muddat (Paid Until):</p>
+                  <p className={`font-bold ${new Date() > new Date(booking.checkOutExpected) ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {format(new Date(booking.checkOutExpected), 'dd.MM.yyyy')}
+                    {new Date() > new Date(booking.checkOutExpected) && ' (To\'lov muddati o\'tgan!)'}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-slate-800/50 p-3 rounded-lg">
+                  <p className="text-slate-400 mb-1">Qarz (Qoldiq):</p>
+                  <p className={`font-bold ${remaining > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {remaining > 0 ? remaining.toLocaleString() + " so'm" : 'Yo\'q'}
+                  </p>
+                </div>
+              )}
             </div>
-            {remaining > 0 && (
-              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            {booking.bookingType !== 'monthly' && remaining > 0 && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg mt-2">
                 <p className="text-red-400 text-sm font-medium mb-2">Mehmon {remaining.toLocaleString()} so'm qarz. "To'lov qo'shish" bo'limidan pulni qabul qiling.</p>
               </div>
             )}
@@ -221,6 +235,20 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 {paymentMethods.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
+            
+            {booking.bookingType === 'monthly' && (
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="space-y-1">
+                  <label className="text-sm text-slate-400">Qaysi sanadan (Period Start)</label>
+                  <input type="date" value={paymentPeriodStart} onChange={(e) => setPaymentPeriodStart(e.target.value)} className="input-field" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-slate-400">Qaysi sanagacha (Period End)</label>
+                  <input type="date" value={paymentPeriodEnd} onChange={(e) => setPaymentPeriodEnd(e.target.value)} className="input-field" />
+                </div>
+              </div>
+            )}
+
             <button type="submit" className="w-full btn-primary py-2 mt-4">To'lovni qabul qilish</button>
 
             {booking.payments && booking.payments.length > 0 && (
@@ -228,9 +256,16 @@ export default function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 <h4 className="text-sm font-semibold text-slate-300 mb-2">Qilingan to'lovlar tarixi:</h4>
                 <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
                   {booking.payments.map(p => (
-                    <div key={p.id} className="flex justify-between items-center bg-slate-800/30 px-3 py-2 rounded border border-slate-700/30 text-sm">
-                      <span className="text-slate-400 capitalize">{p.method}</span>
-                      <span className="text-emerald-400 font-medium">+{p.amount.toLocaleString()}</span>
+                    <div key={p.id} className="flex flex-col bg-slate-800/30 px-3 py-2 rounded border border-slate-700/30 text-sm">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-slate-400 capitalize">{p.method}</span>
+                        <span className="text-emerald-400 font-medium">+{p.amount.toLocaleString()} so'm</span>
+                      </div>
+                      {p.periodStart && p.periodEnd && (
+                        <div className="text-xs text-slate-500">
+                          Davr: {format(new Date(p.periodStart), 'dd.MM.yy')} dan {format(new Date(p.periodEnd), 'dd.MM.yy')} gacha
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

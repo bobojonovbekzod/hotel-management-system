@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import api from '../lib/api';
 import { format } from 'date-fns';
 import { uz } from 'date-fns/locale';
 import { 
@@ -28,7 +29,8 @@ import {
   Plus,
   Key,
   UserCheck,
-  CalendarDays
+  CalendarDays,
+  Activity
 } from 'lucide-react';
 
 const superadminNav = [
@@ -39,6 +41,7 @@ const adminNav = [
   { path: '/admin/front-desk', icon: Key, label: 'Qabul (Shahmatka)' },
   { path: '/admin/renters', icon: CalendarDays, label: 'Ijarachilar' },
   { path: '/admin/reservations', icon: CalendarClock, label: 'Oldindan Bronlar' },
+  { path: '/admin/shifts', icon: Clock, label: 'Smenalar' },
   { path: '/admin/expenses', icon: Wallet, label: 'Xarajatlar' },
   { path: '/admin/salary', icon: UserCheck, label: 'Mening Oyligim' },
 ];
@@ -51,19 +54,22 @@ const directorNav = [
   { path: '/director/bookings', icon: ClipboardList, label: 'Bronlar' },
   { path: '/director/expenses', icon: Wallet, label: 'Xarajatlar' },
   { path: '/director/staff', icon: Users, label: 'Xodimlar' },
-  { path: '/director/payroll', icon: Banknote, label: 'Oylik maosh' },
   { path: '/director/attendance', icon: CalendarClock, label: 'Davomat' },
   { path: '/director/shifts', icon: Clock, label: 'Smenalar' },
+  { path: '/director/transactions', icon: Banknote, label: 'Kassa (Tranzaksiyalar)' },
 ];
 
 const ownerNav = [
   { path: '/owner/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/owner/branches', icon: Building2, label: 'Filiallar' },
   { path: '/owner/rooms', icon: BedDouble, label: 'Xonalar' },
+  { path: '/owner/transactions', icon: Wallet, label: 'Kassa (Kirim-chiqim)' },
   { path: '/owner/staff', icon: Users, label: 'Xodimlar' },
   { path: '/owner/payroll', icon: Banknote, label: 'Oylik maosh' },
+  { path: '/owner/room-analytics', icon: Activity, label: 'Xonalar Tahlili' },
   { path: '/owner/attendance', icon: CalendarClock, label: 'Davomat' },
   { path: '/owner/devices', icon: Server, label: 'Face ID Qurilmalari' },
+  { path: '/owner/settings', icon: Settings, label: 'Sozlamalar' },
 ];
 
 const supervisorNav = [
@@ -74,7 +80,6 @@ const supervisorNav = [
   { path: '/supervisor/expenses', icon: Wallet, label: 'Xarajatlar' },
   { path: '/supervisor/shifts', icon: Clock, label: 'Smenalar' },
   { path: '/supervisor/staff', icon: Users, label: 'Xodimlar' },
-  { path: '/supervisor/payroll', icon: Banknote, label: 'Oylik maosh' },
   { path: '/supervisor/attendance', icon: CalendarClock, label: 'Davomat' },
   { path: '/supervisor/branches', icon: Building2, label: 'Filiallar' },
   { path: '/supervisor/devices', icon: Server, label: 'Face ID Qurilmalari' },
@@ -174,9 +179,17 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div className="p-5 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-500 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20 text-white flex-shrink-0">
-              <Hotel size={22} />
-            </div>
+            {user?.company?.logoUrl ? (
+              <img 
+                src={`${api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : ''}${user.company.logoUrl}`} 
+                alt="Logo" 
+                className="w-10 h-10 rounded-full object-cover shadow-lg border border-slate-700/50 flex-shrink-0 bg-white" 
+              />
+            ) : (
+              <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-500 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20 text-white flex-shrink-0">
+                <Hotel size={22} />
+              </div>
+            )}
             <div>
               <h1 className="font-bold text-white text-[15px] leading-tight tracking-tight">Hotel Manager</h1>
               <p className="text-xs text-slate-400 font-medium mt-0.5">{user?.branch?.name || 'Bosh ofis'}</p>
@@ -187,11 +200,22 @@ export default function Layout({ children }) {
         {/* User info */}
         <div className="p-5 border-b border-slate-800 bg-slate-800/20">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-sm font-bold text-slate-300 flex-shrink-0 shadow-inner">
-              {user?.name?.[0]?.toUpperCase()}
+            <div className="relative w-10 h-10 flex-shrink-0">
+              {user?.photoUrl && user.photoUrl !== 'uploaded_via_base64' ? (
+                <img 
+                  src={`${api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : ''}${user.photoUrl}`} 
+                  alt={user.name} 
+                  className="w-10 h-10 rounded-full object-cover border border-slate-700 shadow-inner"
+                  onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-sm font-bold text-slate-300 shadow-inner">
+                  {user?.name?.[0]?.toUpperCase()}
+                </div>
+              )}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{user?.name}</p>
+              <p className="text-sm font-semibold text-white break-words whitespace-normal leading-tight">{user?.name}</p>
               <div className="mt-1 flex items-center gap-2">
                 <span className={`inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${badge.color}`}>
                   {badge.label}

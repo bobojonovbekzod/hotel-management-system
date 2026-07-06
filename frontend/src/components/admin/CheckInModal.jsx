@@ -24,6 +24,7 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
   });
   
   const [bookingType, setBookingType] = useState('daily');
+  const [monthlyFee, setMonthlyFee] = useState(room.pricePerNight * 30);
   const [payments, setPayments] = useState([{ method: 'cash', amount: '' }]);
   const [notes, setNotes] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -58,8 +59,7 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
   };
 
   const nights = Math.max(1, Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)));
-  const months = Math.max(1, Math.ceil(nights / 30));
-  const totalPrice = bookingType === 'monthly' ? months * room.pricePerNight * 30 : nights * room.pricePerNight; // Assumes pricePerNight is daily rate, so monthly is pricePerNight * 30. If there's a separate monthly rate, we'd use it here. Let's just multiply by 30 for now or let the admin adjust it.
+  const totalPrice = bookingType === 'monthly' ? monthlyFee : nights * room.pricePerNight;
   
   const handleBookingTypeChange = (type) => {
     setBookingType(type);
@@ -113,7 +113,13 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
       return;
     }
 
-    const validPayments = payments.filter(p => parseFloat(p.amount) > 0);
+    const validPayments = payments
+      .filter(p => parseFloat(p.amount) > 0)
+      .map(p => ({
+        ...p,
+        periodStart: bookingType === 'monthly' ? checkIn : null,
+        periodEnd: bookingType === 'monthly' ? checkOut : null
+      }));
 
     setLoading(true);
     try {
@@ -127,7 +133,8 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
         shiftId: shift?.id,
         primaryGuest,
         additionalGuests,
-        bookingType
+        bookingType,
+        monthlyFee: bookingType === 'monthly' ? monthlyFee : null
       });
       toast.success('Mehmon muvaffaqiyatli ro\'yxatga olindi! 🎉');
       onSuccess();
@@ -165,16 +172,35 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
             </label>
           </div>
 
-          <div className="bg-primary-600/10 border border-primary-500/20 rounded-xl p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-400">Bir {bookingType === 'monthly' ? 'oylik' : 'kunlik'} narx</p>
-              <p className="text-lg font-bold text-white">{(bookingType === 'monthly' ? room.pricePerNight * 30 : room.pricePerNight)?.toLocaleString()} so'm</p>
+          {bookingType === 'daily' ? (
+            <div className="bg-primary-600/10 border border-primary-500/20 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-400">Bir kunlik narx</p>
+                <p className="text-lg font-bold text-white">{room.pricePerNight?.toLocaleString()} so'm</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-400">Jami ({nights} kun)</p>
+                <p className="text-xl font-bold text-primary-400">{totalPrice.toLocaleString()} so'm</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Jami ({bookingType === 'monthly' ? months + ' oy' : nights + ' kun'})</p>
-              <p className="text-xl font-bold text-primary-400">{totalPrice.toLocaleString()} so'm</p>
+          ) : (
+            <div className="bg-primary-600/10 border border-primary-500/20 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-400 mb-1">Kelishilgan oylik ijara summasi (so'm)</p>
+                <input 
+                  type="number" 
+                  value={monthlyFee} 
+                  onChange={(e) => setMonthlyFee(parseFloat(e.target.value) || 0)} 
+                  className="input-field max-w-[200px]" 
+                  min="0" 
+                />
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-400">Birinchi to'lov (avans)</p>
+                <p className="text-xl font-bold text-primary-400">{totalPrice.toLocaleString()} so'm</p>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>

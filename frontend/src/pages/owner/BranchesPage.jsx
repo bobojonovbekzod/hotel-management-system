@@ -137,6 +137,9 @@ export default function BranchesPage() {
                     <div>
                       <h3 className="font-bold text-white text-lg">{branch.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+                          ID: {branch.id}
+                        </span>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${branch.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                           {branch.isActive ? 'Faol' : 'Faol emas'}
                         </span>

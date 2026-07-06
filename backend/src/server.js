@@ -33,6 +33,32 @@ const io = new Server(server, {
   },
 });
 
+// Agentlar uchun alohida namespace
+const agentNamespace = io.of('/agent');
+const connectedAgents = new Map(); // branchId -> socketId
+
+agentNamespace.on('connection', (socket) => {
+  const { branchId, token } = socket.handshake.auth;
+  
+  // Oddiy xavfsizlik tekshiruvi (haqiqiy loyihada bazadan tekshiriladi)
+  if (token !== process.env.AGENT_TOKEN && token !== 'hotelbase_maxfiy_agent_123') {
+    console.log(`[Agent] Noto'g'ri token bilan ulanishga urinish: ${socket.id}`);
+    return socket.disconnect();
+  }
+
+  if (branchId) {
+    connectedAgents.set(branchId.toString(), socket.id);
+    console.log(`[Agent] Ulandi: Filial ${branchId} (Socket: ${socket.id})`);
+  }
+
+  socket.on('disconnect', () => {
+    if (branchId) {
+      connectedAgents.delete(branchId.toString());
+      console.log(`[Agent] Uzildi: Filial ${branchId}`);
+    }
+  });
+});
+
 // Start Telegram Bot
 setupBot();
 
@@ -41,13 +67,15 @@ app.use(cors({
   origin: true,
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Socket.io ni req ga ulash
 app.use((req, res, next) => {
   req.io = io;
+  req.agentNamespace = agentNamespace;
+  req.connectedAgents = connectedAgents;
   next();
 });
 
@@ -60,6 +88,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/devices', devicesRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/shifts', shiftRoutes);
+
+app.use('/api/room-categories', require('./routes/roomCategory'));
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/expense-categories', expenseCategoriesRoutes);
 app.use('/api/users', userRoutes);
@@ -67,6 +97,8 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/companies', companiesRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/transactions', require('./routes/transactions'));
+app.use('/api/reports', require('./routes/reports'));
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -9,11 +9,15 @@ export default function AttendancePage() {
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterBranch, setFilterBranch] = useState('');
+  const [branches, setBranches] = useState([]);
 
   const fetchAttendance = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/attendance', { params: { date: filterDate } });
+      const params = { date: filterDate };
+      if (filterBranch) params.branchId = filterBranch;
+      const res = await api.get('/attendance', { params });
       setAttendance(res.data.data);
     } catch (error) {
       toast.error("Davomat ma'lumotlarini yuklashda xatolik");
@@ -24,7 +28,13 @@ export default function AttendancePage() {
 
   useEffect(() => {
     fetchAttendance();
-  }, [filterDate]);
+  }, [filterDate, filterBranch]);
+
+  useEffect(() => {
+    if (user?.role === 'owner' || user?.role === 'supervisor') {
+      api.get('/branches').then(res => setBranches(res.data.data)).catch(() => {});
+    }
+  }, [user]);
 
   const formatTime = (isoString) => {
     if (!isoString) return '—';
@@ -50,6 +60,20 @@ export default function AttendancePage() {
         </div>
         
         <div className="flex items-center gap-3">
+          {(user?.role === 'owner' || user?.role === 'supervisor') && (
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-2">
+              <select
+                className="bg-transparent text-white text-sm outline-none w-auto min-w-[150px]"
+                value={filterBranch}
+                onChange={(e) => setFilterBranch(e.target.value)}
+              >
+                <option className="bg-slate-800 text-white" value="">Barcha filiallar</option>
+                {branches.map((b) => (
+                  <option className="bg-slate-800 text-white" key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-2">
             <Filter size={16} className="text-slate-400" />
             <input 

@@ -4,13 +4,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { BedDouble, Plus, Edit2, X, Building2 } from 'lucide-react';
 
-const roomTypeLabels = {
-  lux_2: 'Ikki kishilik lux',
-  semi_lux_2: 'Ikki kishilik yarim lux',
-  standard_1: 'Standart 1 kishilik',
-  semi_lux_3: '3 kishilik yarim lux',
-};
-
 const statusLabels = {
   available: 'Bo\'sh',
   occupied: 'Band',
@@ -38,15 +31,21 @@ export default function RoomsPage() {
 
   // Form states
   const [roomNumber, setRoomNumber] = useState('');
-  const [roomType, setRoomType] = useState('standard_1');
+  const [roomType, setRoomType] = useState('');
   const [floor, setFloor] = useState('1');
   const [capacity, setCapacity] = useState('1');
   const [pricePerNight, setPricePerNight] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const [categories, setCategories] = useState([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+
   useEffect(() => {
     fetchBranches();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -65,8 +64,20 @@ export default function RoomsPage() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get('/room-categories');
+      setCategories(res.data.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const fetchRooms = async () => {
-    if (!filterBranch && user?.role === 'owner') return;
+    if (!filterBranch && user?.role === 'owner') {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.get(`/rooms${filterBranch ? `?branchId=${filterBranch}` : ''}`);
@@ -78,10 +89,27 @@ export default function RoomsPage() {
     }
   };
 
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    setCreatingCategory(true);
+    try {
+      const res = await api.post('/room-categories', { name: newCategoryName });
+      toast.success("Xona turi qo'shildi");
+      setCategories([...categories, res.data.data]);
+      setRoomType(res.data.data.name);
+      setShowCategoryModal(false);
+      setNewCategoryName('');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Xatolik yuz berdi');
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
   const openAddModal = () => {
     setEditingRoom(null);
     setRoomNumber('');
-    setRoomType('standard_1');
+    setRoomType('');
     setFloor('1');
     setCapacity('1');
     setPricePerNight('');
@@ -131,7 +159,7 @@ export default function RoomsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -156,7 +184,7 @@ export default function RoomsPage() {
           )}
 
           {user?.role === 'owner' && (
-            <button onClick={openAddModal} className="btn-primary h-11 w-[195px] flex items-center gap-2">
+            <button onClick={openAddModal} className="btn-primary h-11 px-4 whitespace-nowrap flex items-center gap-2">
               <Plus size={18} /> Yangi xona
             </button>
           )}
@@ -195,8 +223,8 @@ export default function RoomsPage() {
                       <div className="font-bold text-lg text-white">№ {room.roomNumber}</div>
                     </td>
                     <td className="table-td">
-                      <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-sm border border-slate-700">
-                        {roomTypeLabels[room.roomType]}
+                      <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-sm border border-slate-700 capitalize">
+                        {room.roomType.replace(/_/g, ' ')}
                       </span>
                     </td>
                     <td className="table-td text-slate-300">
@@ -234,19 +262,19 @@ export default function RoomsPage() {
       {/* Add / Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal-content w-full max-w-md p-0 bg-slate-900 border border-slate-800 overflow-hidden">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800 bg-slate-900/80">
+          <div className="modal-content w-full max-w-md p-0 bg-slate-900 border border-slate-800 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 bg-slate-900/80 shrink-0">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <BedDouble className="text-primary-400" />
                 {editingRoom ? 'Xonani tahrirlash' : 'Yangi xona qo\'shish'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg hover:bg-slate-700">
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden">
+              <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
 
                 <div>
                   <label className="label">Xona raqami</label>
@@ -262,20 +290,27 @@ export default function RoomsPage() {
 
                 <div>
                   <label className="label">Xona turi</label>
-                  <select
-                    className="input-field"
-                    value={roomType}
-                    onChange={e => {
-                      setRoomType(e.target.value);
-                      if (e.target.value === 'standard_1') setCapacity('1');
-                      if (e.target.value === 'lux_2' || e.target.value === 'semi_lux_2') setCapacity('2');
-                      if (e.target.value === 'semi_lux_3') setCapacity('3');
-                    }}
-                  >
-                    {Object.entries(roomTypeLabels).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      required
+                      className="input-field flex-1"
+                      value={roomType}
+                      onChange={e => setRoomType(e.target.value)}
+                    >
+                      <option value="" disabled>Tanlang...</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowCategoryModal(true)}
+                      className="px-4 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl border border-slate-700 transition-colors flex items-center justify-center"
+                      title="Yangi xona turi qo'shish"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -326,16 +361,50 @@ export default function RoomsPage() {
                   ></textarea>
                 </div>
 
-                <div className="pt-4 border-t border-slate-800 flex justify-end gap-3">
-                  <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">
-                    Bekor qilish
-                  </button>
-                  <button type="submit" disabled={submitting} className="btn-primary">
-                    {submitting ? 'Saqlanmoqda...' : 'Saqlash'}
-                  </button>
-                </div>
-              </form>
+              </div>
+
+              <div className="p-5 border-t border-slate-800 flex justify-end gap-3 bg-slate-900/80 shrink-0">
+                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">
+                  Bekor qilish
+                </button>
+                <button type="submit" disabled={submitting} className="btn-primary">
+                  {submitting ? 'Saqlanmoqda...' : 'Saqlash'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Category Add Modal */}
+      {showCategoryModal && (
+        <div className="modal-overlay z-[60]" onClick={e => e.target === e.currentTarget && setShowCategoryModal(false)}>
+          <div className="modal-content w-full max-w-sm p-0 bg-slate-900 border border-slate-800 flex flex-col">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 bg-slate-900/80">
+              <h2 className="text-lg font-bold text-white">Yangi xona turi</h2>
+              <button onClick={() => setShowCategoryModal(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">
+                <X size={20} />
+              </button>
             </div>
+            <form onSubmit={handleCreateCategory} className="p-6">
+              <div className="mb-6">
+                <label className="label">Nomi (masalan: VIP, Standart)</label>
+                <input
+                  type="text"
+                  required
+                  className="input-field"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setShowCategoryModal(false)} className="btn-secondary">Bekor qilish</button>
+                <button type="submit" disabled={creatingCategory} className="btn-primary">
+                  {creatingCategory ? 'Qo\'shilmoqda...' : 'Qo\'shish'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

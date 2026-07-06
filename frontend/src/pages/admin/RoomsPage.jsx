@@ -37,7 +37,7 @@ const statusConfig = {
   maintenance: { label: 'Ta\'mirlashda', color: 'room-card-maintenance', dot: 'bg-slate-400', icon: Wrench },
 };
 
-const roomTypeLabel = { standard: 'Standart', deluxe: 'Deluxe', suite: 'Lyuks' };
+
 
 export default function AdminRoomsPage() {
   const { user } = useAuth();
@@ -73,7 +73,7 @@ export default function AdminRoomsPage() {
     fetchActiveShift();
 
     // Socket ulash
-    const s = io(import.meta.env.VITE_SOCKET_URL || `http://${window.location.hostname}:5000`);
+    const s = io(import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin));
     setSocket(s);
     if (user?.branchId) s.emit('join-branch', user.branchId);
 
@@ -242,7 +242,7 @@ export default function AdminRoomsPage() {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <span className="text-2xl font-bold text-white tracking-tight">{room.roomNumber}</span>
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">{roomTypeLabel[room.roomType]}</p>
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">{room.roomType.replace(/_/g, ' ')}</p>
                 </div>
                 <div className={`p-2 rounded-full bg-slate-900/50 ${cfg.color.replace('room-card-', 'text-').replace('-available', '-emerald-400').replace('-occupied', '-red-400').replace('-cleaning', '-yellow-400').replace('-maintenance', '-slate-400')}`}>
                   <StatusIcon size={16} />

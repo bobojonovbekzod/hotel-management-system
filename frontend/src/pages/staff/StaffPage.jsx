@@ -115,6 +115,21 @@ export default function StaffPage() {
     }
   };
 
+  const handleFaceDelete = async () => {
+    if (!window.confirm('Rostdan ham ushbu xodimning yuz ma\'lumotini barcha qurilmalardan o\'chirib tashlamoqchimisiz?')) return;
+    try {
+      setUploadingFace(true);
+      await api.delete(`/users/${faceUser.id}/face`);
+      toast.success('Yuz ma\'lumotlari o\'chirildi');
+      setShowFaceModal(false);
+      fetchStaff();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Xatolik yuz berdi');
+    } finally {
+      setUploadingFace(false);
+    }
+  };
+
   const openAdd = () => {
     setEditUser(null);
     setForm({
@@ -563,11 +578,18 @@ export default function StaffPage() {
                   </div>
                 )}
               </div>
-              <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setShowFaceModal(false)} className="btn-secondary flex-1">Bekor qilish</button>
-                <button type="submit" disabled={uploadingFace} className="btn-primary flex-1 justify-center">
-                  {uploadingFace ? 'Yuklanmoqda...' : <><Upload size={18} /> Yuklash</>}
-                </button>
+              <div className="flex gap-3 pt-4 flex-col sm:flex-row">
+                <div className="flex gap-3 w-full">
+                  <button type="button" onClick={() => setShowFaceModal(false)} className="btn-secondary flex-1">Bekor qilish</button>
+                  <button type="submit" disabled={uploadingFace} className="btn-primary flex-1 justify-center">
+                    {uploadingFace ? 'Yuklanmoqda...' : <><Upload size={18} /> Yuklash</>}
+                  </button>
+                </div>
+                {faceUser?.isFaceRegistered && (
+                  <button type="button" onClick={handleFaceDelete} disabled={uploadingFace} className="px-4 py-2 border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 font-medium rounded-xl flex items-center justify-center gap-2 transition-colors">
+                    <Trash2 size={18} /> O'chirish
+                  </button>
+                )}
               </div>
             </form>
           </div>

@@ -110,13 +110,24 @@ router.post('/webhook', upload.any(), async (req, res) => {
 
     const now = new Date();
 
+    // Davomat qaysi filialga tegishli ekanligini aniqlaymiz
+    let attendanceBranchId = user.branchId;
+    if (eventBody.ipAddress) {
+      const device = await prisma.device.findFirst({ where: { ipAddress: eventBody.ipAddress, companyId: user.companyId } });
+      if (device) attendanceBranchId = device.branchId;
+    }
+    if (!attendanceBranchId) {
+      const firstBranch = await prisma.branch.findFirst({ where: { companyId: user.companyId } });
+      attendanceBranchId = firstBranch ? firstBranch.id : 1;
+    }
+
     if (!record) {
       // Birinchi marta kirdi (Check-In)
       await prisma.attendance.create({
         data: {
           companyId: user.companyId,
           userId,
-          branchId: user.branchId,
+          branchId: attendanceBranchId,
           checkIn: now,
           workDate: today
         }

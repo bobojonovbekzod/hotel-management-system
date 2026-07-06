@@ -22,7 +22,7 @@ export default function FrontDeskPage() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeShift, setActiveShift] = useState(null);
-  
+
   const [checkInRoom, setCheckInRoom] = useState(null);
   const [manageBookingId, setManageBookingId] = useState(null);
   const [socket, setSocket] = useState(null);
@@ -56,14 +56,14 @@ export default function FrontDeskPage() {
     try {
       const res = await api.get('/shifts/my/active');
       setActiveShift(res.data.data);
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
     fetchRooms();
     fetchActiveShift();
 
-    const s = io(import.meta.env.VITE_SOCKET_URL || `http://${window.location.hostname}:5000`);
+    const s = io(import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin));
     setSocket(s);
     if (user?.branchId) s.emit('join-branch', user.branchId);
 
@@ -120,7 +120,7 @@ export default function FrontDeskPage() {
       toast.error('Avval smenani boshlang!');
       return;
     }
-    
+
     if (room.status === 'available') {
       setCheckInRoom(room);
     } else if (room.status === 'occupied') {
@@ -137,7 +137,7 @@ export default function FrontDeskPage() {
         message: `Xona hozir "${statusConfig[room.status].label}" holatida. Bo'sh holatga o'tkazasizmi?`,
         action: async () => {
           try {
-            await api.put(`/rooms/${room.id}`, { status: 'available' });
+            await api.put(`/rooms/${room.id}/status`, { status: 'available' });
             toast.success("Xona tayyor!");
             fetchRooms();
           } catch {
@@ -209,7 +209,7 @@ export default function FrontDeskPage() {
           {rooms.map(room => {
             let statusKey = room.status;
             let blinkClass = '';
-            
+
             if (room.status === 'occupied') {
               const b = activeBookings.find(bk => bk.roomId === room.id);
               if (b && b.isOverstay) {
@@ -229,7 +229,7 @@ export default function FrontDeskPage() {
 
             const status = statusConfig[statusKey];
             const Icon = status.icon;
-            
+
             return (
               <button
                 key={room.id}

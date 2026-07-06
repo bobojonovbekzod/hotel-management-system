@@ -13,6 +13,7 @@ datasource db {
 model Company {
   id                 Int       @id @default(autoincrement())
   name               String
+  logoUrl            String?
   subscriptionEndsAt DateTime?
   isActive           Boolean   @default(true)
   createdAt          DateTime  @default(now())
@@ -30,8 +31,21 @@ model Company {
   guests              Guest[]
   payrollTransactions PayrollTransaction[]
   cleaningTasks       CleaningTask[]
+  roomCategories      RoomCategory[]
 
   @@map("companies")
+}
+
+// Xona turlari (Kompaniya darajasida)
+model RoomCategory {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, name])
+  @@map("room_categories")
 }
 
 // Filialar
@@ -112,7 +126,7 @@ model Room {
   companyId     Int
   branchId      Int
   roomNumber    String
-  roomType      RoomType   @default(standard_1)
+  roomType      String     @default("standard_1")
   floor         Int        @default(1)
   capacity      Int        @default(2)
   pricePerNight Float
@@ -130,12 +144,6 @@ model Room {
   @@map("rooms")
 }
 
-enum RoomType {
-  lux_2
-  semi_lux_2
-  standard_1
-  semi_lux_3
-}
 
 enum RoomStatus {
   available
@@ -175,9 +183,11 @@ model Booking {
   checkOutExpected DateTime
   checkOutActual   DateTime?
   totalPrice       Float
+  monthlyFee       Float?
   paidAmount       Float          @default(0)
   paymentMethod    PaymentMethod?
   status           BookingStatus  @default(active)
+  bookingType      String         @default("daily")
   shiftType        ShiftType?
   notes            String?
   createdAt        DateTime       @default(now())
@@ -220,6 +230,8 @@ model Payment {
   method      PaymentMethod
   type        String        @default("room") // room, penalty, advance
   description String?
+  periodStart DateTime?
+  periodEnd   DateTime?
   createdAt   DateTime      @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id])

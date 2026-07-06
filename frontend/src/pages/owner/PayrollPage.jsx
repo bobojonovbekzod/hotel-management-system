@@ -44,7 +44,10 @@ export default function PayrollPage() {
   };
 
   const fetchPayroll = async () => {
-    if (!filterBranch && user?.role === 'owner') return;
+    if (!filterBranch && user?.role === 'owner') {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.get(`/payroll`, {

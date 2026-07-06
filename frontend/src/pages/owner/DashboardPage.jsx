@@ -33,7 +33,7 @@ export default function OwnerDashboard() {
   const fetchBranches = async () => {
     try {
       const res = await api.get('/branches');
-      setBranches(res.data.data);
+      setBranches(res.data?.data || []);
     } catch {}
   };
 
@@ -124,7 +124,7 @@ export default function OwnerDashboard() {
               onChange={(e) => setSelectedBranch(e.target.value)}
             >
               <option value="">Barcha filiallar</option>
-              {branches.map((b) => (
+              {branches?.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>

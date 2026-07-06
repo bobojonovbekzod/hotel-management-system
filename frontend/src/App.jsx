@@ -14,15 +14,17 @@ import AdminBookingsPage from './pages/admin/BookingsPage';
 import AdminShiftPage from './pages/admin/ShiftPage';
 import AdminRoomsPage from './pages/admin/RoomsPage';
 import CheckInsPage from './pages/admin/CheckInsPage';
+import TransactionsPage from './pages/admin/TransactionsPage';
+import SettingsPage from './pages/owner/SettingsPage';
+import RoomAnalyticsPage from './pages/owner/RoomAnalyticsPage';
 
 // Owner/Director/Admin pages
 import CompaniesPage from './pages/superadmin/CompaniesPage';
-import SettingsPage from './pages/settings/SettingsPage';
 import OwnerDashboard from './pages/owner/DashboardPage';
 import BranchesPage from './pages/owner/BranchesPage';
 import RoomsPage from './pages/owner/RoomsPage';
 import StaffPage from './pages/staff/StaffPage';
-import DevicesPage from './pages/admin/DevicesPage';
+import DevicesPage from './pages/owner/DevicesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import PayrollPage from './pages/owner/PayrollPage';
 
@@ -80,6 +82,11 @@ function AppRoutes() {
           <ReservationsPage />
         </ProtectedRoute>
       } />
+      <Route path="/admin/shifts" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminShiftPage />
+        </ProtectedRoute>
+      } />
       <Route path="/admin/expenses" element={
         <ProtectedRoute allowedRoles={['admin', 'director', 'owner']}>
           <AdminExpensesPage />
@@ -132,9 +139,9 @@ function AppRoutes() {
           <StaffPage />
         </ProtectedRoute>
       } />
-      <Route path="/director/payroll" element={
+      <Route path="/director/transactions" element={
         <ProtectedRoute allowedRoles={['director', 'owner']}>
-          <PayrollPage />
+          <TransactionsPage />
         </ProtectedRoute>
       } />
       {/* Route removed for director */ }
@@ -170,14 +177,29 @@ function AppRoutes() {
           <PayrollPage />
         </ProtectedRoute>
       } />
+      <Route path="/owner/attendance" element={
+        <ProtectedRoute allowedRoles={['owner']}>
+          <AttendancePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/owner/room-analytics" element={
+        <ProtectedRoute allowedRoles={['owner', 'director']}>
+          <RoomAnalyticsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/owner/transactions" element={
+        <ProtectedRoute allowedRoles={['owner']}>
+          <TransactionsPage />
+        </ProtectedRoute>
+      } />
       <Route path="/owner/devices" element={
         <ProtectedRoute allowedRoles={['owner']}>
           <DevicesPage />
         </ProtectedRoute>
       } />
-      <Route path="/owner/attendance" element={
+      <Route path="/owner/settings" element={
         <ProtectedRoute allowedRoles={['owner']}>
-          <AttendancePage />
+          <SettingsPage />
         </ProtectedRoute>
       } />
       <Route path="/owner/reports" element={
@@ -220,11 +242,6 @@ function AppRoutes() {
       <Route path="/supervisor/staff" element={
         <ProtectedRoute allowedRoles={['supervisor', 'owner']}>
           <StaffPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/supervisor/payroll" element={
-        <ProtectedRoute allowedRoles={['supervisor', 'owner']}>
-          <PayrollPage />
         </ProtectedRoute>
       } />
       <Route path="/supervisor/branches" element={
