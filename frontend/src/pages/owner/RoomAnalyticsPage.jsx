@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Activity, Search, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { uz } from 'date-fns/locale';
-import FullScreenLoader from '../FullScreenLoader';
+import FullScreenLoader from '../../components/common/FullScreenLoader';
 
 export default function RoomAnalyticsPage() {
   const [rooms, setRooms] = useState([]);
@@ -26,7 +26,7 @@ export default function RoomAnalyticsPage() {
       setRooms(resRooms.data.data);
       setBranches(resBranches.data.data);
     } catch (err) {
-      toast.error('Ma\\'lumotlarni yuklashda xatolik yuz berdi');
+      toast.error("Ma'lumotlarni yuklashda xatolik yuz berdi");
     } finally {
       setLoading(false);
     }

@@ -69,7 +69,6 @@ const ownerNav = [
   { path: '/owner/room-analytics', icon: Activity, label: 'Xonalar Tahlili' },
   { path: '/owner/attendance', icon: CalendarClock, label: 'Davomat' },
   { path: '/owner/devices', icon: Server, label: 'Face ID Qurilmalari' },
-  { path: '/owner/settings', icon: Settings, label: 'Sozlamalar' },
 ];
 
 const supervisorNav = [

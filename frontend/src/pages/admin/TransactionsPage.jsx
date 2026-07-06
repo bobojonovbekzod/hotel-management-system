@@ -44,7 +44,15 @@ export default function TransactionsPage() {
     }
   };
 
-  const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  
+  const terminalIncome = transactions.filter(t => t.type === 'income' && (t.method === 'terminal' || t.method === 'karta')).reduce((sum, t) => sum + t.amount, 0);
+  const qrcodeIncome = transactions.filter(t => t.type === 'income' && t.method === 'qrcode').reduce((sum, t) => sum + t.amount, 0);
+  const bankIncome = terminalIncome + qrcodeIncome;
+  
+  const cashIncome = totalIncome - bankIncome;
+  const cashBalance = cashIncome - totalExpense;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -92,14 +100,35 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card bg-emerald-500/10 border-emerald-500/20 md:col-span-1">
-          <h3 className="text-emerald-400 font-semibold mb-2">Tanlangan kundagi jami tushum</h3>
-          <p className="text-3xl font-bold text-white">{totalAmount.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
-          <p className="text-sm text-slate-500 mt-1">{transactions.length} ta to'lov</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="card bg-emerald-500/10 border-emerald-500/20">
+          <h3 className="text-emerald-400 font-semibold mb-2">Jami Tushum</h3>
+          <p className="text-3xl font-bold text-white">{totalIncome.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
+          <p className="text-sm text-slate-500 mt-1">Shundan naqd: <span className="text-emerald-400 font-medium">{cashIncome.toLocaleString()}</span></p>
+        </div>
+
+        <div className="card bg-blue-500/10 border-blue-500/20">
+          <h3 className="text-blue-400 font-semibold mb-2">Bank (Karta/QR)</h3>
+          <p className="text-3xl font-bold text-white">{bankIncome.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
+          <div className="flex gap-4 mt-1 text-sm text-slate-500">
+            <span>Terminal: {terminalIncome.toLocaleString()}</span>
+            <span>QR: {qrcodeIncome.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div className="card bg-rose-500/10 border-rose-500/20">
+          <h3 className="text-rose-400 font-semibold mb-2">Jami Xarajatlar</h3>
+          <p className="text-3xl font-bold text-white">{totalExpense.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
+          <p className="text-sm text-slate-500 mt-1">Kassadan qilingan chiqimlar</p>
+        </div>
+
+        <div className={`card ${cashBalance >= 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+          <h3 className={`${cashBalance >= 0 ? 'text-amber-400' : 'text-red-400'} font-semibold mb-2`}>Kassadagi Naqd Qoldiq</h3>
+          <p className="text-3xl font-bold text-white">{cashBalance.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
+          <p className="text-sm text-slate-500 mt-1">Jismoniy naqd pul miqdori</p>
         </div>
         
-        <div className="card md:col-span-2 overflow-x-auto p-0">
+        <div className="card md:col-span-4 overflow-x-auto p-0">
           {loading ? (
             <div className="p-8 text-center text-slate-400">Yuklanmoqda...</div>
           ) : transactions.length === 0 ? (
@@ -116,6 +145,7 @@ export default function TransactionsPage() {
                   <th className="table-th">Filial</th>
                   <th className="table-th">To'lov usuli</th>
                   <th className="table-th">Qabul qildi</th>
+                  <th className="table-th">Turi</th>
                   <th className="table-th text-right pr-6">Summa</th>
                 </tr>
               </thead>
@@ -127,34 +157,38 @@ export default function TransactionsPage() {
                       <span className="block text-xs text-slate-500">{format(new Date(t.createdAt), 'dd.MM.yyyy')}</span>
                     </td>
                     <td className="table-td">
-                      {t.booking ? (
-                        <div>
-                          <span className="text-white font-medium">{t.booking.room?.roomNumber}-xona</span>
-                          <span className="block text-xs text-slate-400">
-                            {t.booking.primaryGuest?.firstName} {t.booking.primaryGuest?.lastName}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-500">-</span>
-                      )}
+                      <span className="text-white font-medium">{t.details}</span>
                     </td>
                     <td className="table-td text-slate-300">
-                      {t.booking?.room?.branch?.name || '-'}
+                      {t.branchName}
                     </td>
                     <td className="table-td">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize
                         ${t.method === 'cash' ? 'bg-emerald-500/20 text-emerald-400' : ''}
                         ${t.method === 'terminal' || t.method === 'karta' ? 'bg-blue-500/20 text-blue-400' : ''}
                         ${t.method === 'qrcode' ? 'bg-purple-500/20 text-purple-400' : ''}
+                        ${t.method === '-' ? 'bg-slate-500/20 text-slate-400' : ''}
                       `}>
                         {t.method}
                       </span>
                     </td>
                     <td className="table-td text-slate-300">
-                      {t.booking?.admin ? `${t.booking.admin.name}` : '-'}
+                      {t.adminName}
+                    </td>
+                    <td className="table-td">
+                      {t.type === 'income' ? (
+                        <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full text-xs font-medium">Kirim</span>
+                      ) : (
+                        <span className="bg-rose-500/20 text-rose-400 px-2 py-1 rounded-full text-xs font-medium">Chiqim</span>
+                      )}
                     </td>
                     <td className="table-td text-right pr-6">
-                      <span className="text-emerald-400 font-bold">+{t.amount.toLocaleString()}</span> so'm
+                      {t.type === 'income' ? (
+                        <span className="text-emerald-400 font-bold">+{t.amount.toLocaleString()}</span>
+                      ) : (
+                        <span className="text-rose-400 font-bold">-{t.amount.toLocaleString()}</span>
+                      )}
+                       <span className="text-slate-400 text-xs ml-1">so'm</span>
                     </td>
                   </tr>
                 ))}

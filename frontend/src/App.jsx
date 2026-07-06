@@ -24,7 +24,7 @@ import OwnerDashboard from './pages/owner/DashboardPage';
 import BranchesPage from './pages/owner/BranchesPage';
 import RoomsPage from './pages/owner/RoomsPage';
 import StaffPage from './pages/staff/StaffPage';
-import DevicesPage from './pages/owner/DevicesPage';
+import DevicesPage from './pages/admin/DevicesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import PayrollPage from './pages/owner/PayrollPage';
 

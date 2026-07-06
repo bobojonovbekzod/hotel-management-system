@@ -34,7 +34,7 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (res.data.success) {
-        toast.success('Logotip muvaffaqiyatli yangilandi. Iltimos, o\\'zgarishlar to\\'liq ko\\'rinishi uchun sahifani yangilang (F5).');
+        toast.success("Logotip muvaffaqiyatli yangilandi. Iltimos, o'zgarishlar to'liq ko'rinishi uchun sahifani yangilang (F5).");
       }
     } catch (err) {
       toast.error('Logotip yuklashda xatolik yuz berdi');
