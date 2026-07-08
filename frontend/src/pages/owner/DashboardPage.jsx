@@ -316,8 +316,8 @@ export default function OwnerDashboard() {
               >
                 <defs>
                   <linearGradient id="colorPercentage" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#007bff" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#007bff" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#007bff" stopOpacity={0.6}/>
+                    <stop offset="95%" stopColor="#007bff" stopOpacity={0.1}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={true} horizontal={true} />

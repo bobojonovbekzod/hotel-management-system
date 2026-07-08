@@ -129,6 +129,7 @@ router.get('/my/active', authenticate, authorize('admin'), async (req, res) => {
         bookings: {
           include: { room: true, primaryGuest: true },
         },
+        expenses: true
       },
     });
     res.json({ success: true, data: shift });
