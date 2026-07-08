@@ -139,13 +139,25 @@ export default function AdminShiftPage() {
               <p className="text-sm text-slate-600 mb-2">Faol bronlar:</p>
               <div className="space-y-2">
                 {activeShift.bookings.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-900">Xona {b.room?.roomNumber}</span>
-                      <span className="text-xs text-slate-600">→ {b.primaryGuest?.firstName} {b.primaryGuest?.lastName}</span>
-                      <span className="text-xs font-bold text-emerald-400 ml-2">{b.totalPrice?.toLocaleString()} so'm</span>
+                  <div key={b.id} className="flex flex-col gap-1.5 bg-slate-50 rounded-lg px-3 py-2 border border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900">Xona {b.room?.roomNumber}</span>
+                        <span className="text-xs text-slate-600">→ {b.primaryGuest?.firstName} {b.primaryGuest?.lastName}</span>
+                      </div>
+                      <span className="text-xs text-slate-500 font-medium">{format(new Date(b.checkIn), 'HH:mm')}</span>
                     </div>
-                    <span className="text-xs text-slate-600">{format(new Date(b.checkIn), 'HH:mm')}</span>
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                        b.paymentMethod === 'cash' ? 'bg-green-100 text-green-700' :
+                        b.paymentMethod === 'terminal' ? 'bg-blue-100 text-blue-700' :
+                        b.paymentMethod === 'qrcode' ? 'bg-orange-100 text-orange-700' :
+                        'bg-slate-200 text-slate-700'
+                      }`}>
+                        {b.paymentMethod === 'cash' ? 'Naqd' : b.paymentMethod || 'Kiritilmagan'}
+                      </span>
+                      <span className="text-sm font-bold text-emerald-600">{b.paidAmount?.toLocaleString()} so'm</span>
+                    </div>
                   </div>
                 ))}
               </div>
