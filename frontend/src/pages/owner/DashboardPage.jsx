@@ -299,7 +299,7 @@ export default function OwnerDashboard() {
         <div className="card mt-6">
           <div className="text-center mb-6 relative">
             <h3 className="text-[17px] font-bold text-slate-800 tracking-tight">
-              Mehmonxonaning bandligi
+              Mehmonxonaning bandligi "{selectedBranch ? branches?.find(b => String(b.id) === String(selectedBranch))?.name : 'Barcha filiallar'}"
             </h3>
             <p className="text-[13px] text-slate-500 font-medium mt-1">
               Xonalar bo'yicha % nisbat .... <span className="text-emerald-600 ml-1">({monthlyOccupancyRate}% oylik bandlik)</span>
