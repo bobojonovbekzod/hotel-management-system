@@ -86,6 +86,16 @@ router.post('/', authenticate, authorize('superadmin'), async (req, res) => {
             phone: ownerPhone,
             role: 'owner'
           }
+        },
+        expenseCategories: {
+          create: [
+            { name: 'Oziq ovqat' },
+            { name: 'Tozalik vositalari' },
+            { name: 'Telekommunikatsiya' },
+            { name: 'Remont' },
+            { name: "Kommunal to'lovlar" },
+            { name: 'Boshqa xarajatlar' }
+          ]
         }
       },
       include: {
