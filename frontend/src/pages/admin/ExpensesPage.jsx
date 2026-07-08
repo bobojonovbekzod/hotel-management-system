@@ -114,14 +114,14 @@ export default function ExpensesPage() {
   const totalAmount = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <WalletCards className="text-primary-400" /> Xarajatlar
           </h1>
-          <p className="text-slate-400 text-sm">{format(now, 'MMMM yyyy')} oyi uchun</p>
+          <p className="text-slate-600 text-sm">{format(now, 'MMMM yyyy')} oyi uchun</p>
         </div>
         <button onClick={() => setShowForm(true)} className="btn-primary flex items-center gap-2">
           <Plus size={18} /> Xarajat qo'shish
@@ -152,7 +152,7 @@ export default function ExpensesPage() {
             className={`px-3 py-1.5 rounded-xl text-sm transition-all border ${
               filter === 'all'
                 ? 'bg-primary-600/20 border-primary-500/40 text-white'
-                : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:text-white'
+                : 'bg-slate-50 border-slate-300 text-slate-600 hover:text-slate-900'
             }`}
           >
             Barchasi
@@ -164,7 +164,7 @@ export default function ExpensesPage() {
               className={`px-3 py-1.5 rounded-xl text-sm transition-all border ${
                 filter === c.id.toString()
                   ? 'bg-primary-600/20 border-primary-500/40 text-white'
-                  : 'bg-slate-800/30 border-slate-700/30 text-slate-400 hover:text-white'
+                  : 'bg-slate-50 border-slate-300 text-slate-600 hover:text-slate-900'
               }`}
             >
               {c.name}
@@ -176,11 +176,11 @@ export default function ExpensesPage() {
       {/* Expenses List */}
       <div className="card">
         {loading ? (
-          <div className="py-10 text-center text-slate-400">Yuklanmoqda...</div>
+          <div className="py-10 text-center text-slate-600">Yuklanmoqda...</div>
         ) : filteredExpenses.length === 0 ? (
           <div className="py-10 text-center flex flex-col items-center">
-            <Inbox size={48} className="text-slate-600 mb-4" />
-            <p className="text-slate-400">Xarajat yo'q</p>
+            <Inbox size={48} className="text-slate-700 mb-4" />
+            <p className="text-slate-600">Xarajat yo'q</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -198,17 +198,17 @@ export default function ExpensesPage() {
               <tbody>
                 {filteredExpenses.map((expense) => (
                   <tr key={expense.id} className="table-row">
-                    <td className="table-td font-medium text-white">
+                    <td className="table-td font-medium text-slate-900">
                       {expense.category?.name || '-'}
                     </td>
-                    <td className="table-td text-slate-300">{expense.description || '—'}</td>
+                    <td className="table-td text-slate-800">{expense.description || '—'}</td>
                     <td className="table-td">
                       {format(new Date(expense.expenseDate), 'dd.MM.yyyy')}
                     </td>
-                    <td className="table-td text-right font-bold text-white">
-                      {expense.amount.toLocaleString()} <span className="text-xs text-slate-500">so'm</span>
+                    <td className="table-td text-right font-bold text-slate-900">
+                      {expense.amount.toLocaleString()} <span className="text-xs text-slate-600">so'm</span>
                     </td>
-                    <td className="table-td text-slate-400 text-xs">{expense.admin?.name}</td>
+                    <td className="table-td text-slate-600 text-xs">{expense.admin?.name}</td>
                     <td className="table-td">
                       {user?.role === 'owner' && (
                         <button
@@ -224,11 +224,11 @@ export default function ExpensesPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t border-slate-600/50">
-                  <td colSpan={3} className="table-td font-semibold text-slate-300">
+                  <td colSpan={3} className="table-td font-semibold text-slate-800">
                     Jami:
                   </td>
                   <td className="table-td text-right font-bold text-xl text-red-400">
-                    {totalAmount.toLocaleString()} <span className="text-xs text-slate-400">so'm</span>
+                    {totalAmount.toLocaleString()} <span className="text-xs text-slate-600">so'm</span>
                   </td>
                   <td colSpan={2}></td>
                 </tr>
@@ -242,10 +242,10 @@ export default function ExpensesPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-md card">
-            <h3 className="text-lg font-bold text-white mb-4">Xarajat qo'shish</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Xarajat qo'shish</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Turkum</label>
+                <label className="block text-sm text-slate-600 mb-1">Turkum</label>
                 <select
                   value={form.categoryId}
                   onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
@@ -260,7 +260,7 @@ export default function ExpensesPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Summa (so'm)</label>
+                <label className="block text-sm text-slate-600 mb-1">Summa (so'm)</label>
                 <input
                   type="number"
                   value={form.amount}
@@ -271,7 +271,7 @@ export default function ExpensesPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Tavsif (ixtiyoriy)</label>
+                <label className="block text-sm text-slate-600 mb-1">Tavsif (ixtiyoriy)</label>
                 <input
                   type="text"
                   value={form.description}
@@ -281,7 +281,7 @@ export default function ExpensesPage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-300">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}

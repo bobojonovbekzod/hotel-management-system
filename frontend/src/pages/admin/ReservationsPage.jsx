@@ -67,15 +67,15 @@ export default function ReservationsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-400">
             <CalendarClock size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Oldindan Bron qilinganlar</h1>
-            <p className="text-slate-400">Kutilayotgan mehmonlar va zakladlar ro'yxati</p>
+            <h1 className="text-2xl font-bold text-slate-900">Oldindan Bron qilinganlar</h1>
+            <p className="text-slate-600">Kutilayotgan mehmonlar va zakladlar ro'yxati</p>
           </div>
         </div>
         
@@ -86,11 +86,11 @@ export default function ReservationsPage() {
 
       <div className="card">
         {loading ? (
-          <div className="py-10 text-center text-slate-400">Yuklanmoqda...</div>
+          <div className="py-10 text-center text-slate-600">Yuklanmoqda...</div>
         ) : reservations.length === 0 ? (
           <div className="py-10 text-center flex flex-col items-center">
-            <CalendarClock size={48} className="text-slate-600 mb-4" />
-            <p className="text-slate-400">Hozircha oldindan bron qilingan xonalar yo'q.</p>
+            <CalendarClock size={48} className="text-slate-700 mb-4" />
+            <p className="text-slate-600">Hozircha oldindan bron qilingan xonalar yo'q.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -113,25 +113,25 @@ export default function ReservationsPage() {
                   return (
                     <tr key={r.id} className="table-row">
                       <td className="table-td">
-                        <p className="font-semibold text-white">{r.primaryGuest?.firstName} {r.primaryGuest?.lastName}</p>
-                        <p className="text-xs text-slate-400">{r.primaryGuest?.phone}</p>
+                        <p className="font-semibold text-slate-900">{r.primaryGuest?.firstName} {r.primaryGuest?.lastName}</p>
+                        <p className="text-xs text-slate-600">{r.primaryGuest?.phone}</p>
                       </td>
                       <td className="table-td text-center">
-                        <span className="px-3 py-1 bg-slate-800 rounded-lg text-white font-bold border border-slate-700">
+                        <span className="px-3 py-1 bg-slate-100 rounded-lg text-slate-900 font-bold border border-slate-300">
                           {r.room?.roomNumber}
                         </span>
                       </td>
-                      <td className="table-td text-sm text-slate-300">
+                      <td className="table-td text-sm text-slate-800">
                         <div className="flex flex-col">
                           <span className={today ? 'text-orange-400 font-bold' : ''}>K: {format(new Date(r.checkIn), 'dd.MM.yyyy')}</span>
                           <span>Ch: {format(new Date(r.checkOutExpected), 'dd.MM.yyyy')}</span>
                         </div>
                       </td>
-                      <td className="table-td text-right font-medium text-slate-300">
-                        {r.totalPrice.toLocaleString()} <span className="text-xs text-slate-500">so'm</span>
+                      <td className="table-td text-right font-medium text-slate-800">
+                        {r.totalPrice.toLocaleString()} <span className="text-xs text-slate-600">so'm</span>
                       </td>
                       <td className="table-td text-right font-medium text-emerald-400">
-                        {r.paidAmount.toLocaleString()} <span className="text-xs text-slate-500 text-emerald-400/50">so'm</span>
+                        {r.paidAmount.toLocaleString()} <span className="text-xs text-slate-600 text-emerald-400/50">so'm</span>
                       </td>
                       <td className="table-td text-center">
                         {today ? (

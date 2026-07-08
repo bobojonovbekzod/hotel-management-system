@@ -27,6 +27,7 @@ import StaffPage from './pages/staff/StaffPage';
 import DevicesPage from './pages/admin/DevicesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import PayrollPage from './pages/owner/PayrollPage';
+import HRDashboardPage from './pages/owner/HRDashboardPage';
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
@@ -177,6 +178,11 @@ function AppRoutes() {
           <PayrollPage />
         </ProtectedRoute>
       } />
+      <Route path="/owner/hr" element={
+        <ProtectedRoute allowedRoles={['owner']}>
+          <HRDashboardPage />
+        </ProtectedRoute>
+      } />
       <Route path="/owner/attendance" element={
         <ProtectedRoute allowedRoles={['owner']}>
           <AttendancePage />
@@ -285,14 +291,14 @@ import { Users, Building2, Construction } from 'lucide-react';
 
 function StaffPlaceholder() {
   return (
-    <div className="space-y-6 animate-fade-in">
-      <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
         <Users className="text-primary-400" /> Xodimlar
       </h1>
       <div className="card py-16 text-center">
-        <Construction className="w-16 h-16 mx-auto text-slate-600 mb-4" />
-        <p className="text-slate-400 text-lg">Bu bo'lim tez orada qo'shiladi</p>
-        <p className="text-slate-500 text-sm mt-2">Xodimlar maoshi va davomati (Face ID) bo'limi</p>
+        <Construction className="w-16 h-16 mx-auto text-slate-700 mb-4" />
+        <p className="text-slate-600 text-lg">Bu bo'lim tez orada qo'shiladi</p>
+        <p className="text-slate-600 text-sm mt-2">Xodimlar maoshi va davomati (Face ID) bo'limi</p>
       </div>
     </div>
   );

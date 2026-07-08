@@ -1,3 +1,4 @@
+import ModalPortal from '../common/ModalPortal';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -10,7 +11,7 @@ const paymentMethods = [
   { value: 'qrcode', label: 'QR', icon: <Smartphone size={16} /> },
 ];
 
-export default function CheckOutModal({ booking, onClose, onSuccess }) {
+function CheckOutModal({ booking, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [additionalPayment, setAdditionalPayment] = useState('');
   const [paymentMethod, setPaymentMethod] = useState(booking.paymentMethod || 'cash');
@@ -41,67 +42,67 @@ export default function CheckOutModal({ booking, onClose, onSuccess }) {
       <div className="modal-content p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-white">🚪 Check-out</h2>
-            <p className="text-slate-400 text-sm">Xona #{booking.room?.roomNumber}</p>
+            <h2 className="text-xl font-bold text-slate-900">🚪 Check-out</h2>
+            <p className="text-slate-600 text-sm">Xona #{booking.room?.roomNumber}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-2xl">&times;</button>
+          <button onClick={onClose} className="text-slate-600 hover:text-slate-900 text-2xl">&times;</button>
         </div>
 
         {/* Guest info */}
         <div className="card mb-5">
-          <h3 className="text-sm font-semibold text-slate-400 mb-3">Mehmon ma'lumotlari</h3>
+          <h3 className="text-sm font-semibold text-slate-600 mb-3">Mehmon ma'lumotlari</h3>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-lg">
               👤
             </div>
             <div>
-              <p className="font-semibold text-white">
+              <p className="font-semibold text-slate-900">
                 {booking.primaryGuest?.firstName} {booking.primaryGuest?.lastName}
               </p>
-              <p className="text-sm text-slate-400">{booking.primaryGuest?.phone}</p>
+              <p className="text-sm text-slate-600">{booking.primaryGuest?.phone}</p>
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-slate-400 text-xs mb-1">Kirish</p>
-              <p className="text-white font-medium">{format(new Date(booking.checkIn), 'dd.MM.yyyy HH:mm')}</p>
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-slate-600 text-xs mb-1">Kirish</p>
+              <p className="text-slate-900 font-medium">{format(new Date(booking.checkIn), 'dd.MM.yyyy HH:mm')}</p>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-slate-400 text-xs mb-1">Chiqish (taxminiy)</p>
-              <p className="text-white font-medium">{format(new Date(booking.checkOutExpected), 'dd.MM.yyyy HH:mm')}</p>
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-slate-600 text-xs mb-1">Chiqish (taxminiy)</p>
+              <p className="text-slate-900 font-medium">{format(new Date(booking.checkOutExpected), 'dd.MM.yyyy HH:mm')}</p>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-slate-400 text-xs mb-1">Tunalar</p>
-              <p className="text-white font-bold text-lg">{stayDays} kun</p>
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-slate-600 text-xs mb-1">Tunalar</p>
+              <p className="text-slate-900 font-bold text-lg">{stayDays} kun</p>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-slate-400 text-xs mb-1">To'lov usuli</p>
-              <p className="text-white font-medium capitalize">{booking.paymentMethod || '—'}</p>
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-slate-600 text-xs mb-1">To'lov usuli</p>
+              <p className="text-slate-900 font-medium capitalize">{booking.paymentMethod || '—'}</p>
             </div>
           </div>
         </div>
 
         {/* Payment summary */}
         <div className="card mb-5">
-          <h3 className="text-sm font-semibold text-slate-400 mb-3">To'lov</h3>
+          <h3 className="text-sm font-semibold text-slate-600 mb-3">To'lov</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-slate-400">Jami summa:</span>
-              <span className="text-white font-semibold">{booking.totalPrice?.toLocaleString()} so'm</span>
+              <span className="text-slate-600">Jami summa:</span>
+              <span className="text-slate-900 font-semibold">{booking.totalPrice?.toLocaleString()} so'm</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">To'langan:</span>
+              <span className="text-slate-600">To'langan:</span>
               <span className="text-emerald-400 font-semibold">{booking.paidAmount?.toLocaleString()} so'm</span>
             </div>
             {remaining > 0 && (
-              <div className="flex justify-between pt-2 border-t border-slate-700/50">
+              <div className="flex justify-between pt-2 border-t border-slate-300">
                 <span className="text-red-400 font-medium">Qoldiq:</span>
                 <span className="text-red-400 font-bold">{remaining.toLocaleString()} so'm</span>
               </div>
             )}
             {remaining <= 0 && (
-              <div className="flex items-center gap-2 text-emerald-400 pt-2 border-t border-slate-700/50">
+              <div className="flex items-center gap-2 text-emerald-400 pt-2 border-t border-slate-300">
                 <CheckCircle2 size={18} />
                 <span className="font-medium">To'liq to'langan</span>
               </div>
@@ -123,7 +124,7 @@ export default function CheckOutModal({ booking, onClose, onSuccess }) {
                   value={additionalPayment}
                   onChange={(e) => setAdditionalPayment(e.target.value)}
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">so'm</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 text-sm">so'm</span>
               </div>
             </div>
             <div>
@@ -134,7 +135,7 @@ export default function CheckOutModal({ booking, onClose, onSuccess }) {
                     className={`py-2.5 rounded-xl border text-sm font-medium transition-all flex flex-col items-center gap-1 ${
                       paymentMethod === pm.value
                         ? 'bg-primary-600/30 border-primary-500 text-primary-400'
-                        : 'bg-slate-800/30 border-slate-600/50 text-slate-400 hover:border-slate-500'
+                        : 'bg-slate-50 border-slate-600/50 text-slate-600 hover:border-slate-500'
                     }`}
                     onClick={() => setPaymentMethod(pm.value)}>
                     <span className="text-lg">{pm.icon}</span>
@@ -163,4 +164,8 @@ export default function CheckOutModal({ booking, onClose, onSuccess }) {
       </div>
     </div>
   );
+}
+
+export default function CheckOutModalWrapper(props) {
+  return <ModalPortal><CheckOutModal {...props} /></ModalPortal>;
 }

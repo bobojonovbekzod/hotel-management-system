@@ -12,6 +12,7 @@ export default function RoomAnalyticsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [branchFilter, setBranchFilter] = useState('');
   const [branches, setBranches] = useState([]);
+  const [filterMonth, setFilterMonth] = useState(format(new Date(), 'yyyy-MM'));
 
   useEffect(() => {
     fetchData();
@@ -20,7 +21,7 @@ export default function RoomAnalyticsPage() {
   const fetchData = async () => {
     try {
       const [resRooms, resBranches] = await Promise.all([
-        api.get('/reports/rooms-activity'),
+        api.get('/reports/rooms-activity', { params: { month: filterMonth } }),
         api.get('/branches')
       ]);
       setRooms(resRooms.data.data);
@@ -41,19 +42,19 @@ export default function RoomAnalyticsPage() {
   if (loading) return <FullScreenLoader />;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Activity className="text-primary-400" /> Xonalar Tahlili
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Xonalarning oxirgi 30 kunlik faolligi va bandlik holati</p>
+          <p className="text-slate-600 text-sm mt-1">Xonalarning oylik faolligi va keltirgan daromadi</p>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
           <input
             type="text"
             placeholder="Xona raqami bo'yicha qidiruv..."
@@ -74,6 +75,21 @@ export default function RoomAnalyticsPage() {
             ))}
           </select>
         </div>
+        <div className="w-full sm:w-auto flex items-center gap-2 bg-slate-100 rounded-xl px-3 border border-slate-300">
+          <Clock size={18} className="text-slate-600" />
+          <input
+            type="month"
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="bg-transparent border-none text-slate-900 focus:outline-none py-2 outline-none"
+          />
+        </div>
+        <button
+          onClick={fetchData}
+          className="btn-primary w-full sm:w-auto flex items-center justify-center"
+        >
+          Filtrlash
+        </button>
       </div>
 
       <div className="card p-0 overflow-hidden">
@@ -82,52 +98,36 @@ export default function RoomAnalyticsPage() {
             <thead>
               <tr>
                 <th className="table-th">Xona / Filial</th>
-                <th className="table-th text-center">So'nggi 30 kundagi bandlik</th>
-                <th className="table-th text-center">So'nggi 30 kundagi daromadli kunlar</th>
+                <th className="table-th text-center">Foydalanishlar soni</th>
+                <th className="table-th text-center">Keltirgan daromadi</th>
                 <th className="table-th">Oxirgi marta band qilingan sana</th>
-                <th className="table-th text-center">Status</th>
               </tr>
             </thead>
             <tbody>
               {filteredRooms.map((room) => (
                 <tr key={room.id} className="table-row">
                   <td className="table-td">
-                    <div className="font-bold text-white text-base">#{room.roomNumber}</div>
-                    <div className="text-xs text-slate-400">{room.branchName}</div>
+                    <div className="font-bold text-slate-900 text-base">#{room.roomNumber}</div>
+                    <div className="text-xs text-slate-600">{room.branchName}</div>
                   </td>
                   <td className="table-td text-center">
-                    <span className="font-mono text-white text-lg">{room.totalBookings30Days}</span> marta
+                    <span className="font-mono text-slate-900 text-lg">{room.totalBookings}</span> marta
                   </td>
                   <td className="table-td text-center">
-                    <span className="font-mono text-white text-lg">{room.totalOccupiedDays30Days}</span> kun
+                    <span className="font-mono text-emerald-400 font-bold text-lg">{room.totalIncome?.toLocaleString()}</span> <span className="text-xs text-slate-600">so'm</span>
                   </td>
-                  <td className="table-td text-slate-300">
+                  <td className="table-td text-slate-800">
                     {room.lastOccupiedDate ? (
                       format(new Date(room.lastOccupiedDate), 'dd MMM, yyyy HH:mm', { locale: uz })
                     ) : (
-                      <span className="text-slate-500">Ma'lumot yo'q</span>
-                    )}
-                  </td>
-                  <td className="table-td text-center">
-                    {room.status === 'Faol' ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-400/20">
-                        <CheckCircle size={14} /> Faol
-                      </span>
-                    ) : room.status === 'Kam ishlatilgan' ? (
-                      <span className="inline-flex items-center gap-1 text-yellow-400 bg-yellow-400/10 px-3 py-1 rounded-full text-xs font-semibold border border-yellow-400/20">
-                        <Clock size={14} /> Kam ishlatilgan
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-red-400 bg-red-400/10 px-3 py-1 rounded-full text-xs font-semibold border border-red-400/20">
-                        <AlertTriangle size={14} /> Shubhali
-                      </span>
+                      <span className="text-slate-600">Ma'lumot yo'q</span>
                     )}
                   </td>
                 </tr>
               ))}
               {filteredRooms.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan="4" className="px-6 py-8 text-center text-slate-600">
                     Ma'lumot topilmadi
                   </td>
                 </tr>

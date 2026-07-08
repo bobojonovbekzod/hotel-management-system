@@ -8,10 +8,22 @@ const prisma = new PrismaClient();
 // GET /api/expense-categories - Barcha aktiv xarajat turlari
 router.get('/', authenticate, async (req, res) => {
   try {
-    const categories = await prisma.expenseCategory.findMany({
+    let categories = await prisma.expenseCategory.findMany({
       where: { companyId: req.user.companyId, isActive: true },
       orderBy: { name: 'asc' }
     });
+
+    // Auto-create default category if none exists
+    if (categories.length === 0) {
+      const defaultCategory = await prisma.expenseCategory.create({
+        data: {
+          companyId: req.user.companyId,
+          name: 'Umumiy xarajat'
+        }
+      });
+      categories = [defaultCategory];
+    }
+
     res.json({ success: true, data: categories });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server xatosi.' });

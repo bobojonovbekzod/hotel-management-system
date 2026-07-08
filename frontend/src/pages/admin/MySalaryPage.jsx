@@ -26,52 +26,52 @@ export default function MySalaryPage() {
   };
 
   if (loading) {
-    return <div className="text-center text-slate-400 py-10">Yuklanmoqda...</div>;
+    return <div className="text-center text-slate-600 py-10">Yuklanmoqda...</div>;
   }
 
   if (!data) return null;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <div className="w-12 h-12 bg-primary-500/20 rounded-xl flex items-center justify-center text-primary-400">
           <UserCheck size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Mening Oyligim</h1>
-          <p className="text-slate-400">{format(now, 'MMMM yyyy')} oyi uchun hisobot</p>
+          <h1 className="text-2xl font-bold text-slate-900">Mening Oyligim</h1>
+          <p className="text-slate-600">{format(now, 'MMMM yyyy')} oyi uchun hisobot</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="card bg-slate-800/50 border-slate-700/50">
+        <div className="card bg-slate-50 border-slate-300">
           <div className="flex items-center gap-3 mb-2">
             <Clock className="text-blue-400" size={20} />
-            <span className="text-slate-300">Smenalar soni</span>
+            <span className="text-slate-800">Smenalar soni</span>
           </div>
-          <p className="text-3xl font-bold text-white">{data.shifts}</p>
-          <p className="text-sm text-slate-500 mt-1">Bu oydagi yopilgan smenalar</p>
+          <p className="text-3xl font-bold text-slate-900">{data.shifts}</p>
+          <p className="text-sm text-slate-600 mt-1">Bu oydagi yopilgan smenalar</p>
         </div>
 
-        <div className="card bg-slate-800/50 border-slate-700/50">
+        <div className="card bg-slate-50 border-slate-300">
           <div className="flex items-center gap-3 mb-2">
             <TrendingDown className="text-red-400" size={20} />
-            <span className="text-slate-300">Jarimalar</span>
+            <span className="text-slate-800">Jarimalar</span>
           </div>
           <p className="text-3xl font-bold text-red-400">
             {data.penalties.toLocaleString()} <span className="text-sm">so'm</span>
           </p>
         </div>
 
-        <div className="card bg-slate-800/50 border-slate-700/50">
+        <div className="card bg-slate-50 border-slate-300">
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="text-emerald-400" size={20} />
-            <span className="text-slate-300">Bonus / Avans</span>
+            <span className="text-slate-800">Bonus / Avans</span>
           </div>
           <p className="text-3xl font-bold text-emerald-400">
-            {data.bonuses.toLocaleString()} <span className="text-sm text-slate-500">so'm (bonus)</span>
+            {data.bonuses.toLocaleString()} <span className="text-sm text-slate-600">so'm (bonus)</span>
             <br/>
-            <span className="text-xl text-yellow-400">{data.advances.toLocaleString()} <span className="text-sm text-slate-500">so'm (avans)</span></span>
+            <span className="text-xl text-yellow-400">{data.advances.toLocaleString()} <span className="text-sm text-slate-600">so'm (avans)</span></span>
           </p>
         </div>
 

@@ -1,3 +1,4 @@
+import ModalPortal from '../common/ModalPortal';
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, UserPlus, CreditCard, Smartphone, Banknote, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -11,7 +12,7 @@ const paymentMethods = [
 
 const emptyGuest = { firstName: '', lastName: '', phone: '', passportNumber: '', nationality: 'UZ' };
 
-export default function CheckInModal({ room, shift, onClose, onSuccess }) {
+function CheckInModal({ room, shift, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [primaryGuest, setPrimaryGuest] = useState({ ...emptyGuest });
   const [additionalGuests, setAdditionalGuests] = useState([]);
@@ -150,23 +151,23 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
       <div className="modal-content p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
               <UserPlus className="text-primary-400" /> Check-in
             </h2>
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-600 text-sm">
               Xona #{room.roomNumber}
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+          <button onClick={onClose} className="text-slate-600 hover:text-slate-900 text-2xl leading-none">&times;</button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-white font-medium cursor-pointer">
+            <label className="flex items-center gap-2 text-slate-900 font-medium cursor-pointer">
               <input type="radio" name="bookingType" value="daily" checked={bookingType === 'daily'} onChange={() => handleBookingTypeChange('daily')} className="text-primary-500" />
               Kunlik mijoz
             </label>
-            <label className="flex items-center gap-2 text-white font-medium cursor-pointer">
+            <label className="flex items-center gap-2 text-slate-900 font-medium cursor-pointer">
               <input type="radio" name="bookingType" value="monthly" checked={bookingType === 'monthly'} onChange={() => handleBookingTypeChange('monthly')} className="text-primary-500" />
               Oylik ijarachi
             </label>
@@ -175,18 +176,18 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
           {bookingType === 'daily' ? (
             <div className="bg-primary-600/10 border border-primary-500/20 rounded-xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">Bir kunlik narx</p>
-                <p className="text-lg font-bold text-white">{room.pricePerNight?.toLocaleString()} so'm</p>
+                <p className="text-sm text-slate-600">Bir kunlik narx</p>
+                <p className="text-lg font-bold text-slate-900">{room.pricePerNight?.toLocaleString()} so'm</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-400">Jami ({nights} kun)</p>
+                <p className="text-sm text-slate-600">Jami ({nights} kun)</p>
                 <p className="text-xl font-bold text-primary-400">{totalPrice.toLocaleString()} so'm</p>
               </div>
             </div>
           ) : (
             <div className="bg-primary-600/10 border border-primary-500/20 rounded-xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400 mb-1">Kelishilgan oylik ijara summasi (so'm)</p>
+                <p className="text-sm text-slate-600 mb-1">Kelishilgan oylik ijara summasi (so'm)</p>
                 <input 
                   type="number" 
                   value={monthlyFee} 
@@ -196,7 +197,7 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
                 />
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-400">Birinchi to'lov (avans)</p>
+                <p className="text-sm text-slate-600">Birinchi to'lov (avans)</p>
                 <p className="text-xl font-bold text-primary-400">{totalPrice.toLocaleString()} so'm</p>
               </div>
             </div>
@@ -204,17 +205,17 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Kirish vaqti</label>
+              <label className="block text-sm text-slate-600 mb-1">Kirish vaqti</label>
               <input type="datetime-local" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} className="input-field" required />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Chiqish vaqti</label>
+              <label className="block text-sm text-slate-600 mb-1">Chiqish vaqti</label>
               <input type="datetime-local" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} className="input-field" required />
             </div>
           </div>
 
           <div className="space-y-3">
-            <h3 className="font-semibold text-white border-b border-slate-700 pb-2">Asosiy mehmon</h3>
+            <h3 className="font-semibold text-slate-900 border-b border-slate-300 pb-2">Asosiy mehmon</h3>
             <div className="grid grid-cols-2 gap-3 relative">
               <input type="text" placeholder="Ismi" value={primaryGuest.firstName} onChange={(e) => setPrimaryGuest({...primaryGuest, firstName: e.target.value})} className="input-field" required />
               <input type="text" placeholder="Familiyasi" value={primaryGuest.lastName} onChange={(e) => setPrimaryGuest({...primaryGuest, lastName: e.target.value})} className="input-field" required />
@@ -222,16 +223,16 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
               <input type="text" placeholder="Pasport / JSHSHIR" value={primaryGuest.passportNumber} onChange={(e) => setPrimaryGuest({...primaryGuest, passportNumber: e.target.value})} className="input-field" />
               
               {showDropdown && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-100 border border-slate-300 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
                   {searchResults.map(g => (
                     <div 
                       key={g.id} 
                       onClick={() => handleSelectGuest(g)}
-                      className="p-3 hover:bg-primary-500/20 cursor-pointer border-b border-slate-700/50 last:border-0 flex items-center justify-between"
+                      className="p-3 hover:bg-primary-500/20 cursor-pointer border-b border-slate-300 last:border-0 flex items-center justify-between"
                     >
                       <div>
-                        <p className="text-white font-medium">{g.firstName} {g.lastName}</p>
-                        <p className="text-xs text-slate-400">Tel: {g.phone || '-'} | Pasport: {g.passportNumber || '-'}</p>
+                        <p className="text-slate-900 font-medium">{g.firstName} {g.lastName}</p>
+                        <p className="text-xs text-slate-600">Tel: {g.phone || '-'} | Pasport: {g.passportNumber || '-'}</p>
                       </div>
                       <button type="button" className="text-xs bg-primary-500/20 text-primary-400 px-2 py-1 rounded">Tanlash</button>
                     </div>
@@ -243,9 +244,9 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
 
           {additionalGuests.length > 0 && (
             <div className="space-y-3">
-              <h3 className="font-semibold text-white border-b border-slate-700 pb-2">Hamrohlar ({additionalGuests.length})</h3>
+              <h3 className="font-semibold text-slate-900 border-b border-slate-300 pb-2">Hamrohlar ({additionalGuests.length})</h3>
               {additionalGuests.map((g, idx) => (
-                <div key={idx} className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 relative">
+                <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-300 relative">
                   <button type="button" onClick={() => removeGuest(idx)} className="absolute top-2 right-2 text-red-400 hover:text-red-300">
                     <Trash2 size={16} />
                   </button>
@@ -262,14 +263,14 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
             <Plus size={16} /> Hamroh qo'shish
           </button>
 
-          <div className="space-y-3 pt-4 border-t border-slate-700">
+          <div className="space-y-3 pt-4 border-t border-slate-300">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-white">To'lov qabul qilish (Split Payment)</h3>
-              <p className="text-sm font-bold text-slate-300">Qabul qilingan: {totalPaid.toLocaleString()} so'm</p>
+              <h3 className="font-semibold text-slate-900">To'lov qabul qilish (Split Payment)</h3>
+              <p className="text-sm font-bold text-slate-800">Qabul qilingan: {totalPaid.toLocaleString()} so'm</p>
             </div>
             
             {payments.map((p, idx) => (
-              <div key={idx} className="flex gap-2 items-center bg-slate-800/50 p-2 rounded-lg">
+              <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg">
                 <select value={p.method} onChange={(e) => updatePayment(idx, 'method', e.target.value)} className="input-field w-1/3">
                   {paymentMethods.map(pm => <option key={pm.value} value={pm.value}>{pm.label}</option>)}
                 </select>
@@ -303,4 +304,8 @@ export default function CheckInModal({ room, shift, onClose, onSuccess }) {
       </div>
     </div>
   );
+}
+
+export default function CheckInModalWrapper(props) {
+  return <ModalPortal><CheckInModal {...props} /></ModalPortal>;
 }

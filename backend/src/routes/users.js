@@ -232,4 +232,56 @@ router.delete('/:id', authenticate, authorize('owner'), async (req, res) => {
   }
 });
 
+// GET /api/users/hr-stats - HR Dashboard statistikasi
+router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+  try {
+    const where = { companyId: req.user.companyId, role: { notIn: ['owner', 'superadmin'] } };
+    if (req.user.role === 'director') where.branchId = req.user.branchId;
+
+    const allStaff = await prisma.user.findMany({
+      where,
+      select: {
+        id: true, name: true, role: true, isActive: true, createdAt: true,
+        branch: { select: { name: true } }
+      }
+    });
+
+    const total = allStaff.length;
+    const active = allStaff.filter(u => u.isActive).length;
+    const inactive = total - active;
+
+    // Role breakdown
+    const byRole = {};
+    allStaff.forEach(u => {
+      byRole[u.role] = (byRole[u.role] || 0) + 1;
+    });
+
+    // Branch breakdown
+    const byBranch = {};
+    allStaff.forEach(u => {
+      const branchName = u.branch?.name || 'Filial biriktirilmagan';
+      if (!byBranch[branchName]) byBranch[branchName] = { total: 0, active: 0 };
+      byBranch[branchName].total++;
+      if (u.isActive) byBranch[branchName].active++;
+    });
+
+    // New this month
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const newThisMonth = allStaff.filter(u => new Date(u.createdAt) >= monthStart).length;
+
+    res.json({
+      success: true,
+      data: {
+        total, active, inactive, newThisMonth,
+        byRole: Object.entries(byRole).map(([role, count]) => ({ role, count })),
+        byBranch: Object.entries(byBranch).map(([branch, d]) => ({ branch, ...d })),
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
 module.exports = router;

@@ -127,7 +127,6 @@ router.get('/my/active', authenticate, authorize('admin'), async (req, res) => {
       include: {
         _count: { select: { bookings: true } },
         bookings: {
-          where: { status: 'active' },
           include: { room: true, primaryGuest: true },
         },
       },

@@ -69,12 +69,12 @@ export default function AdminShiftPage() {
   const nightShifts = shifts.filter((s) => s.shiftType === 'night');
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <Clock className="text-primary-400" /> Smena boshqaruvi
         </h1>
-        <p className="text-slate-400 text-sm">Kunduzgi (08:00–19:00) | Tungi (19:00–08:00)</p>
+        <p className="text-slate-600 text-sm">Kunduzgi (08:00–19:00) | Tungi (19:00–08:00)</p>
       </div>
 
       {/* Active Shift Card */}
@@ -95,34 +95,35 @@ export default function AdminShiftPage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-slate-800/30 rounded-xl p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">Boshlanish vaqti</p>
-              <p className="font-bold text-white">{format(new Date(activeShift.startTime), 'HH:mm')}</p>
-              <p className="text-xs text-slate-500">{format(new Date(activeShift.startTime), 'dd.MM.yyyy')}</p>
+            <div className="bg-slate-50 rounded-xl p-4 text-center">
+              <p className="text-xs text-slate-600 mb-1">Boshlanish vaqti</p>
+              <p className="font-bold text-slate-900">{format(new Date(activeShift.startTime), 'HH:mm')}</p>
+              <p className="text-xs text-slate-600">{format(new Date(activeShift.startTime), 'dd.MM.yyyy')}</p>
             </div>
-            <div className="bg-slate-800/30 rounded-xl p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">Smenada bronlar</p>
+            <div className="bg-slate-50 rounded-xl p-4 text-center">
+              <p className="text-xs text-slate-600 mb-1">Smenada bronlar</p>
               <p className="text-3xl font-bold text-primary-400">{activeShift._count?.bookings || 0}</p>
             </div>
-            <div className="bg-slate-800/30 rounded-xl p-4 text-center col-span-2 md:col-span-1">
-              <p className="text-xs text-slate-400 mb-1">Smenada tushum</p>
+            <div className="bg-slate-50 rounded-xl p-4 text-center col-span-2 md:col-span-1">
+              <p className="text-xs text-slate-600 mb-1">Smenada tushum</p>
               <p className="text-xl font-bold text-emerald-400">{activeShift.totalIncome?.toLocaleString()}</p>
-              <p className="text-xs text-slate-500">so'm</p>
+              <p className="text-xs text-slate-600">so'm</p>
             </div>
           </div>
 
           {/* Active bookings */}
           {activeShift.bookings?.length > 0 && (
             <div className="mb-4">
-              <p className="text-sm text-slate-400 mb-2">Faol bronlar:</p>
+              <p className="text-sm text-slate-600 mb-2">Faol bronlar:</p>
               <div className="space-y-2">
                 {activeShift.bookings.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between bg-slate-800/30 rounded-lg px-3 py-2">
+                  <div key={b.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-white">Xona {b.room?.roomNumber}</span>
-                      <span className="text-xs text-slate-400">→ {b.primaryGuest?.firstName} {b.primaryGuest?.lastName}</span>
+                      <span className="text-sm font-medium text-slate-900">Xona {b.room?.roomNumber}</span>
+                      <span className="text-xs text-slate-600">→ {b.primaryGuest?.firstName} {b.primaryGuest?.lastName}</span>
+                      <span className="text-xs font-bold text-emerald-400 ml-2">{b.totalPrice?.toLocaleString()} so'm</span>
                     </div>
-                    <span className="text-xs text-slate-400">{format(new Date(b.checkIn), 'HH:mm')}</span>
+                    <span className="text-xs text-slate-600">{format(new Date(b.checkIn), 'HH:mm')}</span>
                   </div>
                 ))}
               </div>
@@ -152,11 +153,11 @@ export default function AdminShiftPage() {
         </div>
       ) : (
         <div className="card text-center py-10 flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 border border-slate-700/50 text-slate-500">
+          <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-4 border border-slate-300 text-slate-600">
             <Clock size={32} />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Faol smena yo'q</h3>
-          <p className="text-slate-400 mb-6">Ishlashni boshlash uchun yangi smena oching</p>
+          <h3 className="text-xl font-bold text-slate-900 mb-2">Faol smena yo'q</h3>
+          <p className="text-slate-600 mb-6">Ishlashni boshlash uchun yangi smena oching</p>
           <button id="start-shift-btn" onClick={handleStart} className="btn-primary inline-flex items-center gap-2 px-8">
             <Play size={18} /> Smenani boshlash
           </button>
@@ -166,33 +167,33 @@ export default function AdminShiftPage() {
       {/* Monthly stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="card text-center">
-          <p className="text-xs text-slate-400 mb-1">Oylik smenalar</p>
-          <p className="text-3xl font-bold text-white">{shifts.filter((s) => s.status === 'closed').length}</p>
+          <p className="text-xs text-slate-600 mb-1">Oylik smenalar</p>
+          <p className="text-3xl font-bold text-slate-900">{shifts.filter((s) => s.status === 'closed').length}</p>
         </div>
         <div className="card text-center">
-          <p className="text-xs text-slate-400 mb-1">Kunduzgi</p>
+          <p className="text-xs text-slate-600 mb-1">Kunduzgi</p>
           <p className="text-3xl font-bold text-yellow-400">{morningShifts.filter((s) => s.status === 'closed').length}</p>
         </div>
         <div className="card text-center">
-          <p className="text-xs text-slate-400 mb-1">Tungi</p>
+          <p className="text-xs text-slate-600 mb-1">Tungi</p>
           <p className="text-3xl font-bold text-blue-400">{nightShifts.filter((s) => s.status === 'closed').length}</p>
         </div>
       </div>
 
       {/* Shifts history */}
       <div className="card">
-        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+        <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
           <FileText size={18} className="text-primary-400" /> Bu oylik smenalar
         </h3>
         {loading ? (
-          <div className="py-8 text-center text-slate-400">Yuklanmoqda...</div>
+          <div className="py-8 text-center text-slate-600">Yuklanmoqda...</div>
         ) : shifts.length === 0 ? (
-          <div className="py-8 text-center text-slate-400">Smena tarixi yo'q</div>
+          <div className="py-8 text-center text-slate-600">Smena tarixi yo'q</div>
         ) : (
           <div className="space-y-2">
             {shifts.map((shift) => (
               <div key={shift.id}
-                className="flex items-center justify-between bg-slate-800/30 rounded-xl px-4 py-3 border border-slate-700/30">
+                className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-300">
                 <div className="flex items-center gap-3">
                   <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
                     shift.shiftType === 'morning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'
@@ -200,7 +201,7 @@ export default function AdminShiftPage() {
                     {shift.shiftType === 'morning' ? 'Kunduzgi' : 'Tungi'}
                   </span>
                   <div>
-                    <p className="text-sm text-white font-medium">
+                    <p className="text-sm text-slate-900 font-medium">
                       {format(new Date(shift.startTime), 'dd.MM.yyyy HH:mm')}
                       {shift.endTime && ` → ${format(new Date(shift.endTime), 'HH:mm')}`}
                     </p>
@@ -208,7 +209,7 @@ export default function AdminShiftPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-emerald-400">{shift.totalIncome.toLocaleString()} so'm</p>
-                  <p className="text-xs text-slate-400">{shift._count?.bookings || 0} bron</p>
+                  <p className="text-xs text-slate-600">{shift._count?.bookings || 0} bron</p>
                 </div>
               </div>
             ))}

@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 // GET /api/reports/rooms-activity - Fetch room analytics for owner
 router.get('/rooms-activity', authenticate, authorize('owner', 'director'), async (req, res) => {
   try {
-    const { branchId } = req.query;
+    const { branchId, month } = req.query; // month format: 'YYYY-MM'
     
     let targetBranchId = branchId ? parseInt(branchId) : null;
     if (req.user.role === 'director') targetBranchId = req.user.branchId;
@@ -27,37 +27,30 @@ router.get('/rooms-activity', authenticate, authorize('owner', 'director'), asyn
       ]
     });
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    let startDate, endDate;
+    if (month) {
+      const [year, m] = month.split('-');
+      startDate = new Date(year, parseInt(m) - 1, 1);
+      endDate = new Date(year, parseInt(m), 0, 23, 59, 59, 999);
+    } else {
+      const now = new Date();
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    }
 
     const report = [];
 
     for (const room of rooms) {
-      const recentBookings = await prisma.booking.findMany({
+      const monthlyBookings = await prisma.booking.findMany({
         where: {
           roomId: room.id,
-          createdAt: { gte: thirtyDaysAgo }
+          createdAt: { gte: startDate, lte: endDate }
         },
         orderBy: { createdAt: 'desc' }
       });
 
-      const totalBookings30Days = recentBookings.length;
-      let totalOccupiedDays30Days = 0;
-
-      recentBookings.forEach(b => {
-        const checkIn = new Date(b.checkIn);
-        const checkOut = b.checkOutActual ? new Date(b.checkOutActual) : new Date(b.checkOutExpected);
-        
-        // Calculate days occupied within the last 30 days
-        const start = checkIn < thirtyDaysAgo ? thirtyDaysAgo : checkIn;
-        const end = checkOut > new Date() ? new Date() : checkOut;
-        
-        if (start < end) {
-          const diffTime = Math.abs(end - start);
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          totalOccupiedDays30Days += diffDays;
-        }
-      });
+      const totalBookings = monthlyBookings.length;
+      const totalIncome = monthlyBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
       // Find the absolute last occupied date ever
       const lastBooking = await prisma.booking.findFirst({
@@ -69,23 +62,14 @@ router.get('/rooms-activity', authenticate, authorize('owner', 'director'), asyn
         ? (lastBooking.checkOutActual || lastBooking.checkOutExpected) 
         : null;
 
-      let status = 'Faol';
-      if (totalBookings30Days === 0) {
-        status = 'Shubhali (Ishlatilmayapti)';
-      } else if (totalBookings30Days < 3) {
-        status = 'Kam ishlatilgan';
-      }
-
       report.push({
         id: room.id,
         roomNumber: room.roomNumber,
         branchName: room.branch?.name,
         pricePerNight: room.pricePerNight,
-        status,
-        totalBookings30Days,
-        totalOccupiedDays30Days,
-        lastOccupiedDate,
-        currentStatus: room.status
+        totalBookings,
+        totalIncome,
+        lastOccupiedDate
       });
     }
 

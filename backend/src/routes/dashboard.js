@@ -218,21 +218,63 @@ router.get('/summary', authenticate, async (req, res) => {
       });
     }
 
-    // Barcha filiallar statistikasi (owner uchun)
+    // To'lov turlari bo'yicha aniq hisobot (Payment table orqali)
+    const paymentMethodStats = await prisma.payment.groupBy({
+      by: ['method'],
+      where: {
+        booking: { companyId: req.user.companyId, ...(branchId ? { branchId: parseInt(branchId) } : {}) },
+        createdAt: { gte: startDate, lte: endDate }
+      },
+      _sum: { amount: true }
+    });
+    
+    const paymentStats = [
+      { name: 'Naqd', value: paymentMethodStats.find(p => p.method === 'cash')?._sum.amount || 0 },
+      { name: 'Terminal', value: paymentMethodStats.find(p => p.method === 'terminal')?._sum.amount || 0 },
+      { name: 'QrCode', value: paymentMethodStats.find(p => p.method === 'qrcode')?._sum.amount || 0 },
+    ];
+
+    // Barcha filiallar statistikasi (owner, supervisor, director uchun)
     let branchStats = null;
-    if (req.user.role === 'owner' || req.user.role === 'supervisor') {
-      const branches = await prisma.branch.findMany({ where: { isActive: true, companyId: req.user.companyId } });
+    if (['owner', 'supervisor', 'director'].includes(req.user.role)) {
+      const branchQuery = (req.user.role === 'director') 
+        ? { id: req.user.branchId } 
+        : { isActive: true, companyId: req.user.companyId };
+      const branches = await prisma.branch.findMany({ where: branchQuery });
       branchStats = await Promise.all(
         branches.map(async (branch) => {
-          const income = await prisma.booking.aggregate({
-            where: { branchId: branch.id, createdAt: { gte: startDate, lte: endDate } },
-            _sum: { paidAmount: true },
+          const payments = await prisma.payment.findMany({
+            where: {
+              booking: { branchId: branch.id },
+              createdAt: { gte: startDate, lte: endDate }
+            }
           });
+
+          const totalIncome = payments.reduce((sum, p) => sum + p.amount, 0);
+          const terminal = payments.filter(p => p.method === 'terminal').reduce((sum, p) => sum + p.amount, 0);
+          const qrcode = payments.filter(p => p.method === 'qrcode').reduce((sum, p) => sum + p.amount, 0);
+          const cash = payments.filter(p => p.method === 'cash').reduce((sum, p) => sum + p.amount, 0);
+          const additionalServices = payments.filter(p => p.type !== 'room' && p.type !== 'advance').reduce((sum, p) => sum + p.amount, 0);
+
+          const expenses = await prisma.expense.aggregate({
+            where: { branchId: branch.id, expenseDate: { gte: startDate, lte: endDate } },
+            _sum: { amount: true }
+          });
+          const totalExpenses = expenses._sum.amount || 0;
+          const balance = cash - totalExpenses;
+
           const occupied = await prisma.room.count({ where: { branchId: branch.id, status: 'occupied' } });
           const total = await prisma.room.count({ where: { branchId: branch.id } });
+
           return {
             branch,
-            monthlyIncome: income._sum.paidAmount || 0,
+            totalIncome,
+            terminal,
+            qrcode,
+            cash,
+            additionalServices,
+            totalExpenses,
+            balance,
             occupiedRooms: occupied,
             totalRooms: total,
           };
@@ -240,11 +282,51 @@ router.get('/summary', authenticate, async (req, res) => {
       );
     }
 
-    // To'lov turlari bo'yicha tushum yuqorida hisoblangan (paymentMethods)
+    // Xonalar bandligi dinamikasi (kunlik, joriy oy yoki oraliq uchun)
+    const occupancyStats = [];
+    const endDay = (endDate < new Date()) ? endDate.getDate() : Math.min(new Date().getDate(), endDate.getDate());
+    
+    // Oydagi barcha bronlarni olish
+    const overlappingBookings = await prisma.booking.findMany({
+      where: {
+        ...branchFilter,
+        status: { in: ['active', 'checked_out'] },
+        checkIn: { lte: endDate },
+        OR: [
+          { checkOutActual: { gte: startDate } },
+          { checkOutExpected: { gte: startDate }, status: 'active' }
+        ]
+      },
+      select: { checkIn: true, checkOutActual: true, checkOutExpected: true, status: true }
+    });
 
-    const terminalTotal = paymentMethods.find(p => p.paymentMethod === 'terminal')?._sum.paidAmount || 0;
-    const qrcodeTotal = paymentMethods.find(p => p.paymentMethod === 'qrcode')?._sum.paidAmount || 0;
-    const cashBalance = totalIncome - terminalTotal - qrcodeTotal - totalExpenses;
+    for (let day = 1; day <= endDay; day++) {
+      const currentDay = new Date(startDate.getFullYear(), startDate.getMonth(), day);
+      currentDay.setHours(12, 0, 0, 0);
+
+      let occupiedCount = 0;
+      for (const b of overlappingBookings) {
+        const checkIn = new Date(b.checkIn);
+        const checkOut = b.status === 'checked_out' && b.checkOutActual ? new Date(b.checkOutActual) : new Date(b.checkOutExpected);
+        
+        const checkInDay = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
+        const checkOutDay = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+
+        if (currentDay >= checkInDay && currentDay <= checkOutDay) {
+          occupiedCount++;
+        }
+      }
+
+      occupancyStats.push({
+        date: currentDay.getDate().toString().padStart(2, '0') + '-' + (currentDay.getMonth() + 1).toString().padStart(2, '0'),
+        band: occupiedCount
+      });
+    }
+
+    const terminalTotal = paymentStats[1].value;
+    const qrcodeTotal = paymentStats[2].value;
+    const cashTotal = paymentStats[0].value;
+    const cashBalance = cashTotal - totalExpenses;
 
     res.json({
       success: true,
@@ -268,6 +350,8 @@ router.get('/summary', authenticate, async (req, res) => {
         topAdmins,
         shiftReports,
         branchStats,
+        paymentStats,
+        occupancyStats
       },
     });
   } catch (error) {

@@ -72,16 +72,16 @@ export default function DevicesPage() {
     }
   };
 
-  if (loading) return <div className="text-center p-10 text-slate-400">Yuklanmoqda...</div>;
+  if (loading) return <div className="text-center p-10 text-slate-600">Yuklanmoqda...</div>;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Server className="text-primary-400" /> Face ID Qurilmalari
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Hikvision qurilmalarini tarmoqqa ulash</p>
+          <p className="text-slate-600 text-sm mt-1">Hikvision qurilmalarini tarmoqqa ulash</p>
         </div>
         <button onClick={() => setShowModal(true)} className="btn-primary">
           <Plus size={18} /> Qurilma qo'shish
@@ -97,26 +97,26 @@ export default function DevicesPage() {
                   <ShieldAlert size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-white">{device.name}</h3>
+                  <h3 className="font-bold text-lg text-slate-900">{device.name}</h3>
                   <span className="text-xs font-semibold text-primary-400 px-2 py-0.5 rounded bg-primary-500/20">
                     Hikvision
                   </span>
                 </div>
               </div>
-              <button onClick={() => setConfirmDialog({ isOpen: true, id: device.id })} className="text-slate-500 hover:text-red-400 transition-colors">
+              <button onClick={() => setConfirmDialog({ isOpen: true, id: device.id })} className="text-slate-600 hover:text-red-400 transition-colors">
                 <Trash2 size={18} />
               </button>
             </div>
             
             <div className="space-y-2 mt-6">
-              <div className="flex items-center gap-2 text-sm text-slate-300 bg-slate-900/50 p-2 rounded-lg">
-                <Network size={16} className="text-slate-500" />
-                <span className="text-slate-400 w-16">IP Manzil:</span>
+              <div className="flex items-center gap-2 text-sm text-slate-800 bg-white shadow-sm p-2 rounded-lg">
+                <Network size={16} className="text-slate-600" />
+                <span className="text-slate-600 w-16">IP Manzil:</span>
                 <span className="font-mono">{device.ipAddress}:{device.port}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-300 bg-slate-900/50 p-2 rounded-lg">
-                <Key size={16} className="text-slate-500" />
-                <span className="text-slate-400 w-16">Login:</span>
+              <div className="flex items-center gap-2 text-sm text-slate-800 bg-white shadow-sm p-2 rounded-lg">
+                <Key size={16} className="text-slate-600" />
+                <span className="text-slate-600 w-16">Login:</span>
                 <span className="font-mono">{device.username}</span>
               </div>
             </div>
@@ -124,7 +124,7 @@ export default function DevicesPage() {
         ))}
 
         {devices.length === 0 && (
-          <div className="col-span-full card py-12 text-center text-slate-400 border-dashed border-slate-700">
+          <div className="col-span-full card py-12 text-center text-slate-600 border-dashed border-slate-300">
             Hali hech qanday qurilma ulanmagan
           </div>
         )}
@@ -133,7 +133,7 @@ export default function DevicesPage() {
       {showModal && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal-content p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Qurilma qo'shish</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Qurilma qo'shish</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="label">Qurilma nomi (Masalan: Asosiy eshik)</label>

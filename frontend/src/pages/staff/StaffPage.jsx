@@ -229,14 +229,14 @@ export default function StaffPage() {
   });
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <Users className="text-primary-400" /> Xodimlar
           </h1>
-          <p className="text-slate-400 text-sm mt-1 font-medium">{staff.length} ta xodim mavjud</p>
+          <p className="text-slate-600 text-sm mt-1 font-medium">{staff.length} ta xodim mavjud</p>
         </div>
         <div className="flex gap-3">
 
@@ -281,9 +281,9 @@ export default function StaffPage() {
           <div className="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" />
         </div>
       ) : staff.length === 0 ? (
-        <div className="card py-16 text-center border-slate-800">
-          <Users size={48} className="mx-auto mb-4 text-slate-600" />
-          <p className="text-slate-400 font-medium">Xodim topilmadi</p>
+        <div className="card py-16 text-center border-slate-200">
+          <Users size={48} className="mx-auto mb-4 text-slate-700" />
+          <p className="text-slate-600 font-medium">Xodim topilmadi</p>
           <button onClick={openAdd} className="btn-primary mt-6 mx-auto">
             <UserPlus size={18} /> Birinchi xodimni qo'shish
           </button>
@@ -292,13 +292,13 @@ export default function StaffPage() {
         // Owner/Supervisor: filial bo'yicha guruhlangan
         Object.entries(grouped).map(([branchName, members]) => (
           <div key={branchName} className="card p-0 overflow-hidden mb-6">
-            <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/50 flex items-center gap-3">
+            <div className="px-6 py-4 border-b border-slate-200 bg-white shadow-sm flex items-center gap-3">
               <div className="p-2 bg-primary-500/10 rounded-lg text-primary-400">
                 <Building2 size={18} />
               </div>
-              <h3 className="font-semibold text-white tracking-tight flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                 {branchName}
-                <span className="text-xs text-slate-500 font-medium bg-slate-800 px-2 py-0.5 rounded-full">
+                <span className="text-xs text-slate-600 font-medium bg-slate-100 px-2 py-0.5 rounded-full">
                   {members.length} ta
                 </span>
               </h3>
@@ -331,15 +331,15 @@ export default function StaffPage() {
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowForm(false)}>
           <div className="modal-content max-w-2xl">
             {submitting && <FullScreenLoader />}
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white shadow-sm">
               <div>
-                <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
                   {editUser ? <Edit2 size={20} className="text-primary-400" /> : <UserPlus size={20} className="text-primary-400" />}
                   {editUser ? 'Xodimni tahrirlash' : 'Yangi xodim qo\'shish'}
                 </h2>
-                {editUser && <p className="text-slate-400 text-sm mt-1">@{form.username}</p>}
+                {editUser && <p className="text-slate-600 text-sm mt-1">@{form.username}</p>}
               </div>
-              <button onClick={() => setShowForm(false)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">&times;</button>
+              <button onClick={() => setShowForm(false)} className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">&times;</button>
             </div>
 
             <div className="p-6">
@@ -357,10 +357,10 @@ export default function StaffPage() {
                           onClick={() => setForm({ ...form, role: key })}
                           className={`py-2 px-1 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 ${form.role === key
                             ? 'bg-primary-500/10 border-primary-500/50 text-white shadow-sm'
-                            : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:bg-slate-800'
+                            : 'bg-white shadow-sm border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-100'
                             }`}
                         >
-                          <Icon size={16} className={form.role === key ? 'text-primary-400' : 'text-slate-500'} />
+                          <Icon size={16} className={form.role === key ? 'text-primary-400' : 'text-slate-600'} />
                           {cfg.label}
                         </button>
                       );
@@ -452,7 +452,7 @@ export default function StaffPage() {
                       />
                       <button
                         type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded-md transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900 p-1.5 hover:bg-slate-100 rounded-md transition-colors"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -509,24 +509,24 @@ export default function StaffPage() {
                     <p className="text-[11px] uppercase tracking-wider font-bold text-emerald-400 mb-2 flex items-center gap-2">
                       <ShieldCheck size={14} /> Xodimga quyidagi ma'lumotlarni yuboring:
                     </p>
-                    <div className="space-y-1 bg-slate-900/50 p-3 rounded-lg border border-emerald-500/10">
-                      <p className="text-sm text-slate-300 flex justify-between">
-                        <span className="text-slate-500">Sayt:</span>
+                    <div className="space-y-1 bg-white shadow-sm p-3 rounded-lg border border-emerald-500/10">
+                      <p className="text-sm text-slate-800 flex justify-between">
+                        <span className="text-slate-600">Sayt:</span>
                         <span className="font-mono text-emerald-300">http://tizim-manzili/login</span>
                       </p>
-                      <p className="text-sm text-slate-300 flex justify-between">
-                        <span className="text-slate-500">Username:</span>
+                      <p className="text-sm text-slate-800 flex justify-between">
+                        <span className="text-slate-600">Username:</span>
                         <span className="font-mono text-emerald-300 font-bold">{form.username}</span>
                       </p>
-                      <p className="text-sm text-slate-300 flex justify-between">
-                        <span className="text-slate-500">Parol:</span>
+                      <p className="text-sm text-slate-800 flex justify-between">
+                        <span className="text-slate-600">Parol:</span>
                         <span className="font-mono text-emerald-300 font-bold">{form.password}</span>
                       </p>
                     </div>
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-4 border-t border-slate-800">
+                <div className="flex gap-3 pt-4 border-t border-slate-200">
                   <button type="button" onClick={() => setShowForm(false)} className="btn-secondary flex-1 justify-center">
                     Bekor qilish
                   </button>
@@ -551,10 +551,10 @@ export default function StaffPage() {
       {showFaceModal && faceUser && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowFaceModal(false)}>
           <div className="modal-content p-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-4">
               <ScanFace className="text-primary-400" /> Face ID yuklash
             </h2>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-slate-600 text-sm mb-6">
               Xodim: <strong>{faceUser.name}</strong> (@{faceUser.username})
             </p>
             <form onSubmit={handleFaceUpload} className="space-y-4">
@@ -569,8 +569,8 @@ export default function StaffPage() {
               </div>
               <div>
                 <label className="label">Rasm (JPG/PNG)</label>
-                <div className="border-2 border-dashed border-slate-700 p-4 rounded-xl text-center hover:border-primary-500 transition-colors">
-                  <input type="file" accept="image/jpeg, image/png" onChange={handleImageChange} className="w-full text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-500/10 file:text-primary-400 hover:file:bg-primary-500/20" required />
+                <div className="border-2 border-dashed border-slate-300 p-4 rounded-xl text-center hover:border-primary-500 transition-colors">
+                  <input type="file" accept="image/jpeg, image/png" onChange={handleImageChange} className="w-full text-slate-800 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-500/10 file:text-primary-400 hover:file:bg-primary-500/20" required />
                 </div>
                 {faceImageBase64 && (
                   <div className="mt-4 flex justify-center">
@@ -641,14 +641,14 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                         <img
                           src={photoUrl}
                           alt={u.name}
-                          className="w-10 h-10 rounded-full object-cover border border-slate-700 shadow-inner"
+                          className="w-10 h-10 rounded-full object-cover border border-slate-300 shadow-inner"
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.style.display = 'none'; // hide broken img
                           }}
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[13px] font-bold text-slate-300 shadow-inner">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center text-[13px] font-bold text-slate-800 shadow-inner">
                           {u.name?.[0]?.toUpperCase()}
                         </div>
                       )}
@@ -659,7 +659,7 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                         />
                       )}
                     </div>
-                    <span className="font-semibold text-slate-200 tracking-tight">{u.name}</span>
+                    <span className="font-semibold text-slate-900 tracking-tight">{u.name}</span>
                   </div>
                 </td>
                 <td className="table-td">
@@ -668,16 +668,16 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                   </span>
                 </td>
                 <td className="table-td">
-                  <span className="font-mono text-[13px] font-medium text-slate-400">
+                  <span className="font-mono text-[13px] font-medium text-slate-600">
                     @{u.username}
                   </span>
                 </td>
-                <td className="table-td text-slate-400 font-medium text-sm">{u.phone || '—'}</td>
+                <td className="table-td text-slate-600 font-medium text-sm">{u.phone || '—'}</td>
                 <td className="table-td text-right">
                   {u.salaryType === 'per_shift' ? (
                     <span className="text-[12px] text-emerald-400 font-bold uppercase tracking-wider bg-emerald-400/10 px-2 py-1 rounded-md">Smenabay</span>
                   ) : u.salary ? (
-                    <span className="text-slate-200 font-semibold">{Number(u.salary).toLocaleString('ru-RU').replace(/,/g, ' ')} <span className="text-xs font-medium text-slate-500">so'm</span></span>
+                    <span className="text-slate-900 font-semibold">{Number(u.salary).toLocaleString('ru-RU').replace(/,/g, ' ')} <span className="text-xs font-medium text-slate-600">so'm</span></span>
                   ) : '—'}
                 </td>
                 <td className="table-td text-center">
@@ -705,7 +705,7 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                   {onFaceId && (
                     <button
                       onClick={() => onFaceId(u)}
-                      className={`mr-2 p-1.5 rounded-lg transition-colors ${u.isFaceRegistered ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-primary-400 hover:bg-primary-500/10'}`}
+                      className={`mr-2 p-1.5 rounded-lg transition-colors ${u.isFaceRegistered ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-600 hover:text-primary-400 hover:bg-primary-500/10'}`}
                       title="Face ID yuz qo'shish"
                     >
                       <ScanFace size={16} />
@@ -714,7 +714,7 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                   {onFinance && (
                     <button
                       onClick={() => onFinance(u)}
-                      className="text-slate-400 hover:text-indigo-400 transition-colors p-1.5 rounded-lg hover:bg-indigo-500/10 mr-2"
+                      className="text-slate-600 hover:text-indigo-400 transition-colors p-1.5 rounded-lg hover:bg-indigo-500/10 mr-2"
                       title="Moliya (Oylik va jarimalar)"
                     >
                       <Wallet size={16} />
@@ -723,7 +723,7 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                   {onEdit && (
                     <button
                       onClick={() => onEdit(u)}
-                      className="text-slate-400 hover:text-primary-400 transition-colors p-1.5 rounded-lg hover:bg-primary-500/10 mr-2"
+                      className="text-slate-600 hover:text-primary-400 transition-colors p-1.5 rounded-lg hover:bg-primary-500/10 mr-2"
                       title="Tahrirlash"
                     >
                       <Edit2 size={16} />
@@ -732,7 +732,7 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                   {onDelete && (
                     <button
                       onClick={() => onDelete(u)}
-                      className="text-slate-400 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10"
+                      className="text-slate-600 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10"
                       title="O'chirish"
                     >
                       <Trash2 size={16} />
@@ -751,15 +751,15 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
 function PayrollModal({ staff, branchName, onClose }) {
   const currentMonth = new Date().toLocaleString('uz-UZ', { month: 'long', year: 'numeric' });
   return (
-    <div className="fixed inset-0 z-[100] bg-white text-black overflow-y-auto print-area print:bg-white print:text-black animate-fade-in">
+    <div className="fixed inset-0 z-[100] bg-white text-black overflow-y-auto print-area print:bg-white print:text-black">
       <div className="p-8 max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8 print:hidden">
-          <h2 className="text-xl font-bold text-slate-800">Maosh tarqatish varaqasi</h2>
+          <h2 className="text-xl font-bold text-slate-900">Maosh tarqatish varaqasi</h2>
           <div className="flex gap-4">
             <button onClick={() => window.print()} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm">
               <Printer size={18} /> Chop etish
             </button>
-            <button onClick={onClose} className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-medium transition-colors shadow-sm">
+            <button onClick={onClose} className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-900 rounded-xl font-medium transition-colors shadow-sm">
               Yopish
             </button>
           </div>

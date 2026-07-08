@@ -1,10 +1,11 @@
+import ModalPortal from '../common/ModalPortal';
 import { useState } from 'react';
 import { X, Calendar, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
-export default function ExtendStayModal({ isOpen, onClose, booking, onSuccess }) {
+function ExtendStayModal({ isOpen, onClose, booking, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     newCheckOutExpected: booking ? format(new Date(booking.checkOutExpected), "yyyy-MM-dd'T'HH:mm") : '',
@@ -50,27 +51,27 @@ export default function ExtendStayModal({ isOpen, onClose, booking, onSuccess })
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-scale-up">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-800/20">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-scale-up">
+        <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <Calendar className="text-primary-400" />
             Muddatni uzaytirish
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-slate-900 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-1">
-            <p className="text-sm text-slate-400">Mehmon</p>
-            <p className="text-lg font-medium text-white">{booking.primaryGuest?.firstName} {booking.primaryGuest?.lastName}</p>
-            <p className="text-sm text-slate-500">Joriy ketish vaqti: {format(new Date(booking.checkOutExpected), 'dd.MM.yyyy HH:mm')}</p>
+            <p className="text-sm text-slate-600">Mehmon</p>
+            <p className="text-lg font-medium text-slate-900">{booking.primaryGuest?.firstName} {booking.primaryGuest?.lastName}</p>
+            <p className="text-sm text-slate-600">Joriy ketish vaqti: {format(new Date(booking.checkOutExpected), 'dd.MM.yyyy HH:mm')}</p>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Yangi ketish vaqti</label>
+              <label className="block text-sm font-medium text-slate-800 mb-1.5">Yangi ketish vaqti</label>
               <input
                 type="datetime-local"
                 name="newCheckOutExpected"
@@ -86,9 +87,9 @@ export default function ExtendStayModal({ isOpen, onClose, booking, onSuccess })
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Qo'shimcha narx (so'm)</label>
+              <label className="block text-sm font-medium text-slate-800 mb-1.5">Qo'shimcha narx (so'm)</label>
               <div className="relative">
-                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
                 <input
                   type="number"
                   name="additionalPrice"
@@ -102,9 +103,9 @@ export default function ExtendStayModal({ isOpen, onClose, booking, onSuccess })
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Hozir to'lanadigan summa (so'm)</label>
+              <label className="block text-sm font-medium text-slate-800 mb-1.5">Hozir to'lanadigan summa (so'm)</label>
               <div className="relative">
-                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
                 <input
                   type="number"
                   name="additionalPayment"
@@ -118,7 +119,7 @@ export default function ExtendStayModal({ isOpen, onClose, booking, onSuccess })
 
             {Number(formData.additionalPayment) > 0 && (
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">To'lov turi</label>
+                <label className="block text-sm font-medium text-slate-800 mb-1.5">To'lov turi</label>
                 <div className="grid grid-cols-3 gap-2">
                   {['cash', 'terminal', 'qrcode'].map(method => (
                     <button
@@ -128,7 +129,7 @@ export default function ExtendStayModal({ isOpen, onClose, booking, onSuccess })
                       className={`py-2 rounded-xl text-sm font-medium transition-colors border ${
                         formData.paymentMethod === method
                           ? 'bg-primary-500/20 text-primary-400 border-primary-500/50'
-                          : 'bg-slate-800/50 text-slate-400 border-transparent hover:bg-slate-800'
+                          : 'bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100'
                       }`}
                     >
                       {method === 'cash' ? 'Naqd' : method === 'terminal' ? 'Terminal' : 'Click/Payme'}
@@ -139,11 +140,11 @@ export default function ExtendStayModal({ isOpen, onClose, booking, onSuccess })
             )}
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-slate-800">
+          <div className="flex gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 transition-colors font-medium"
+              className="flex-1 py-2.5 rounded-xl text-slate-800 hover:bg-slate-100 transition-colors font-medium"
             >
               Bekor qilish
             </button>
@@ -159,4 +160,8 @@ export default function ExtendStayModal({ isOpen, onClose, booking, onSuccess })
       </div>
     </div>
   );
+}
+
+export default function ExtendStayModalWrapper(props) {
+  return <ModalPortal><ExtendStayModal {...props} /></ModalPortal>;
 }

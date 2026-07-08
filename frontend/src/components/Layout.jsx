@@ -30,7 +30,12 @@ import {
   Key,
   UserCheck,
   CalendarDays,
-  Activity
+  Activity,
+  ChevronDown,
+  Archive,
+  CreditCard,
+  Shield,
+  UserCog
 } from 'lucide-react';
 
 const superadminNav = [
@@ -59,16 +64,57 @@ const directorNav = [
   { path: '/director/transactions', icon: Banknote, label: 'Kassa (Tranzaksiyalar)' },
 ];
 
-const ownerNav = [
-  { path: '/owner/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/owner/branches', icon: Building2, label: 'Filiallar' },
-  { path: '/owner/rooms', icon: BedDouble, label: 'Xonalar' },
-  { path: '/owner/transactions', icon: Wallet, label: 'Kassa (Kirim-chiqim)' },
-  { path: '/owner/staff', icon: Users, label: 'Xodimlar' },
-  { path: '/owner/payroll', icon: Banknote, label: 'Oylik maosh' },
-  { path: '/owner/room-analytics', icon: Activity, label: 'Xonalar Tahlili' },
-  { path: '/owner/attendance', icon: CalendarClock, label: 'Davomat' },
-  { path: '/owner/devices', icon: Server, label: 'Face ID Qurilmalari' },
+// Flat array for non-owner roles
+const ownerNav = null; // owner uses ownerNavGroups below
+
+const ownerNavGroups = [
+  {
+    type: 'single',
+    path: '/owner/dashboard',
+    icon: LayoutDashboard,
+    label: 'Dashboard',
+  },
+  {
+    type: 'group',
+    label: 'Moliya',
+    icon: CreditCard,
+    key: 'moliya',
+    items: [
+      { path: '/owner/transactions', icon: Wallet, label: 'Kassa (Kirim-chiqim)' },
+      { path: '/owner/payroll', icon: Banknote, label: 'Oylik maosh' },
+    ],
+  },
+  {
+    type: 'group',
+    label: 'HR',
+    icon: UserCog,
+    key: 'hr',
+    items: [
+      { path: '/owner/hr', icon: LayoutDashboard, label: 'HR Dashboard' },
+      { path: '/owner/staff', icon: Users, label: 'Xodimlar' },
+    ],
+  },
+  {
+    type: 'group',
+    label: 'Ichki nazorat',
+    icon: Shield,
+    key: 'nazorat',
+    items: [
+      { path: '/owner/branches', icon: Building2, label: 'Filiallar' },
+      { path: '/owner/rooms', icon: BedDouble, label: 'Xonalar' },
+      { path: '/owner/room-analytics', icon: Activity, label: 'Xonalar Tahlili' },
+      { path: '/owner/attendance', icon: CalendarClock, label: 'Davomat' },
+      { path: '/owner/devices', icon: Server, label: 'Face ID Qurilmalari' },
+    ],
+  },
+  {
+    type: 'group',
+    label: "Omborxona",
+    icon: Archive,
+    key: 'ombor',
+    items: [],
+    comingSoon: true,
+  },
 ];
 
 const supervisorNav = [
@@ -117,7 +163,7 @@ function CurrentShiftDisplay() {
       <span className="text-xs text-slate-400 font-medium">
         {isMorning ? 'Kunduzgi smena' : 'Tungi smena'}
       </span>
-      <span className="text-[10px] text-slate-500">
+      <span className="text-[10px] text-slate-600">
         {isMorning ? '08:00 - 19:00' : '19:00 - 08:00'}
       </span>
     </div>
@@ -129,12 +175,27 @@ export default function Layout({ children }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [openGroups, setOpenGroups] = useState(() => {
+    // Auto-open the group that contains the current path
+    const initial = {};
+    ownerNavGroups.forEach(g => {
+      if (g.type === 'group' && g.items?.some(i => location.pathname.startsWith(i.path))) {
+        initial[g.key] = true;
+      }
+    });
+    return initial;
+  });
+
+  const toggleGroup = (key) => {
+    setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const getNav = () => {
     return user?.role === 'admin' ? adminNav :
     user?.role === 'director' ? directorNav :
     user?.role === 'supervisor' ? supervisorNav :
     user?.role === 'superadmin' ? superadminNav :
-    user?.role === 'owner' ? ownerNav : [];
+    user?.role === 'owner' ? null : [];
   };
 
   const navItems = getNav();
@@ -160,7 +221,7 @@ export default function Layout({ children }) {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-950">
+    <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -171,12 +232,12 @@ export default function Layout({ children }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-slate-900/80 backdrop-blur-2xl border-r border-slate-800/80 flex flex-col transition-transform duration-300 ${
+        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 flex flex-col bg-white border-r border-slate-200 transition-transform duration-300 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Logo */}
-        <div className="p-5 border-b border-slate-800">
+        <div className="p-5 border-b border-slate-100">
           <div className="flex items-center gap-3">
             {user?.company?.logoUrl ? (
               <img 
@@ -190,14 +251,14 @@ export default function Layout({ children }) {
               </div>
             )}
             <div>
-              <h1 className="font-bold text-white text-[15px] leading-tight tracking-tight">Hotel Manager</h1>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">{user?.branch?.name || 'Bosh ofis'}</p>
+              <h1 className="font-bold text-slate-900 text-[15px] leading-tight tracking-tight">Hotel Manager</h1>
+              <p className="text-xs text-slate-600 font-medium mt-0.5">{user?.branch?.name || 'Bosh ofis'}</p>
             </div>
           </div>
         </div>
 
         {/* User info */}
-        <div className="p-5 border-b border-slate-800 bg-slate-800/20">
+        <div className="p-5 bg-slate-50 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 flex-shrink-0">
               {user?.photoUrl && user.photoUrl !== 'uploaded_via_base64' ? (
@@ -208,19 +269,19 @@ export default function Layout({ children }) {
                   onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-sm font-bold text-slate-300 shadow-inner">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 border border-primary-400/50 flex items-center justify-center text-[15px] font-bold text-white shadow-md">
                   {user?.name?.[0]?.toUpperCase()}
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white break-words whitespace-normal leading-tight">{user?.name}</p>
+              <p className="text-sm font-semibold text-slate-900 break-words whitespace-normal leading-tight">{user?.name}</p>
               <div className="mt-1 flex items-center gap-2">
                 <span className={`inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${badge.color}`}>
                   {badge.label}
                 </span>
                 {user?.role === 'owner' && (
-                  <span className="text-[10px] text-slate-500 font-mono tracking-wider" title="Company ID">
+                  <span className="text-[10px] text-slate-600 font-mono tracking-wider" title="Company ID">
                     CID:{user.companyId}
                   </span>
                 )}
@@ -231,47 +292,131 @@ export default function Layout({ children }) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
-                  active 
-                    ? 'text-white bg-primary-500/10 border border-primary-500/20 shadow-sm' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
-                }`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <Icon size={18} className={active ? 'text-primary-400' : 'text-slate-500'} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+          {user?.role === 'owner' ? (
+            // Grouped nav for owner
+            <div className="space-y-0.5">
+              {ownerNavGroups.map((group) => {
+                if (group.type === 'single') {
+                  const Icon = group.icon;
+                  const active = isActive(group.path);
+                  return (
+                    <Link
+                      key={group.path}
+                      to={group.path}
+                      style={active ? {background: '#f1f5f9'} : {}}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
+                        active ? 'text-primary-600 shadow-sm' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <Icon size={18} className={active ? "text-primary-500" : "text-slate-400"} />
+                      <span>{group.label}</span>
+                    </Link>
+                  );
+                }
+
+                // Group
+                const GroupIcon = group.icon;
+                const isGroupOpen = !!openGroups[group.key];
+                const hasActiveChild = group.items?.some(i => isActive(i.path));
+
+                return (
+                  <div key={group.key}>
+                    <button
+                      onClick={() => toggleGroup(group.key)}
+                      style={hasActiveChild ? {background: '#f1f5f9'} : {}}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
+                        hasActiveChild ? 'text-primary-600' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <GroupIcon size={18} className={hasActiveChild ? "text-primary-500" : "text-slate-400"} />
+                      <span className="flex-1 text-left">{group.label}</span>
+                      {group.comingSoon && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-700 text-slate-400">Tez kunda</span>
+                      )}
+                      {!group.comingSoon && (
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform duration-200 text-slate-600 ${isGroupOpen ? 'rotate-180' : ''}`}
+                        />
+                      )}
+                    </button>
+
+                    {isGroupOpen && !group.comingSoon && group.items.length > 0 && (
+                      <div className="ml-3 mt-0.5 pl-3 space-y-0.5" style={{borderLeft: '1px solid rgba(0,201,167,0.15)'}}>
+                        {group.items.map((item) => {
+                          const ItemIcon = item.icon;
+                          const active = isActive(item.path);
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              style={active ? {background: '#f8fafc'} : {}}
+                              className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
+                                active ? 'text-primary-600 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                              onClick={() => setSidebarOpen(false)}
+                            >
+                              <ItemIcon size={16} className={active ? "text-primary-500" : "text-slate-400"} />
+                              <span>{item.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            // Flat nav for other roles
+            (getNav() || []).map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  style={active ? {background: '#f1f5f9'} : {}}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
+                    active ? 'text-primary-600 shadow-sm' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <Icon size={18} className={active ? "text-primary-500" : "text-slate-400"} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })
+          )}
         </nav>
 
         {/* Shift info */}
         {user?.role === 'admin' && (
-          <div className="px-4 py-4 border-t border-slate-800 bg-slate-900/50">
+          <div className="px-4 py-4" style={{borderTop: '1px solid rgba(0,201,167,0.1)', background: 'rgba(0,201,167,0.03)'}}>
             <CurrentShiftDisplay />
           </div>
         )}
 
         {/* Logout */}
-        <div className="p-4 border-t border-slate-800 space-y-2">
+        <div className="p-4 space-y-2" style={{borderTop: '1px solid rgba(0,201,167,0.1)'}}>
           <Link
             to="/settings"
             onClick={() => setSidebarOpen(false)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition-all duration-200 font-medium text-sm"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-transparent transition-all duration-200 font-medium text-sm"
+            style={{color: '#6a8fa8'}}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#334155'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = '#6a8fa8'; }}
           >
             <Settings size={18} />
             <span>Sozlamalar</span>
           </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all duration-200 font-medium text-sm"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-transparent transition-all duration-200 font-medium text-sm"
+            style={{color: '#6a8fa8'}}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = '#6a8fa8'; e.currentTarget.style.borderColor = 'transparent'; }}
           >
             <LogOut size={18} />
             <span>Tizimdan chiqish</span>
@@ -280,25 +425,25 @@ export default function Layout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-[#0b1120]">
-        {/* Top bar */}
-        <header className="h-16 bg-slate-900/50 backdrop-blur-xl border-b border-slate-800/80 flex items-center justify-between px-6 flex-shrink-0 z-10 sticky top-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-slate-50">
+        {/* Top bar - Dark like e-mehmon */}
+        <header className="h-16 flex items-center justify-between px-6 flex-shrink-0 z-10 sticky top-0" style={{background: '#1a2a3a', borderBottom: '1px solid #111e2b'}}>
           <div className="flex items-center gap-4">
             <button
-              className="lg:hidden p-1.5 -ml-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="lg:hidden p-1.5 -ml-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <Menu size={20} />
             </button>
             <div>
-              <p className="text-[13px] font-medium text-slate-400 capitalize">
+              <p className="text-[13px] font-medium text-slate-300 capitalize">
                 <DateDisplay />
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-lg font-bold text-slate-200 tabular-nums tracking-tight">
+              <p className="text-lg font-bold text-white tabular-nums tracking-tight">
                 <ClockDisplay />
               </p>
             </div>

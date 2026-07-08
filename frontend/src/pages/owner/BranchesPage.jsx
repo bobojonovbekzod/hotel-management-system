@@ -90,15 +90,15 @@ export default function BranchesPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center bg-slate-900/50 p-6 rounded-2xl border border-slate-800/80 backdrop-blur-xl">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center bg-white shadow-sm p-6 rounded-2xl border border-slate-200 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-primary-500/10 rounded-xl text-primary-400">
             <Building2 size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Filiallar</h1>
-            <p className="text-slate-400 text-sm mt-1">Sizning biznesingizdagi barcha mehmonxonalar</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Filiallar</h1>
+            <p className="text-slate-600 text-sm mt-1">Sizning biznesingizdagi barcha mehmonxonalar</p>
           </div>
         </div>
         <button
@@ -120,24 +120,24 @@ export default function BranchesPage() {
              <div className="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" />
           </div>
         ) : branches.length === 0 ? (
-          <div className="col-span-full card py-16 text-center border-slate-800 border-dashed bg-slate-900/30">
-            <Building2 size={48} className="mx-auto mb-4 text-slate-600" />
-            <p className="text-slate-400 font-medium text-lg">Hali hech qanday filial qo'shilmagan</p>
-            <p className="text-slate-500 text-sm mt-1">Birinchi filiali qo'shish uchun "Yangi Filial" tugmasini bosing.</p>
+          <div className="col-span-full card py-16 text-center border-slate-200 border-dashed bg-white shadow-sm">
+            <Building2 size={48} className="mx-auto mb-4 text-slate-700" />
+            <p className="text-slate-600 font-medium text-lg">Hali hech qanday filial qo'shilmagan</p>
+            <p className="text-slate-600 text-sm mt-1">Birinchi filiali qo'shish uchun "Yangi Filial" tugmasini bosing.</p>
           </div>
         ) : (
           branches.map(branch => (
-            <div key={branch.id} className="bg-slate-900/80 rounded-2xl border border-slate-800/80 overflow-hidden hover:border-slate-700 transition-colors">
-              <div className="p-5 border-b border-slate-800">
+            <div key={branch.id} className="bg-white shadow-sm rounded-2xl border border-slate-200 overflow-hidden hover:border-slate-300 transition-colors">
+              <div className="p-5 border-b border-slate-200">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-primary-500/10 rounded-xl flex items-center justify-center text-primary-400 border border-primary-500/20">
                       <Building2 size={24} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-white text-lg">{branch.name}</h3>
+                      <h3 className="font-bold text-slate-900 text-lg">{branch.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-800 border border-slate-300">
                           ID: {branch.id}
                         </span>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${branch.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
@@ -147,10 +147,10 @@ export default function BranchesPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => handleEdit(branch)} className="p-2 text-slate-400 hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors">
+                    <button onClick={() => handleEdit(branch)} className="p-2 text-slate-600 hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-colors">
                       <Edit2 size={16} />
                     </button>
-                    <button onClick={() => handleDelete(branch.id)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                    <button onClick={() => handleDelete(branch.id)} className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -159,32 +159,32 @@ export default function BranchesPage() {
               
               <div className="p-5 space-y-4">
                 <div className="flex items-start gap-3">
-                  <MapPin size={18} className="text-slate-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-medium text-slate-300">{branch.address || 'Manzil ko\'rsatilmagan'}</span>
+                  <MapPin size={18} className="text-slate-600 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm font-medium text-slate-800">{branch.address || 'Manzil ko\'rsatilmagan'}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Phone size={18} className="text-slate-500 flex-shrink-0" />
-                  <span className="text-sm font-medium text-slate-300">{branch.phone || '—'}</span>
+                  <Phone size={18} className="text-slate-600 flex-shrink-0" />
+                  <span className="text-sm font-medium text-slate-800">{branch.phone || '—'}</span>
                 </div>
               </div>
 
-              <div className="p-5 bg-slate-900/40 grid grid-cols-2 gap-4 border-t border-slate-800">
+              <div className="p-5 bg-white shadow-sm grid grid-cols-2 gap-4 border-t border-slate-200">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-800 rounded-lg text-slate-400">
+                  <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
                     <BedDouble size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Xonalar</p>
-                    <p className="text-lg font-bold text-slate-200 leading-none mt-1">{branch._count?.rooms || 0}</p>
+                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-600">Xonalar</p>
+                    <p className="text-lg font-bold text-slate-900 leading-none mt-1">{branch._count?.rooms || 0}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-800 rounded-lg text-slate-400">
+                  <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
                     <Users size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Xodimlar</p>
-                    <p className="text-lg font-bold text-slate-200 leading-none mt-1">{branch._count?.users || 0}</p>
+                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-600">Xodimlar</p>
+                    <p className="text-lg font-bold text-slate-900 leading-none mt-1">{branch._count?.users || 0}</p>
                   </div>
                 </div>
               </div>
@@ -197,12 +197,12 @@ export default function BranchesPage() {
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <div className="modal-content">
             {submitting && <FullScreenLoader />}
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white shadow-sm">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 {editingId ? <Edit2 className="text-primary-400" /> : <Plus className="text-primary-400" />}
                 {editingId ? 'Filialni Tahrirlash' : 'Yangi Filial'}
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white hover:bg-slate-800 p-2 rounded-lg transition-colors">
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 p-2 rounded-lg transition-colors">
                 ✕
               </button>
             </div>
@@ -252,7 +252,7 @@ export default function BranchesPage() {
                   maxLength={17}
                 />
               </div>
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-800">
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -285,12 +285,12 @@ export default function BranchesPage() {
               <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4 border-4 border-red-500/20">
                 <Trash2 size={24} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Filialni o'chirish</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Filialni o'chirish</h3>
+              <p className="text-slate-600 text-sm">
                 Siz rostdan ham ushbu filialni o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.
               </p>
             </div>
-            <div className="p-4 bg-slate-900/50 flex gap-3 border-t border-slate-800 rounded-b-2xl">
+            <div className="p-4 bg-white shadow-sm flex gap-3 border-t border-slate-200 rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => setDeleteModalOpen(false)}

@@ -63,7 +63,8 @@ export default function FrontDeskPage() {
     fetchRooms();
     fetchActiveShift();
 
-    const s = io(import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin));
+    // Socket ulash - Vite proxy (dev) yoki Nginx (prod) orqali
+    const s = io();
     setSocket(s);
     if (user?.branchId) s.emit('join-branch', user.branchId);
 
@@ -173,20 +174,20 @@ export default function FrontDeskPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Key className="text-primary-400" /> Qabul (Shahmatka)
           </h1>
-          <p className="text-slate-400 text-sm">Mehmonlarni kutib olish va xonalarni boshqarish</p>
+          <p className="text-slate-600 text-sm">Mehmonlarni kutib olish va xonalarni boshqarish</p>
         </div>
 
-        <div className="flex items-center gap-4 bg-slate-800/50 p-2 rounded-xl border border-slate-700/50">
+        <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-xl border border-slate-300">
           {activeShift ? (
             <>
               <div className="px-4 py-2">
-                <p className="text-xs text-slate-400">Smena daromadi</p>
+                <p className="text-xs text-slate-600">Smena daromadi</p>
                 <p className="font-bold text-emerald-400">{activeShift.totalIncome.toLocaleString()} so'm</p>
               </div>
               <button onClick={endShift} className="px-6 py-2 bg-red-500/20 text-red-400 font-bold rounded-lg hover:bg-red-500/30 transition-colors">
@@ -203,7 +204,7 @@ export default function FrontDeskPage() {
 
       {/* Rooms Grid */}
       {loading ? (
-        <div className="py-10 text-center text-slate-400">Xonalar yuklanmoqda...</div>
+        <div className="py-10 text-center text-slate-600">Xonalar yuklanmoqda...</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {rooms.map(room => {
@@ -237,9 +238,9 @@ export default function FrontDeskPage() {
                 className={`relative overflow-hidden group flex flex-col items-center justify-center p-6 rounded-2xl border transition-all hover:scale-105 active:scale-95 ${status.border} ${status.bg} backdrop-blur-sm ${blinkClass}`}
               >
                 <div className={`absolute top-3 right-3 w-3 h-3 rounded-full ${status.dot}`} />
-                <Icon size={40} className={`mb-3 ${statusKey === 'available' ? 'text-emerald-400' : statusKey === 'overstay' ? 'text-red-500' : statusKey === 'reserved' ? 'text-orange-400' : statusKey === 'occupied' ? 'text-blue-400' : statusKey === 'cleaning' ? 'text-yellow-400' : 'text-slate-400'}`} />
-                <span className="text-2xl font-black text-white">{room.roomNumber}</span>
-                <span className="text-xs font-medium text-slate-400 mt-1 capitalize">{room.roomType.replace('_', ' ')}</span>
+                <Icon size={40} className={`mb-3 ${statusKey === 'available' ? 'text-emerald-400' : statusKey === 'overstay' ? 'text-red-500' : statusKey === 'reserved' ? 'text-orange-400' : statusKey === 'occupied' ? 'text-blue-400' : statusKey === 'cleaning' ? 'text-yellow-400' : 'text-slate-600'}`} />
+                <span className="text-2xl font-black text-slate-900">{room.roomNumber}</span>
+                <span className="text-xs font-medium text-slate-600 mt-1 capitalize">{room.roomType.replace('_', ' ')}</span>
               </button>
             );
           })}

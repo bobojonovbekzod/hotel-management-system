@@ -55,21 +55,21 @@ export default function TransactionsPage() {
   const cashBalance = cashIncome - totalExpense;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 bg-primary-500/20 rounded-xl flex items-center justify-center text-primary-400">
           <Banknote size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Kassa (Tranzaksiyalar)</h1>
-          <p className="text-slate-400">Barcha tushumlar va to'lovlar ro'yxati</p>
+          <h1 className="text-2xl font-bold text-slate-900">Kassa (Tranzaksiyalar)</h1>
+          <p className="text-slate-600">Barcha tushumlar va to'lovlar ro'yxati</p>
         </div>
       </div>
 
       <div className="card p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-400 flex items-center gap-2">
+            <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
               <CalendarIcon size={16} /> Sana bo'yicha filter
             </label>
             <input
@@ -82,7 +82,7 @@ export default function TransactionsPage() {
 
           {user?.role === 'owner' && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-400 flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
                 <Building2 size={16} /> Filial bo'yicha filter
               </label>
               <select
@@ -100,40 +100,44 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="card bg-emerald-500/10 border-emerald-500/20">
-          <h3 className="text-emerald-400 font-semibold mb-2">Jami Tushum</h3>
-          <p className="text-3xl font-bold text-white">{totalIncome.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
-          <p className="text-sm text-slate-500 mt-1">Shundan naqd: <span className="text-emerald-400 font-medium">{cashIncome.toLocaleString()}</span></p>
-        </div>
-
-        <div className="card bg-blue-500/10 border-blue-500/20">
-          <h3 className="text-blue-400 font-semibold mb-2">Bank (Karta/QR)</h3>
-          <p className="text-3xl font-bold text-white">{bankIncome.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
-          <div className="flex gap-4 mt-1 text-sm text-slate-500">
-            <span>Terminal: {terminalIncome.toLocaleString()}</span>
-            <span>QR: {qrcodeIncome.toLocaleString()}</span>
+      <div className="card p-0 bg-white border border-slate-200 overflow-hidden mb-8">
+        <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-800/60">
+          
+          <div className="flex-1 p-5 text-center md:text-left bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors">
+            <p className="text-sm font-medium text-slate-600 mb-1">Jami Tushum</p>
+            <p className="text-2xl font-bold text-slate-900">{totalIncome.toLocaleString()}</p>
           </div>
-        </div>
 
-        <div className="card bg-rose-500/10 border-rose-500/20">
-          <h3 className="text-rose-400 font-semibold mb-2">Jami Xarajatlar</h3>
-          <p className="text-3xl font-bold text-white">{totalExpense.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
-          <p className="text-sm text-slate-500 mt-1">Kassadan qilingan chiqimlar</p>
-        </div>
+          <div className="flex-1 p-5 text-center md:text-left hover:bg-slate-50 transition-colors">
+            <p className="text-sm font-medium text-slate-600 mb-1">Terminal</p>
+            <p className="text-2xl font-bold text-slate-900">{terminalIncome.toLocaleString()}</p>
+          </div>
 
-        <div className={`card ${cashBalance >= 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
-          <h3 className={`${cashBalance >= 0 ? 'text-amber-400' : 'text-red-400'} font-semibold mb-2`}>Kassadagi Naqd Qoldiq</h3>
-          <p className="text-3xl font-bold text-white">{cashBalance.toLocaleString()} <span className="text-base font-normal text-slate-400">so'm</span></p>
-          <p className="text-sm text-slate-500 mt-1">Jismoniy naqd pul miqdori</p>
+          <div className="flex-1 p-5 text-center md:text-left hover:bg-slate-50 transition-colors">
+            <p className="text-sm font-medium text-slate-600 mb-1">QR Code</p>
+            <p className="text-2xl font-bold text-slate-900">{qrcodeIncome.toLocaleString()}</p>
+          </div>
+
+          <div className="flex-1 p-5 text-center md:text-left hover:bg-slate-50 transition-colors">
+            <p className="text-sm font-medium text-slate-600 mb-1">Xarajatlar</p>
+            <p className="text-2xl font-bold text-rose-400">{totalExpense.toLocaleString()}</p>
+          </div>
+
+          <div className={`flex-1 p-5 text-center md:text-left transition-colors ${cashBalance >= 0 ? 'bg-amber-500/5 hover:bg-amber-500/10' : 'bg-red-500/5 hover:bg-red-500/10'}`}>
+            <p className="text-sm font-medium text-slate-600 mb-1">Naqd Qoldiq</p>
+            <p className={`text-2xl font-bold ${cashBalance >= 0 ? 'text-amber-400' : 'text-red-400'}`}>{cashBalance.toLocaleString()}</p>
+          </div>
+
         </div>
-        
-        <div className="card md:col-span-4 overflow-x-auto p-0">
+      </div>
+      
+      <div className="grid grid-cols-1">
+        <div className="card overflow-x-auto p-0">
           {loading ? (
-            <div className="p-8 text-center text-slate-400">Yuklanmoqda...</div>
+            <div className="p-8 text-center text-slate-600">Yuklanmoqda...</div>
           ) : transactions.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 flex flex-col items-center">
-              <Search size={48} className="mb-4 text-slate-600" />
+            <div className="p-8 text-center text-slate-600 flex flex-col items-center">
+              <Search size={48} className="mb-4 text-slate-700" />
               Bu sanada hech qanday tranzaksiya topilmadi
             </div>
           ) : (
@@ -153,13 +157,13 @@ export default function TransactionsPage() {
                 {transactions.map((t) => (
                   <tr key={t.id} className="table-row">
                     <td className="table-td pl-6">
-                      <span className="text-white font-medium">{format(new Date(t.createdAt), 'HH:mm')}</span>
-                      <span className="block text-xs text-slate-500">{format(new Date(t.createdAt), 'dd.MM.yyyy')}</span>
+                      <span className="text-slate-900 font-medium">{format(new Date(t.createdAt), 'HH:mm')}</span>
+                      <span className="block text-xs text-slate-600">{format(new Date(t.createdAt), 'dd.MM.yyyy')}</span>
                     </td>
                     <td className="table-td">
-                      <span className="text-white font-medium">{t.details}</span>
+                      <span className="text-slate-900 font-medium">{t.details}</span>
                     </td>
-                    <td className="table-td text-slate-300">
+                    <td className="table-td text-slate-800">
                       {t.branchName}
                     </td>
                     <td className="table-td">
@@ -167,12 +171,12 @@ export default function TransactionsPage() {
                         ${t.method === 'cash' ? 'bg-emerald-500/20 text-emerald-400' : ''}
                         ${t.method === 'terminal' || t.method === 'karta' ? 'bg-blue-500/20 text-blue-400' : ''}
                         ${t.method === 'qrcode' ? 'bg-purple-500/20 text-purple-400' : ''}
-                        ${t.method === '-' ? 'bg-slate-500/20 text-slate-400' : ''}
+                        ${t.method === '-' ? 'bg-slate-500/20 text-slate-600' : ''}
                       `}>
                         {t.method}
                       </span>
                     </td>
-                    <td className="table-td text-slate-300">
+                    <td className="table-td text-slate-800">
                       {t.adminName}
                     </td>
                     <td className="table-td">
@@ -188,7 +192,7 @@ export default function TransactionsPage() {
                       ) : (
                         <span className="text-rose-400 font-bold">-{t.amount.toLocaleString()}</span>
                       )}
-                       <span className="text-slate-400 text-xs ml-1">so'm</span>
+                       <span className="text-slate-600 text-xs ml-1">so'm</span>
                     </td>
                   </tr>
                 ))}

@@ -96,7 +96,7 @@ export default function CompaniesPage() {
   };
 
   const getLicenseStatus = (date) => {
-    if (!date) return { label: 'Cheksiz', color: 'text-slate-400 bg-slate-800 border-slate-700' };
+    if (!date) return { label: 'Cheksiz', color: 'text-slate-600 bg-slate-100 border-slate-300' };
     const end = new Date(date);
     const now = new Date();
     if (end < now) return { label: 'Tugagan', color: 'text-red-400 bg-red-500/10 border-red-500/20' };
@@ -110,14 +110,14 @@ export default function CompaniesPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <ShieldCheck className="text-primary-400" /> Kompaniyalar (Mijozlar)
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Superadmin boshqaruv paneli</p>
+          <p className="text-slate-600 text-sm mt-1">Superadmin boshqaruv paneli</p>
         </div>
 
         <button onClick={() => setShowAddModal(true)} className="btn-primary">
@@ -126,16 +126,16 @@ export default function CompaniesPage() {
       </div>
 
       {/* Content */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto custom-scrollbar">
           {loading ? (
-            <div className="p-12 text-center text-slate-400">Yuklanmoqda...</div>
+            <div className="p-12 text-center text-slate-600">Yuklanmoqda...</div>
           ) : companies.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">Hech qanday kompaniya topilmadi.</div>
+            <div className="p-12 text-center text-slate-600">Hech qanday kompaniya topilmadi.</div>
           ) : (
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-800/50">
+                <tr className="bg-slate-50">
                   <th className="table-th">ID</th>
                   <th className="table-th">Kompaniya Nomi</th>
                   <th className="table-th">Litsenziya muddati</th>
@@ -148,11 +148,11 @@ export default function CompaniesPage() {
                 {companies.map((company) => {
                   const lic = getLicenseStatus(company.subscriptionEndsAt);
                   return (
-                    <tr key={company.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="table-td text-slate-400 font-mono text-xs">#{company.id}</td>
+                    <tr key={company.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="table-td text-slate-600 font-mono text-xs">#{company.id}</td>
                       <td className="table-td">
-                        <div className="font-bold text-white">{company.name}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">
+                        <div className="font-bold text-slate-900">{company.name}</div>
+                        <div className="text-xs text-slate-600 mt-0.5">
                           Yaratilgan: {format(new Date(company.createdAt), 'dd.MM.yyyy')}
                         </div>
                       </td>
@@ -162,16 +162,16 @@ export default function CompaniesPage() {
                             {lic.label}
                           </span>
                           {company.subscriptionEndsAt && (
-                            <span className="text-sm text-slate-300 flex items-center gap-1">
-                              <CalendarDays size={14} className="text-slate-500"/>
+                            <span className="text-sm text-slate-800 flex items-center gap-1">
+                              <CalendarDays size={14} className="text-slate-600"/>
                               {format(new Date(company.subscriptionEndsAt), 'dd.MM.yyyy')}
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="table-td text-slate-400">
-                        <span className="text-white font-medium">{company._count.branches}</span> ta filial <br/>
-                        <span className="text-white font-medium">{company._count.users}</span> ta xodim
+                      <td className="table-td text-slate-600">
+                        <span className="text-slate-900 font-medium">{company._count.branches}</span> ta filial <br/>
+                        <span className="text-slate-900 font-medium">{company._count.users}</span> ta xodim
                       </td>
                       <td className="table-td">
                         {company.isActive ? (
@@ -200,10 +200,10 @@ export default function CompaniesPage() {
       {/* Add Modal */}
       {showAddModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddModal(false)}>
-          <div className="modal-content w-full max-w-md p-0 bg-slate-900 border border-slate-800">
-            <div className="p-5 border-b border-slate-800 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">Yangi mijoz qo'shish</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white"><X size={20}/></button>
+          <div className="modal-content w-full max-w-md p-0 bg-white border border-slate-200">
+            <div className="p-5 border-b border-slate-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-slate-900">Yangi mijoz qo'shish</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-600 hover:text-slate-900"><X size={20}/></button>
             </div>
             <div className="p-6">
               <form onSubmit={handleAddSubmit} className="space-y-4">
@@ -211,7 +211,7 @@ export default function CompaniesPage() {
                   <label className="label">Kompaniya Nomi</label>
                   <input type="text" required className="input-field" value={companyName} onChange={e => setCompanyName(e.target.value)} />
                 </div>
-                <div className="border-t border-slate-800 pt-4 mt-2">
+                <div className="border-t border-slate-200 pt-4 mt-2">
                   <h3 className="text-sm font-semibold text-primary-400 mb-3">Asosiy Owner Ma'lumotlari</h3>
                   <div className="space-y-4">
                     <div>
@@ -247,10 +247,10 @@ export default function CompaniesPage() {
       {/* Edit Modal */}
       {showEditModal && editingCompany && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowEditModal(false)}>
-          <div className="modal-content w-full max-w-sm p-0 bg-slate-900 border border-slate-800">
-            <div className="p-5 border-b border-slate-800 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">Kompaniyani Tahrirlash</h2>
-              <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-white"><X size={20}/></button>
+          <div className="modal-content w-full max-w-sm p-0 bg-white border border-slate-200">
+            <div className="p-5 border-b border-slate-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-slate-900">Kompaniyani Tahrirlash</h2>
+              <button onClick={() => setShowEditModal(false)} className="text-slate-600 hover:text-slate-900"><X size={20}/></button>
             </div>
             <div className="p-6">
               <form onSubmit={handleEditSubmit} className="space-y-4">
@@ -261,21 +261,21 @@ export default function CompaniesPage() {
                 <div>
                   <label className="label">Litsenziya tugash sanasi</label>
                   <input type="date" className="input-field" value={editSubscription} onChange={e => setEditSubscription(e.target.value)} />
-                  <p className="text-xs text-slate-500 mt-1">Bo'sh qoldirilsa, litsenziya cheksiz bo'ladi.</p>
+                  <p className="text-xs text-slate-600 mt-1">Bo'sh qoldirilsa, litsenziya cheksiz bo'ladi.</p>
                 </div>
                 <div className="flex items-center gap-3 mt-2">
                   <input 
                     type="checkbox" 
                     id="isActiveCheck"
-                    className="w-4 h-4 rounded bg-slate-800 border-slate-700 text-primary-500 focus:ring-primary-500/20"
+                    className="w-4 h-4 rounded bg-slate-100 border-slate-300 text-primary-500 focus:ring-primary-500/20"
                     checked={editIsActive}
                     onChange={e => setEditIsActive(e.target.checked)}
                   />
-                  <label htmlFor="isActiveCheck" className="text-sm font-medium text-slate-300 cursor-pointer">
+                  <label htmlFor="isActiveCheck" className="text-sm font-medium text-slate-800 cursor-pointer">
                     Kompaniya faolmi? (Tizimga kirishiga ruxsat)
                   </label>
                 </div>
-                <div className="pt-4 mt-4 border-t border-slate-800 flex justify-end gap-3">
+                <div className="pt-4 mt-4 border-t border-slate-200 flex justify-end gap-3">
                   <button type="button" onClick={() => setShowEditModal(false)} className="btn-secondary">Bekor qilish</button>
                   <button type="submit" disabled={submitting} className="btn-primary">
                     {submitting ? 'Saqlanmoqda...' : 'Saqlash'}

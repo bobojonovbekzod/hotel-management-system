@@ -8,11 +8,17 @@
   * {
     box-sizing: border-box;
   }
-  
+
   body {
-    @apply bg-slate-900 text-slate-300 font-sans antialiased selection:bg-primary-500/30 selection:text-white;
-    background: #0f172a;
+    @apply font-sans antialiased;
+    background: #f1f5f9;
+    color: #0f172a;
     min-height: 100vh;
+  }
+
+  ::selection {
+    background: rgba(0, 201, 167, 0.3);
+    color: white;
   }
 
   ::-webkit-scrollbar {
@@ -20,13 +26,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-800 rounded-full border-2 border-transparent bg-clip-padding;
+    background: #cbd5e1;
+    border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-700;
+    background: #94a3b8;
   }
 }
 
@@ -35,108 +42,244 @@
     width: 4px;
     height: 4px;
   }
-  
+
+  /* --- Asosiy kartochka --- */
   .card {
-    @apply bg-slate-900/40 backdrop-blur-sm border border-slate-800/80 rounded-2xl p-6 shadow-sm relative overflow-hidden;
-  }
-  
-  .card-hover {
-    @apply card transition-all duration-300 hover:border-slate-700/80 hover:bg-slate-800/40 hover:shadow-lg hover:shadow-black/20;
+    @apply rounded-2xl p-6 relative overflow-hidden;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   }
 
-  .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-500 text-white font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md hover:shadow-primary-500/10 border border-primary-500/50 flex items-center gap-2;
+  .card-hover {
+    @apply card transition-all duration-300;
   }
-  
+  .card-hover:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  /* --- Tugmalar --- */
+  .btn-primary {
+    @apply font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2;
+    background: linear-gradient(135deg, #00C9A7 0%, #00a88c 100%);
+    color: white;
+    border: 1px solid rgba(0, 201, 167, 0.4);
+    box-shadow: 0 2px 12px rgba(0, 201, 167, 0.25);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #00dbb8 0%, #00C9A7 100%);
+    box-shadow: 0 4px 20px rgba(0, 201, 167, 0.35);
+  }
+
   .btn-secondary {
-    @apply bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-sm flex items-center gap-2;
+    @apply font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center gap-2;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+  }
+  .btn-secondary:hover {
+    background: #e2e8f0;
+    color: #334155;
   }
 
   .btn-danger {
-    @apply bg-red-600/90 hover:bg-red-500 text-white font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-sm border border-red-500/50 flex items-center gap-2;
+    @apply font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center gap-2;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+  }
+  .btn-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
   }
 
   .btn-success {
-    @apply bg-emerald-600/90 hover:bg-emerald-500 text-white font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-sm border border-emerald-500/50 flex items-center gap-2;
+    @apply font-medium px-4 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] flex items-center gap-2;
+    background: rgba(0, 201, 167, 0.15);
+    border: 1px solid rgba(0, 201, 167, 0.35);
+    color: #00C9A7;
+  }
+  .btn-success:hover {
+    background: rgba(0, 201, 167, 0.25);
   }
 
+  /* --- Input --- */
   .input-field {
-    @apply w-full bg-slate-900 border border-slate-700/80 text-slate-100 placeholder-slate-500 rounded-xl px-4 focus:outline-none focus:border-primary-500/80 shadow-sm text-sm h-11;
+    @apply w-full rounded-xl px-4 focus:outline-none text-sm h-11 transition-all duration-200;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+  }
+  .input-field::placeholder {
+    color: #94a3b8;
+  }
+  .input-field:focus {
+    border-color: rgba(0, 201, 167, 0.5);
+    box-shadow: 0 0 0 3px rgba(0, 201, 167, 0.08);
   }
 
   .label {
-    @apply block text-[13px] font-medium text-slate-400 mb-1.5 uppercase tracking-wide;
+    @apply block text-[13px] font-medium mb-1.5 tracking-wide;
+    color: #475569;
   }
 
   ::-webkit-calendar-picker-indicator {
-    filter: invert(1);
     cursor: pointer;
     opacity: 0.6;
   }
-  
   ::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
   }
 
+  /* --- Badgelar --- */
   .badge-available {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: rgba(0, 201, 167, 0.12);
+    color: #00C9A7;
+    border: 1px solid rgba(0, 201, 167, 0.25);
   }
 
   .badge-occupied {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.25);
   }
 
   .badge-cleaning {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.25);
   }
 
   .badge-maintenance {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background: rgba(100, 116, 139, 0.12);
+    color: #94a3b8;
+    border: 1px solid rgba(100, 116, 139, 0.25);
   }
 
+  /* --- E-mehmon uslubidagi stat kartochkalar --- */
   .stat-card {
-    @apply card flex items-center gap-4 py-5;
+    @apply rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden transition-all duration-300;
+    color: white;
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .stat-card-purple {
+    background: linear-gradient(135deg, #7B5EA7 0%, #9B59B6 100%);
+    box-shadow: 0 6px 24px rgba(123, 94, 167, 0.35);
+  }
+  .stat-card-blue {
+    background: linear-gradient(135deg, #2980b9 0%, #56CCF2 100%);
+    box-shadow: 0 6px 24px rgba(41, 128, 185, 0.35);
+  }
+  .stat-card-teal {
+    background: linear-gradient(135deg, #00C9A7 0%, #00e5c3 100%);
+    box-shadow: 0 6px 24px rgba(0, 201, 167, 0.35);
+  }
+  .stat-card-orange {
+    background: linear-gradient(135deg, #F7971E 0%, #FFD200 100%);
+    box-shadow: 0 6px 24px rgba(247, 151, 30, 0.35);
+  }
+  .stat-card-red {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    box-shadow: 0 6px 24px rgba(235, 51, 73, 0.35);
   }
 
   .stat-icon {
     @apply w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
   }
 
+  /* --- Modal --- */
   .modal-overlay {
-    @apply fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in;
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease-in-out;
   }
 
   .modal-content {
-    @apply bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up relative;
+    @apply rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    animation: slideUp 0.3s ease-out;
   }
 
+  /* --- Jadval --- */
   .table-row {
-    @apply border-b border-slate-800 hover:bg-slate-800/30 transition-colors duration-150;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background 0.15s;
+  }
+  .table-row:hover {
+    background: #f8fafc;
   }
 
   .table-th {
-    @apply text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider py-3.5 px-4 bg-slate-900/50 border-b border-slate-800;
+    @apply text-left py-3.5 px-4 text-[12px] font-semibold tracking-wider;
+    color: #1e293b;
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
   }
 
   .table-td {
-    @apply py-3.5 px-4 text-sm text-slate-300;
+    @apply py-3.5 px-4 text-sm;
+    color: #0f172a;
   }
 
+  /* --- Xona kartochkalari --- */
   .room-card-available {
-    @apply relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/5 to-transparent hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all duration-300 cursor-pointer p-5 shadow-sm;
+    @apply relative overflow-hidden rounded-2xl transition-all duration-300 cursor-pointer p-5;
+    border: 1px solid rgba(0, 201, 167, 0.25);
+    background: linear-gradient(to bottom, rgba(0, 201, 167, 0.06), transparent);
+  }
+  .room-card-available:hover {
+    border-color: rgba(0, 201, 167, 0.5);
+    background: linear-gradient(to bottom, rgba(0, 201, 167, 0.12), transparent);
   }
 
   .room-card-occupied {
-    @apply relative overflow-hidden rounded-2xl border border-red-500/30 bg-gradient-to-b from-red-500/5 to-transparent hover:border-red-500/50 hover:bg-red-500/10 transition-all duration-300 cursor-pointer p-5 shadow-sm;
+    @apply relative overflow-hidden rounded-2xl transition-all duration-300 cursor-pointer p-5;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: linear-gradient(to bottom, rgba(239, 68, 68, 0.06), transparent);
+  }
+  .room-card-occupied:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: linear-gradient(to bottom, rgba(239, 68, 68, 0.12), transparent);
   }
 
   .room-card-cleaning {
-    @apply relative overflow-hidden rounded-2xl border border-yellow-500/30 bg-gradient-to-b from-yellow-500/5 to-transparent hover:border-yellow-500/50 hover:bg-yellow-500/10 transition-all duration-300 cursor-pointer p-5 shadow-sm;
+    @apply relative overflow-hidden rounded-2xl transition-all duration-300 cursor-pointer p-5;
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    background: linear-gradient(to bottom, rgba(251, 191, 36, 0.06), transparent);
+  }
+  .room-card-cleaning:hover {
+    border-color: rgba(251, 191, 36, 0.5);
+    background: linear-gradient(to bottom, rgba(251, 191, 36, 0.12), transparent);
   }
 
   .room-card-maintenance {
-    @apply relative overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-800/20 transition-all duration-300 cursor-not-allowed p-5 opacity-60;
+    @apply relative overflow-hidden rounded-2xl transition-all duration-300 cursor-not-allowed p-5 opacity-70;
+    border: 1px solid #cbd5e1;
+    background: #f1f5f9;
   }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 
 @media print {

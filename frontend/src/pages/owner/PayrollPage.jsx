@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
-import { Download, Printer, Filter, Calendar, Wallet, CheckCircle, Search, TrendingUp, TrendingDown, DollarSign, X } from 'lucide-react';
+import { Download, Printer, Filter, Calendar, Wallet, CheckCircle, Search, TrendingUp, TrendingDown, DollarSign, X, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function PayrollPage() {
@@ -162,10 +162,10 @@ export default function PayrollPage() {
       <div className="hide-on-print">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
               <Wallet className="text-emerald-400" size={32} /> Oylik maosh
             </h1>
-            <p className="text-slate-400 mt-1">Xodimlarning oylik maoshlari va jarimalarni boshqarish</p>
+            <p className="text-slate-600 mt-1">Xodimlarning oylik maoshlari va jarimalarni boshqarish</p>
           </div>
 
           {user?.role === 'owner' && (
@@ -181,8 +181,8 @@ export default function PayrollPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 mb-6 flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2 text-slate-300">
+        <div className="bg-white shadow-sm border border-slate-200 rounded-2xl p-4 mb-6 flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2 text-slate-800">
             <Filter size={18} className="text-emerald-400" />
             <span className="font-medium">Filtrlar:</span>
           </div>
@@ -212,41 +212,41 @@ export default function PayrollPage() {
         </div>
 
         {/* Report Table */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto custom-scrollbar">
             {loading ? (
-              <div className="p-12 text-center flex flex-col items-center text-slate-400">
+              <div className="p-12 text-center flex flex-col items-center text-slate-600">
                 <div className="w-10 h-10 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mb-4" />
                 Hisoblanmoqda...
               </div>
             ) : report.length === 0 ? (
-              <div className="p-12 text-center text-slate-400">
+              <div className="p-12 text-center text-slate-600">
                 <Search size={48} className="mx-auto mb-4 opacity-20" />
                 <p>Bu oy uchun ma'lumot topilmadi</p>
               </div>
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr className="bg-slate-800/50">
+                  <tr className="bg-slate-50">
                     <th className="table-th text-left">Xodim</th>
                     <th className="table-th text-center">Smenalar</th>
                     <th className="table-th text-right">Kassa Tushumi</th>
-                    <th className="table-th text-right border-l border-slate-700 bg-indigo-500/5 text-indigo-300">Asosiy Oylik</th>
-                    <th className="table-th text-right border-l border-slate-700 bg-indigo-500/5 text-indigo-300">KPI Daromadi</th>
-                    <th className="table-th text-right border-l border-slate-700 bg-emerald-500/5 text-emerald-300">Bonus</th>
-                    <th className="table-th text-right border-l border-slate-700 bg-red-500/5 text-red-300">Jarima</th>
-                    <th className="table-th text-right border-l border-slate-700 bg-orange-500/5 text-orange-300">Avans</th>
-                    <th className="table-th text-right border-l border-slate-700 bg-emerald-500/10 text-emerald-300 font-bold">Qoldiq</th>
-                    <th className="table-th text-center border-l border-slate-800">Boshqaruv</th>
+                    <th className="table-th text-right border-l border-slate-300 bg-indigo-500/5 text-indigo-300">Asosiy Oylik</th>
+                    <th className="table-th text-right border-l border-slate-300 bg-indigo-500/5 text-indigo-300">KPI Daromadi</th>
+                    <th className="table-th text-right border-l border-slate-300 bg-emerald-500/5 text-emerald-300">Bonus</th>
+                    <th className="table-th text-right border-l border-slate-300 bg-red-500/5 text-red-300">Jarima</th>
+                    <th className="table-th text-right border-l border-slate-300 bg-orange-500/5 text-orange-300">Avans</th>
+                    <th className="table-th text-right border-l border-slate-300 bg-emerald-500/10 text-emerald-300 font-bold">Qoldiq</th>
+                    <th className="table-th text-center border-l border-slate-200">Boshqaruv</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
                   {report.map((item) => (
-                    <tr key={item.user.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={item.user.id} className="hover:bg-slate-50 transition-colors">
                       <td className="table-td">
                         <div className="flex flex-col max-w-[200px]">
-                          <span className="font-bold text-white">{item.user.name}</span>
-                          <span className="text-[10px] text-slate-500 uppercase tracking-wider text-right mt-0.5">{item.user.role}</span>
+                          <span className="font-bold text-slate-900">{item.user.name}</span>
+                          <span className="text-[10px] text-slate-600 uppercase tracking-wider text-right mt-0.5">{item.user.role}</span>
                         </div>
                       </td>
                       <td className="table-td text-center">
@@ -256,66 +256,66 @@ export default function PayrollPage() {
                             <span className="text-indigo-400" title="Tungi smena">🌙 {item.stats.nightShifts}</span>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-500">Statik oylik</span>
+                          <span className="text-xs text-slate-600">Statik oylik</span>
                         )}
                       </td>
-                      <td className="table-td text-right font-mono text-sm text-slate-300">
+                      <td className="table-td text-right font-mono text-sm text-slate-800">
                         {item.stats.totalShiftIncome > 0 ? item.stats.totalShiftIncome.toLocaleString() : '-'}
                       </td>
 
-                      <td className="table-td text-right border-l border-slate-700">
+                      <td className="table-td text-right border-l border-slate-300">
                         <span className="text-sm font-bold text-indigo-300">
                           {item.stats.baseSalary.toLocaleString()}
                         </span>
                       </td>
 
-                      <td className="table-td text-right border-l border-slate-700">
+                      <td className="table-td text-right border-l border-slate-300">
                         {item.stats.kpiEarnings > 0 ? (
                           <span className="text-sm font-semibold text-emerald-400">
                             {item.stats.kpiEarnings.toLocaleString()}
                           </span>
                         ) : (
-                          <span className="text-slate-600 text-sm">—</span>
+                          <span className="text-slate-700 text-sm">—</span>
                         )}
                       </td>
 
-                      <td className="table-td text-right border-l border-slate-700">
+                      <td className="table-td text-right border-l border-slate-300">
                         {item.stats.totalBonuses > 0 ? (
                           <span className="text-sm font-semibold text-emerald-400">
                             {item.stats.totalBonuses.toLocaleString()}
                           </span>
                         ) : (
-                          <span className="text-slate-600 text-sm">—</span>
+                          <span className="text-slate-700 text-sm">—</span>
                         )}
                       </td>
 
-                      <td className="table-td text-right border-l border-slate-700">
+                      <td className="table-td text-right border-l border-slate-300">
                         {item.stats.totalPenalties > 0 ? (
                           <span className="text-sm font-semibold text-red-400">
                             {item.stats.totalPenalties.toLocaleString()}
                           </span>
                         ) : (
-                          <span className="text-slate-600 text-sm">—</span>
+                          <span className="text-slate-700 text-sm">—</span>
                         )}
                       </td>
 
-                      <td className="table-td text-right border-l border-slate-700">
+                      <td className="table-td text-right border-l border-slate-300">
                         {item.stats.totalAdvances > 0 ? (
                           <span className="text-sm font-semibold text-orange-400">
                             {item.stats.totalAdvances.toLocaleString()}
                           </span>
                         ) : (
-                          <span className="text-slate-600 text-sm">—</span>
+                          <span className="text-slate-700 text-sm">—</span>
                         )}
                       </td>
 
-                      <td className="table-td text-right border-l border-slate-700 bg-emerald-500/5">
+                      <td className="table-td text-right border-l border-slate-300 bg-emerald-500/5">
                         <span className="text-base font-bold text-emerald-400">
                           {item.stats.totalPayable.toLocaleString()}
                         </span>
                       </td>
 
-                      <td className="table-td text-center border-l border-slate-800/50">
+                      <td className="table-td text-center border-l border-slate-200">
                         <button
                           onClick={() => openFinanceModal(item.user)}
                           title="Moliya"
@@ -389,14 +389,29 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Ushbu amaliyotni o\'chirishni xohlaysizmi?')) return;
+    setSubmitting(true);
+    try {
+      await api.delete(`/payroll/${id}`);
+      toast.success('Amaliyot o\'chirildi');
+      // Update history list and close modal to refresh payroll
+      fetchHistory();
+      onClose(true); 
+    } catch (err) {
+      toast.error('O\'chirishda xatolik yuz berdi');
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose(false)}>
-      <div className="modal-content w-full max-w-lg p-0 bg-slate-900 border border-slate-800 overflow-hidden">
-        <div className="flex justify-between items-center p-5 border-b border-slate-800 bg-slate-900/80">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+      <div className="modal-content w-full max-w-lg p-0 bg-white border border-slate-200 overflow-hidden">
+        <div className="flex justify-between items-center p-5 border-b border-slate-200 bg-white shadow-sm">
+          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <Wallet className="text-indigo-400" /> {user.name} - Moliya
           </h2>
-          <button onClick={() => onClose(false)} className="p-2 text-slate-400 hover:text-white transition-colors bg-slate-800 rounded-lg hover:bg-slate-700">
+          <button onClick={() => onClose(false)} className="p-2 text-slate-600 hover:text-slate-900 transition-colors bg-slate-100 rounded-lg hover:bg-slate-700">
             <X size={20} />
           </button>
         </div>
@@ -406,18 +421,18 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
             <div>
               <label className="label">Amaliyot turini tanlang</label>
               <div className="grid grid-cols-2 gap-3">
-                <button type="button" onClick={() => setTxType('penalty')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'penalty' ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
+                <button type="button" onClick={() => setTxType('penalty')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'penalty' ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-700'}`}>
                   <TrendingDown size={18} className="mx-auto mb-1" /> Jarima (- )
                 </button>
                 {currentUser?.role === 'owner' && (
                   <>
-                    <button type="button" onClick={() => setTxType('advance')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'advance' ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
+                    <button type="button" onClick={() => setTxType('advance')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'advance' ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]' : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-700'}`}>
                       <Wallet size={18} className="mx-auto mb-1" /> Avans (- )
                     </button>
-                    <button type="button" onClick={() => setTxType('bonus')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'bonus' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
+                    <button type="button" onClick={() => setTxType('bonus')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'bonus' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-700'}`}>
                       <TrendingUp size={18} className="mx-auto mb-1" /> Bonus (+ )
                     </button>
-                    <button type="button" onClick={() => setTxType('salary_payment')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'salary_payment' ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
+                    <button type="button" onClick={() => setTxType('salary_payment')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'salary_payment' ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-700'}`}>
                       <CheckCircle size={18} className="mx-auto mb-1" /> Oylik to'lash
                     </button>
                   </>
@@ -427,7 +442,7 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
 
             <div>
               <label className="label">Summa (so'm)</label>
-              <input type="number" className="input-field text-lg font-bold text-white bg-slate-950" placeholder="100000" value={txAmount} onChange={e => setTxAmount(e.target.value)} required />
+              <input type="number" className="input-field text-lg font-bold text-slate-900 bg-slate-950" placeholder="100000" value={txAmount} onChange={e => setTxAmount(e.target.value)} required />
             </div>
 
             <div>
@@ -445,22 +460,33 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
 
           {history.length > 0 && (
             <div className="mt-8">
-              <p className="text-xs uppercase text-slate-500 font-bold mb-3 tracking-wider">So'nggi operatsiyalar</p>
+              <p className="text-xs uppercase text-slate-600 font-bold mb-3 tracking-wider">So'nggi operatsiyalar</p>
               <div className="space-y-2">
                 {history.map(tx => (
-                  <div key={tx.id} className="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                    <div>
+                  <div key={tx.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-300">
+                    <div className="flex-1">
                       <span className={`text-xs font-bold px-2 py-1 rounded-md mr-2 ${tx.type === 'penalty' ? 'text-red-400 bg-red-500/10' :
                         tx.type === 'advance' ? 'text-orange-400 bg-orange-500/10' :
                           tx.type === 'bonus' ? 'text-emerald-400 bg-emerald-500/10' :
                             tx.type === 'salary_payment' ? 'text-indigo-400 bg-indigo-500/10' :
-                              'text-slate-400 bg-slate-500/10'
+                              'text-slate-600 bg-slate-500/10'
                         }`}>
                         {tx.type === 'penalty' ? 'Jarima' : tx.type === 'advance' ? 'Avans' : tx.type === 'bonus' ? 'Bonus' : tx.type === 'salary_payment' ? 'Oylik' : tx.type}
                       </span>
-                      <span className="text-slate-400 text-xs">{new Date(tx.date).toLocaleDateString()}</span>
+                      <span className="text-slate-600 text-xs">{new Date(tx.date).toLocaleDateString()}</span>
                     </div>
-                    <span className="font-mono text-sm font-bold text-white">{tx.amount.toLocaleString()}</span>
+                    <span className="font-mono text-sm font-bold text-slate-900 mr-3">{tx.amount.toLocaleString()}</span>
+                    {currentUser?.role === 'owner' && (
+                      <button 
+                        type="button" 
+                        onClick={() => handleDelete(tx.id)} 
+                        disabled={submitting} 
+                        className="text-slate-600 hover:text-red-400 p-1.5 hover:bg-red-500/10 rounded-md transition-colors" 
+                        title="O'chirish"
+                      >
+                         <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

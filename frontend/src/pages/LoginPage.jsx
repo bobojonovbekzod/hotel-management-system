@@ -42,14 +42,14 @@ export default function LoginPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-900/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-md p-4 animate-fade-in">
+      <div className="relative w-full max-w-md p-4">
         {/* Logo / Title */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary-600 to-primary-400 rounded-2xl flex items-center justify-center shadow-2xl shadow-primary-500/30">
-            <Hotel className="text-white w-8 h-8" />
+            <Hotel className="text-slate-900 w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-1">Hotel Manager</h1>
-          <p className="text-slate-400">Boshqaruv tizimiga kiring</p>
+          <h1 className="text-3xl font-bold text-slate-900 mb-1">Hotel Manager</h1>
+          <p className="text-slate-600">Boshqaruv tizimiga kiring</p>
         </div>
 
         {/* Form */}
@@ -58,7 +58,7 @@ export default function LoginPage() {
             <div>
               <label className="label">Foydalanuvchi nomi</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">👤</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-lg">👤</span>
                 <input
                   id="username-input"
                   type="text"
@@ -74,7 +74,7 @@ export default function LoginPage() {
             <div>
               <label className="label">Parol</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
                 <input
                   id="password-input"
                   type={showPass ? 'text' : 'password'}
@@ -86,7 +86,7 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900 transition-colors"
                   onClick={() => setShowPass(!showPass)}
                 >
                   {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -115,7 +115,7 @@ export default function LoginPage() {
 
         </div>
 
-        <p className="text-center text-slate-600 text-xs mt-6">
+        <p className="text-center text-slate-700 text-xs mt-6">
           Hotel Management System © 2026
         </p>
       </div>

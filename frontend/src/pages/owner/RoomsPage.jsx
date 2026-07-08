@@ -15,7 +15,7 @@ const statusColors = {
   available: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   occupied: 'bg-red-500/10 text-red-400 border-red-500/20',
   cleaning: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  maintenance: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  maintenance: 'bg-slate-500/10 text-slate-600 border-slate-500/20',
 };
 
 export default function RoomsPage() {
@@ -159,14 +159,14 @@ export default function RoomsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-10">
+    <div className="space-y-6 pb-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <BedDouble className="text-primary-400" /> Xonalar boshqaruvi
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Mehmonxona xonalari va ularning narxlari</p>
+          <p className="text-slate-600 text-sm mt-1">Mehmonxona xonalari va ularning narxlari</p>
         </div>
 
         <div className="flex gap-3 items-center">
@@ -192,22 +192,22 @@ export default function RoomsPage() {
       </div>
 
       {/* Content */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto custom-scrollbar">
           {loading ? (
-            <div className="p-12 text-center text-slate-400 flex flex-col items-center">
+            <div className="p-12 text-center text-slate-600 flex flex-col items-center">
               <div className="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mb-4" />
               Yuklanmoqda...
             </div>
           ) : rooms.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">
+            <div className="p-12 text-center text-slate-600">
               <BedDouble size={48} className="mx-auto mb-4 opacity-20" />
               <p>Bu filialda xonalar topilmadi</p>
             </div>
           ) : (
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-800/50">
+                <tr className="bg-slate-50">
                   <th className="table-th">Xona raqami</th>
                   <th className="table-th">Turi</th>
                   <th className="table-th">Qavat / Sig'im</th>
@@ -218,18 +218,18 @@ export default function RoomsPage() {
               </thead>
               <tbody className="divide-y divide-slate-800/50">
                 {rooms.map((room) => (
-                  <tr key={room.id} className="hover:bg-slate-800/30 transition-colors">
+                  <tr key={room.id} className="hover:bg-slate-50 transition-colors">
                     <td className="table-td">
-                      <div className="font-bold text-lg text-white">№ {room.roomNumber}</div>
+                      <div className="font-bold text-lg text-slate-900">№ {room.roomNumber}</div>
                     </td>
                     <td className="table-td">
-                      <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-sm border border-slate-700 capitalize">
+                      <span className="bg-slate-100 text-slate-800 px-3 py-1 rounded-full text-sm border border-slate-300 capitalize">
                         {room.roomType.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="table-td text-slate-300">
+                    <td className="table-td text-slate-800">
                       <div>{room.floor}-qavat</div>
-                      <div className="text-sm text-slate-500">{room.capacity} kishilik</div>
+                      <div className="text-sm text-slate-600">{room.capacity} kishilik</div>
                     </td>
                     <td className="table-td">
                       <div className="font-bold text-emerald-400">
@@ -262,13 +262,13 @@ export default function RoomsPage() {
       {/* Add / Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal-content w-full max-w-md p-0 bg-slate-900 border border-slate-800 flex flex-col max-h-[90vh]">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800 bg-slate-900/80 shrink-0">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <div className="modal-content w-full max-w-md p-0 bg-white border border-slate-200 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-200 bg-white shadow-sm shrink-0">
+              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <BedDouble className="text-primary-400" />
                 {editingRoom ? 'Xonani tahrirlash' : 'Yangi xona qo\'shish'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">
+              <button onClick={() => setShowModal(false)} className="p-2 text-slate-600 hover:text-slate-900 bg-slate-100 rounded-lg hover:bg-slate-700 transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -305,7 +305,7 @@ export default function RoomsPage() {
                     <button 
                       type="button" 
                       onClick={() => setShowCategoryModal(true)}
-                      className="px-4 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl border border-slate-700 transition-colors flex items-center justify-center"
+                      className="px-4 bg-slate-100 text-slate-800 hover:text-slate-900 hover:bg-slate-700 rounded-xl border border-slate-300 transition-colors flex items-center justify-center"
                       title="Yangi xona turi qo'shish"
                     >
                       <Plus size={18} />
@@ -363,7 +363,7 @@ export default function RoomsPage() {
 
               </div>
 
-              <div className="p-5 border-t border-slate-800 flex justify-end gap-3 bg-slate-900/80 shrink-0">
+              <div className="p-5 border-t border-slate-200 flex justify-end gap-3 bg-white shadow-sm shrink-0">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">
                   Bekor qilish
                 </button>
@@ -379,10 +379,10 @@ export default function RoomsPage() {
       {/* Category Add Modal */}
       {showCategoryModal && (
         <div className="modal-overlay z-[60]" onClick={e => e.target === e.currentTarget && setShowCategoryModal(false)}>
-          <div className="modal-content w-full max-w-sm p-0 bg-slate-900 border border-slate-800 flex flex-col">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800 bg-slate-900/80">
-              <h2 className="text-lg font-bold text-white">Yangi xona turi</h2>
-              <button onClick={() => setShowCategoryModal(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors">
+          <div className="modal-content w-full max-w-sm p-0 bg-white border border-slate-200 flex flex-col">
+            <div className="flex justify-between items-center p-5 border-b border-slate-200 bg-white shadow-sm">
+              <h2 className="text-lg font-bold text-slate-900">Yangi xona turi</h2>
+              <button onClick={() => setShowCategoryModal(false)} className="p-2 text-slate-600 hover:text-slate-900 bg-slate-100 rounded-lg hover:bg-slate-700 transition-colors">
                 <X size={20} />
               </button>
             </div>

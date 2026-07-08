@@ -65,22 +65,22 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
           <Settings className="text-primary-400" /> Profil Sozlamalari
         </h1>
-        <p className="text-slate-400 text-sm mt-1">Shaxsiy ma'lumotlaringiz va tizimga kirish parolingizni o'zgartirish</p>
+        <p className="text-slate-600 text-sm mt-1">Shaxsiy ma'lumotlaringiz va tizimga kirish parolingizni o'zgartirish</p>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
           
           {/* Shaxsiy ma'lumotlar */}
           <div>
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
-              <User size={20} className="text-slate-400" /> Shaxsiy ma'lumotlar
+            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2 mb-4">
+              <User size={20} className="text-slate-600" /> Shaxsiy ma'lumotlar
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -106,14 +106,14 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <hr className="border-slate-800" />
+          <hr className="border-slate-200" />
 
           {/* Xavfsizlik va Parol */}
           <div>
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
-              <Lock size={20} className="text-slate-400" /> Xavfsizlik (Parolni o'zgartirish)
+            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2 mb-4">
+              <Lock size={20} className="text-slate-600" /> Xavfsizlik (Parolni o'zgartirish)
             </h2>
-            <p className="text-sm text-slate-400 mb-6">Agar parolni o'zgartirishni xohlamasangiz, bu qatorlarni bo'sh qoldiring.</p>
+            <p className="text-sm text-slate-600 mb-6">Agar parolni o'zgartirishni xohlamasangiz, bu qatorlarni bo'sh qoldiring.</p>
             
             <div className="space-y-4 max-w-md">
               <div>

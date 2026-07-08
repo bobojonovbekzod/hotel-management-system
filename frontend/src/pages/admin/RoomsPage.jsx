@@ -19,7 +19,7 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="fixed inset-0 z-[100] bg-red-900/90 flex flex-col items-center justify-center p-8 text-white">
+        <div className="fixed inset-0 z-[100] bg-red-900/90 flex flex-col items-center justify-center p-8 text-slate-900">
           <h2 className="text-3xl font-bold mb-4">Modal xatosi (Crash)</h2>
           <pre className="bg-black/50 p-6 rounded-xl w-full max-w-2xl overflow-auto text-sm">{this.state.errorMsg}</pre>
           <button onClick={this.props.onClose} className="mt-6 px-6 py-2 bg-white text-red-900 font-bold rounded-lg hover:bg-slate-200">Yopish</button>
@@ -72,8 +72,8 @@ export default function AdminRoomsPage() {
     fetchRooms();
     fetchActiveShift();
 
-    // Socket ulash
-    const s = io(import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin));
+    // Socket ulash - Vite proxy (dev) yoki Nginx (prod) orqali
+    const s = io();
     setSocket(s);
     if (user?.branchId) s.emit('join-branch', user.branchId);
 
@@ -150,21 +150,21 @@ export default function AdminRoomsPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm font-medium text-slate-400">Xonalar yuklanmoqda...</p>
+          <p className="text-sm font-medium text-slate-600">Xonalar yuklanmoqda...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <BedDouble className="text-primary-400" /> Xonalar holati
           </h1>
-          <p className="text-slate-400 text-sm mt-1 font-medium">Real vaqtda yangilanib turadi</p>
+          <p className="text-slate-600 text-sm mt-1 font-medium">Real vaqtda yangilanib turadi</p>
         </div>
         
         {user?.role !== 'owner' && (
@@ -184,7 +184,7 @@ export default function AdminRoomsPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Jami xonalar', count: counts.total, icon: BedDouble, color: 'text-slate-300' },
+          { label: 'Jami xonalar', count: counts.total, icon: BedDouble, color: 'text-slate-800' },
           { label: 'Bo\'sh', count: counts.available, icon: CheckCircle2, color: 'text-emerald-400' },
           { label: 'Band', count: counts.occupied, icon: User, color: 'text-red-400' },
           { label: 'Tozalanmoqda', count: counts.cleaning, icon: Sparkles, color: 'text-yellow-400' },
@@ -193,10 +193,10 @@ export default function AdminRoomsPage() {
           return (
             <div key={s.label} className="card flex items-center justify-between p-5">
               <div>
-                <p className="text-[13px] font-medium text-slate-400 uppercase tracking-wider mb-1">{s.label}</p>
+                <p className="text-[13px] font-medium text-slate-600 uppercase tracking-wider mb-1">{s.label}</p>
                 <div className={`text-3xl font-bold ${s.color}`}>{s.count}</div>
               </div>
-              <div className={`w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center ${s.color}`}>
+              <div className={`w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center ${s.color}`}>
                 <Icon size={24} />
               </div>
             </div>
@@ -205,7 +205,7 @@ export default function AdminRoomsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 flex-wrap bg-slate-900/40 p-2 rounded-2xl border border-slate-800 w-fit">
+      <div className="flex gap-2 flex-wrap bg-white shadow-sm p-2 rounded-2xl border border-slate-200 w-fit">
         {[
           { key: 'all', label: `Hammasi (${counts.total})` },
           { key: 'available', label: `Bo'sh (${counts.available})` },
@@ -217,8 +217,8 @@ export default function AdminRoomsPage() {
             onClick={() => setFilter(f.key)}
             className={`px-4 py-2 rounded-xl text-[13px] font-semibold transition-all duration-200 ${
               filter === f.key
-                ? 'bg-slate-700 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
+                ? 'bg-slate-700 text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             {f.label}
@@ -241,15 +241,15 @@ export default function AdminRoomsPage() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <span className="text-2xl font-bold text-white tracking-tight">{room.roomNumber}</span>
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">{room.roomType.replace(/_/g, ' ')}</p>
+                  <span className="text-2xl font-bold text-slate-900 tracking-tight">{room.roomNumber}</span>
+                  <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider mt-0.5">{room.roomType.replace(/_/g, ' ')}</p>
                 </div>
-                <div className={`p-2 rounded-full bg-slate-900/50 ${cfg.color.replace('room-card-', 'text-').replace('-available', '-emerald-400').replace('-occupied', '-red-400').replace('-cleaning', '-yellow-400').replace('-maintenance', '-slate-400')}`}>
+                <div className={`p-2 rounded-full bg-white shadow-sm ${cfg.color.replace('room-card-', 'text-').replace('-available', '-emerald-400').replace('-occupied', '-red-400').replace('-cleaning', '-yellow-400').replace('-maintenance', '-slate-400')}`}>
                   <StatusIcon size={16} />
                 </div>
               </div>
               
-              <div className="text-sm font-semibold text-slate-200 mb-3 bg-slate-900/40 inline-block px-2 py-1 rounded-md">
+              <div className="text-sm font-semibold text-slate-900 mb-3 bg-white shadow-sm inline-block px-2 py-1 rounded-md">
                 {room.pricePerNight?.toLocaleString('uz-UZ')} so'm
               </div>
               
@@ -261,12 +261,12 @@ export default function AdminRoomsPage() {
                   </span>
                 )}
                 {room.status === 'cleaning' && <span className="text-yellow-400 flex items-center gap-1.5"><Sparkles size={14}/> Tozalanmoqda</span>}
-                {room.status === 'maintenance' && <span className="text-slate-400 flex items-center gap-1.5"><Wrench size={14}/> Ta'mirlash</span>}
+                {room.status === 'maintenance' && <span className="text-slate-600 flex items-center gap-1.5"><Wrench size={14}/> Ta'mirlash</span>}
               </div>
               
               {user?.role === 'owner' && (
-                <div className="mt-3 pt-3 border-t border-slate-700/30">
-                  <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                <div className="mt-3 pt-3 border-t border-slate-300">
+                  <span className="text-[10px] font-medium text-slate-600 uppercase tracking-wider">
                     {room.branch?.name?.split('-')[0] || 'Filial'}
                   </span>
                 </div>
@@ -283,26 +283,26 @@ export default function AdminRoomsPage() {
       </div>
 
       {filteredRooms.length === 0 && (
-        <div className="card py-16 text-center border-slate-800">
-          <BedDouble size={48} className="mx-auto mb-4 text-slate-600" />
-          <p className="text-slate-400 font-medium">Bu holatda xona yo'q</p>
+        <div className="card py-16 text-center border-slate-200">
+          <BedDouble size={48} className="mx-auto mb-4 text-slate-700" />
+          <p className="text-slate-600 font-medium">Bu holatda xona yo'q</p>
         </div>
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 p-4 rounded-xl bg-slate-900/40 border border-slate-800 w-fit">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-2">Ma'lumot:</p>
+      <div className="flex flex-wrap items-center gap-4 p-4 rounded-xl bg-white shadow-sm border border-slate-200 w-fit">
+        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mr-2">Ma'lumot:</p>
         {Object.entries(statusConfig).map(([key, val]) => {
           const Icon = val.icon;
           return (
-            <div key={key} className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+            <div key={key} className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
               <Icon size={14} className={val.dot.split(' ')[0].replace('bg-', 'text-')} />
               {val.label}
             </div>
           )
         })}
         {user?.role !== 'owner' && (
-          <div className="text-xs font-medium text-slate-500 border-l border-slate-700 pl-4 ml-2">
+          <div className="text-xs font-medium text-slate-600 border-l border-slate-300 pl-4 ml-2">
             Bo'sh xonaga bosing → check-in | Band xonaga bosing → check-out
           </div>
         )}

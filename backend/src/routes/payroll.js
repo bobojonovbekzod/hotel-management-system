@@ -16,9 +16,11 @@ router.get('/', authenticate, authorize('owner'), async (req, res) => {
     let targetBranchId = branchId ? parseInt(branchId) : null;
     if (req.user.role === 'director') targetBranchId = req.user.branchId;
 
-    const whereUser = { companyId: req.user.companyId, isActive: true };
-    // We don't filter users by branchId here anymore, because a user from another branch might have worked here.
-    // Instead, we will filter the actual work records by targetBranchId.
+    const whereUser = { 
+      companyId: req.user.companyId, 
+      isActive: true,
+      role: { not: 'owner' }
+    };
 
     const allUsers = await prisma.user.findMany({
       where: whereUser,
@@ -255,19 +257,79 @@ router.post('/', authenticate, async (req, res) => {
 
     // Agar bu oylik to'lovi (salary_payment) bo'lsa, xarajat (Expense) sifatida ham yozib qo'yamiz
     if (type === 'salary_payment' || type === 'advance') {
+      let category = await prisma.expenseCategory.findFirst({
+        where: { companyId: user.companyId, name: 'Xodimlar maoshi' }
+      });
+      
+      if (!category) {
+        category = await prisma.expenseCategory.create({
+          data: {
+            companyId: user.companyId,
+            name: 'Xodimlar maoshi'
+          }
+        });
+      }
+
       await prisma.expense.create({
         data: {
           companyId: user.companyId,
           branchId: user.branchId || req.user.branchId || 1,
           adminId: req.user.id,
-          category: 'salary',
+          categoryId: category.id,
           amount: parseFloat(amount),
-          description: `${type === 'advance' ? 'Avans' : 'Oylik to\'lovi'} - ${user.name} (${description || ''})`
+          description: `${type === 'advance' ? 'Avans' : 'Oylik to\'lovi'} - ${user.name} ${description ? `(${description})` : ''}`
         }
       });
     }
 
     res.json({ success: true, data: tx, message: 'Operatsiya muvaffaqiyatli saqlandi' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
+// Tranzaksiyani o'chirish
+router.delete('/:id', authenticate, async (req, res) => {
+  try {
+    if (!canManagePayroll(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Faqat rahbarlar moliyaviy operatsiya qila oladi.' });
+    }
+
+    const txId = parseInt(req.params.id);
+    const tx = await prisma.payrollTransaction.findUnique({
+      where: { id: txId },
+      include: { user: true }
+    });
+
+    if (!tx || tx.companyId !== req.user.companyId) {
+      return res.status(404).json({ success: false, message: 'Tranzaksiya topilmadi' });
+    }
+
+    // Tranzaksiya o'chirilayotganda, agar u xarajat bo'lsa, xarajatlardan ham o'chiramiz
+    if (tx.type === 'salary_payment' || tx.type === 'advance') {
+      const descPrefix = `${tx.type === 'advance' ? 'Avans' : 'Oylik to\'lovi'} - ${tx.user.name}`;
+      
+      const relatedExpense = await prisma.expense.findFirst({
+        where: {
+          companyId: tx.companyId,
+          amount: tx.amount,
+          description: { startsWith: descPrefix },
+          createdAt: {
+            gte: new Date(tx.date.getTime() - 60000), // 1 daqiqa farq bilan qidirish
+            lte: new Date(tx.date.getTime() + 60000)
+          }
+        }
+      });
+
+      if (relatedExpense) {
+        await prisma.expense.delete({ where: { id: relatedExpense.id } });
+      }
+    }
+
+    await prisma.payrollTransaction.delete({ where: { id: txId } });
+
+    res.json({ success: true, message: 'Amaliyot muvaffaqiyatli o\'chirildi' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server xatosi.' });
