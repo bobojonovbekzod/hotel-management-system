@@ -105,20 +105,31 @@ export default function AdminShiftPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div className="bg-slate-50 rounded-xl p-4 text-center">
               <p className="text-xs text-slate-600 mb-1">Boshlanish vaqti</p>
               <p className="font-bold text-slate-900">{format(new Date(activeShift.startTime), 'HH:mm')}</p>
               <p className="text-xs text-slate-600">{format(new Date(activeShift.startTime), 'dd.MM.yyyy')}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-4 text-center">
-              <p className="text-xs text-slate-600 mb-1">Smenada bronlar</p>
+              <p className="text-xs text-slate-600 mb-1">Bronlar</p>
               <p className="text-3xl font-bold text-primary-400">{activeShift._count?.bookings || 0}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center col-span-2 md:col-span-1">
-              <p className="text-xs text-slate-600 mb-1">Smenada tushum</p>
+            <div className="bg-slate-50 rounded-xl p-4 text-center">
+              <p className="text-xs text-slate-600 mb-1">Jami tushum</p>
               <p className="text-xl font-bold text-emerald-400">{activeShift.totalIncome?.toLocaleString()}</p>
-              <p className="text-xs text-slate-600">so'm</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-4 text-center">
+              <p className="text-xs text-slate-600 mb-1">Terminal</p>
+              <p className="text-xl font-bold text-blue-500">{terminal.toLocaleString()}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-4 text-center">
+              <p className="text-xs text-slate-600 mb-1">QrCode</p>
+              <p className="text-xl font-bold text-orange-500">{qrcode.toLocaleString()}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-4 text-center">
+              <p className="text-xs text-slate-600 mb-1">Naqd (Kassada)</p>
+              <p className="text-xl font-bold text-green-600">{cashBalance.toLocaleString()}</p>
             </div>
           </div>
 
@@ -194,7 +205,7 @@ export default function AdminShiftPage() {
       {/* Shifts history */}
       <div className="card">
         <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <FileText size={18} className="text-primary-400" /> Bu oylik smenalar
+          <FileText size={18} className="text-primary-400" /> Bugungi smenalar
         </h3>
         {loading ? (
           <div className="py-8 text-center text-slate-600">Yuklanmoqda...</div>
@@ -202,7 +213,7 @@ export default function AdminShiftPage() {
           <div className="py-8 text-center text-slate-600">Smena tarixi yo'q</div>
         ) : (
           <div className="space-y-2">
-            {shifts.map((shift) => (
+            {shifts.filter(s => format(new Date(s.startTime), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')).map((shift) => (
               <div key={shift.id}
                 className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-300">
                 <div className="flex items-center gap-3">
