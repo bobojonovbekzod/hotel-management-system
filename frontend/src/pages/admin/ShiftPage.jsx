@@ -214,42 +214,7 @@ export default function AdminShiftPage() {
         </div>
       </div>
 
-      {/* Shifts history */}
-      <div className="card">
-        <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <FileText size={18} className="text-primary-400" /> Bugungi smenalar
-        </h3>
-        {loading ? (
-          <div className="py-8 text-center text-slate-600">Yuklanmoqda...</div>
-        ) : shifts.length === 0 ? (
-          <div className="py-8 text-center text-slate-600">Smena tarixi yo'q</div>
-        ) : (
-          <div className="space-y-2">
-            {shifts.filter(s => format(new Date(s.startTime), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')).map((shift) => (
-              <div key={shift.id}
-                className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-300">
-                <div className="flex items-center gap-3">
-                  <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
-                    shift.shiftType === 'morning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'
-                  }`}>
-                    {shift.shiftType === 'morning' ? 'Kunduzgi' : 'Tungi'}
-                  </span>
-                  <div>
-                    <p className="text-sm text-slate-900 font-medium">
-                      {format(new Date(shift.startTime), 'dd.MM.yyyy HH:mm')}
-                      {shift.endTime && ` → ${format(new Date(shift.endTime), 'HH:mm')}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-emerald-400">{shift.totalIncome.toLocaleString()} so'm</p>
-                  <p className="text-xs text-slate-600">{shift._count?.bookings || 0} bron</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+
   
       {showCloseModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
