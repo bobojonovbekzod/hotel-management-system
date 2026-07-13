@@ -130,6 +130,11 @@ const supervisorNav = [
   { path: '/supervisor/devices', icon: Server, label: 'Face ID Qurilmalari' },
 ];
 
+const hrNav = [
+  { path: '/owner/hr', icon: LayoutDashboard, label: 'HR Dashboard' },
+  { path: '/owner/staff', icon: Users, label: 'Xodimlar' },
+];
+
 function ClockDisplay() {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
@@ -195,6 +200,7 @@ export default function Layout({ children }) {
     user?.role === 'director' ? directorNav :
     user?.role === 'supervisor' ? supervisorNav :
     user?.role === 'superadmin' ? superadminNav :
+    user?.role === 'hr' ? hrNav :
     user?.role === 'owner' ? null : [];
   };
 
@@ -212,6 +218,7 @@ export default function Layout({ children }) {
       director: { label: 'Direktor', color: 'text-purple-400 bg-purple-400/10 border-purple-400/20' },
       supervisor: { label: 'Nazoratchi', color: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20' },
       admin: { label: 'Admin', color: 'text-primary-400 bg-primary-400/10 border-primary-400/20' },
+      hr: { label: 'HR', color: 'text-pink-400 bg-pink-400/10 border-pink-400/20' },
       cleaner: { label: 'Tozalik', color: 'text-slate-400 bg-slate-400/10 border-slate-400/20' },
     };
     return badges[user?.role] || badges.admin;

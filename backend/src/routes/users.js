@@ -10,7 +10,7 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 // GET /api/users - Foydalanuvchilar ro'yxati
-router.get('/', authenticate, authorize('owner', 'director'), async (req, res) => {
+router.get('/', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
   try {
     const where = { companyId: req.user.companyId };
     if (req.user.role === 'director') {
@@ -25,7 +25,7 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
       select: {
         id: true, name: true, username: true, role: true, phone: true,
         salary: true, salaryType: true, kpiPercentage: true, isActive: true, createdAt: true,
-        isFaceRegistered: true, photoUrl: true,
+        isFaceRegistered: true, photoUrl: true, birthDate: true, gender: true, telegram: true,
         branch: { select: { id: true, name: true } },
       },
       orderBy: [{ branchId: 'asc' }, { role: 'asc' }, { name: 'asc' }],
@@ -38,9 +38,9 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
 });
 
 // POST /api/users - Yangi foydalanuvchi
-router.post('/', authenticate, authorize('owner', 'director'), async (req, res) => {
+router.post('/', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
   try {
-    const { name, username, password, role, phone, salary, salaryType, kpiPercentage, branchId } = req.body;
+    const { name, username, password, role, phone, salary, salaryType, kpiPercentage, branchId, birthDate, gender, telegram } = req.body;
 
     const targetBranchId = req.user.role === 'director' ? req.user.branchId : (branchId ? parseInt(branchId) : null);
 
@@ -56,7 +56,10 @@ router.post('/', authenticate, authorize('owner', 'director'), async (req, res) 
         salaryType: salaryType || 'static',
         salary: parseFloat(salary || 0), 
         kpiPercentage: kpiPercentage ? parseFloat(kpiPercentage) : 0,
-        branchId: targetBranchId 
+        branchId: targetBranchId,
+        birthDate: birthDate ? new Date(birthDate) : null,
+        gender: gender || null,
+        telegram: telegram || null
       },
     });
 
@@ -71,13 +74,24 @@ router.post('/', authenticate, authorize('owner', 'director'), async (req, res) 
 });
 
 // PUT /api/users/:id
-router.put('/:id', authenticate, authorize('owner', 'director'), async (req, res) => {
+router.put('/:id', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
   try {
-    const { name, phone, salary, salaryType, kpiPercentage, isActive, role } = req.body;
+    const { name, phone, salary, salaryType, kpiPercentage, isActive, role, birthDate, gender, telegram } = req.body;
     const user = await prisma.user.update({
       where: { id: parseInt(req.params.id), companyId: req.user.companyId },
-      data: { name, phone, salaryType: salaryType || undefined, salary: salary ? parseFloat(salary) : undefined, kpiPercentage: kpiPercentage !== undefined ? parseFloat(kpiPercentage) : undefined, isActive, role },
-      select: { id: true, name: true, username: true, role: true, phone: true, salaryType: true, salary: true, kpiPercentage: true, isActive: true, isFaceRegistered: true, photoUrl: true },
+      data: { 
+        name, 
+        phone, 
+        salaryType: salaryType || undefined, 
+        salary: salary !== undefined && salary !== null && salary !== '' ? parseFloat(salary) : undefined, 
+        kpiPercentage: kpiPercentage !== undefined && kpiPercentage !== null && kpiPercentage !== '' ? parseFloat(kpiPercentage) : undefined, 
+        isActive, 
+        role,
+        birthDate: birthDate ? new Date(birthDate) : null,
+        gender: gender || null,
+        telegram: telegram || null
+      },
+      select: { id: true, name: true, username: true, role: true, phone: true, salaryType: true, salary: true, kpiPercentage: true, isActive: true, isFaceRegistered: true, photoUrl: true, birthDate: true, gender: true, telegram: true },
     });
     res.json({ success: true, data: user });
   } catch (error) {
@@ -86,7 +100,7 @@ router.put('/:id', authenticate, authorize('owner', 'director'), async (req, res
 });
 
 // POST /api/users/:id/face - Yuz rasmini yuklash va Hikvisionga jo'natish
-router.post('/:id/face', authenticate, authorize('owner', 'director'), async (req, res) => {
+router.post('/:id/face', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
   try {
     const { deviceId, base64Image } = req.body;
     const userId = parseInt(req.params.id);
@@ -155,7 +169,7 @@ router.post('/:id/face', authenticate, authorize('owner', 'director'), async (re
 });
 
 // DELETE /api/users/:id/face
-router.delete('/:id/face', authenticate, authorize('owner', 'director', 'supervisor', 'admin'), async (req, res) => {
+router.delete('/:id/face', authenticate, authorize('owner', 'director', 'supervisor', 'admin', 'hr'), async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -191,7 +205,7 @@ router.delete('/:id/face', authenticate, authorize('owner', 'director', 'supervi
 });
 
 // DELETE /api/users/:id
-router.delete('/:id', authenticate, authorize('owner'), async (req, res) => {
+router.delete('/:id', authenticate, authorize('owner', 'hr'), async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     
@@ -233,7 +247,7 @@ router.delete('/:id', authenticate, authorize('owner'), async (req, res) => {
 });
 
 // GET /api/users/hr-stats - HR Dashboard statistikasi
-router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor', 'hr'), async (req, res) => {
   try {
     const where = { companyId: req.user.companyId, role: { notIn: ['owner', 'superadmin'] } };
     if (req.user.role === 'director') where.branchId = req.user.branchId;
@@ -242,13 +256,55 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
       where,
       select: {
         id: true, name: true, role: true, isActive: true, createdAt: true,
-        branch: { select: { name: true } }
+        birthDate: true, gender: true, telegram: true, phone: true, photoUrl: true,
+        branch: { select: { id: true, name: true } }
       }
     });
 
     const total = allStaff.length;
     const active = allStaff.filter(u => u.isActive).length;
     const inactive = total - active;
+
+    // Branches and Roles count
+    const uniqueBranches = new Set(allStaff.map(u => u.branch?.id).filter(Boolean)).size;
+    const uniqueRoles = new Set(allStaff.map(u => u.role)).size;
+
+    // Avg Experience (based on createdAt for now)
+    const now = new Date();
+    let totalMonthsExp = 0;
+    allStaff.forEach(u => {
+      const ms = now - new Date(u.createdAt);
+      totalMonthsExp += ms / (1000 * 60 * 60 * 24 * 30);
+    });
+    const avgExperience = total > 0 ? (totalMonthsExp / 12 / total).toFixed(1) : 0;
+
+    // Age distribution
+    const ageDist = { under25: 0, from25to35: 0, from35to55: 0, over55: 0 };
+    allStaff.forEach(u => {
+      if (u.birthDate) {
+        const age = now.getFullYear() - new Date(u.birthDate).getFullYear();
+        if (age < 25) ageDist.under25++;
+        else if (age >= 25 && age < 35) ageDist.from25to35++;
+        else if (age >= 35 && age < 55) ageDist.from35to55++;
+        else ageDist.over55++;
+      }
+    });
+
+    // Gender distribution
+    const genderDist = { male: 0, female: 0, other: 0 };
+    allStaff.forEach(u => {
+      if (u.gender === 'Erkak') genderDist.male++;
+      else if (u.gender === 'Ayol') genderDist.female++;
+      else if (u.gender) genderDist.other++;
+    });
+
+    // Profile completion
+    const profile = {
+      telegram: allStaff.filter(u => !!u.telegram).length,
+      phone: allStaff.filter(u => !!u.phone).length,
+      photo: allStaff.filter(u => !!u.photoUrl).length,
+      email: 0 // Optional per user request
+    };
 
     // Role breakdown
     const byRole = {};
@@ -266,14 +322,44 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
     });
 
     // New this month
-    const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const newThisMonth = allStaff.filter(u => new Date(u.createdAt) >= monthStart).length;
+
+    // Upcoming birthdays (next 30 days)
+    const upcomingBirthdays = [];
+    allStaff.forEach(u => {
+      if (u.birthDate) {
+        const bDate = new Date(u.birthDate);
+        let nextBirthday = new Date(now.getFullYear(), bDate.getMonth(), bDate.getDate());
+        if (nextBirthday < now) {
+          nextBirthday = new Date(now.getFullYear() + 1, bDate.getMonth(), bDate.getDate());
+        }
+        const diffDays = Math.ceil((nextBirthday - now) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 30) {
+          upcomingBirthdays.push({
+            id: u.id,
+            name: u.name,
+            birthDate: u.birthDate,
+            daysLeft: diffDays,
+            ageTurning: nextBirthday.getFullYear() - bDate.getFullYear()
+          });
+        }
+      }
+    });
+    // Sort by days left
+    upcomingBirthdays.sort((a, b) => a.daysLeft - b.daysLeft);
 
     res.json({
       success: true,
       data: {
         total, active, inactive, newThisMonth,
+        departmentsCount: uniqueBranches,
+        rolesCount: uniqueRoles,
+        avgExperience,
+        ageDist,
+        genderDist,
+        profile,
+        upcomingBirthdays,
         byRole: Object.entries(byRole).map(([role, count]) => ({ role, count })),
         byBranch: Object.entries(byBranch).map(([branch, d]) => ({ branch, ...d })),
       }

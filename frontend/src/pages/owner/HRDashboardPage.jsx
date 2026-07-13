@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Users, UserCheck, UserX, UserPlus, ShieldCheck, UserCog, User, Building2 } from 'lucide-react';
+import { Users, Building2, Briefcase, MapPin, Clock, UserX, User, Mail, Send, Phone, Image as ImageIcon, ChevronRight } from 'lucide-react';
 import FullScreenLoader from '../../components/common/FullScreenLoader';
-
-const roleLabels = {
-  director: { label: 'Direktor', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-  supervisor: { label: 'Nazoratchi', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' },
-  admin: { label: 'Admin', color: 'bg-primary-500/20 text-primary-400 border-primary-500/30' },
-  cleaner: { label: 'Tozalik xodimi', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
-};
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
 export default function HRDashboardPage() {
   const [stats, setStats] = useState(null);
@@ -32,155 +26,492 @@ export default function HRDashboardPage() {
 
   if (loading) return <FullScreenLoader />;
 
-  const maxBranchTotal = Math.max(...(stats?.byBranch?.map(b => b.total) || [1]));
+  // Gender Chart Data
+  const genderData = [
+    { name: 'Erkak', value: stats?.genderDist?.male || 0, color: '#3b82f6' }, // Blue
+    { name: 'Ayol', value: stats?.genderDist?.female || 0, color: '#ec4899' }, // Pink
+    { name: 'Boshqa', value: stats?.genderDist?.other || 0, color: '#64748b' }, // Slate
+  ].filter(d => d.value > 0);
+
+  // If no data, show a grey empty ring
+  if (genderData.length === 0) {
+    genderData.push({ name: 'Ma\'lumot yo\'q', value: 1, color: '#e2e8f0' });
+  }
+
+  // Profile completion progress calculations
+  const total = stats?.total || 1; // avoid division by zero
+  const profilePcts = {
+    email: Math.round(((stats?.profile?.email || 0) / total) * 100),
+    telegram: Math.round(((stats?.profile?.telegram || 0) / total) * 100),
+    phone: Math.round(((stats?.profile?.phone || 0) / total) * 100),
+    photo: Math.round(((stats?.profile?.photo || 0) / total) * 100),
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Users className="text-primary-400" /> HR Dashboard
-        </h1>
-        <p className="text-slate-600 text-sm mt-1">Xodimlar bo'yicha umumiy statistika</p>
+      {/* Top 6 Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl relative overflow-hidden">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-blue-500/10 p-1.5 rounded-lg">
+              <Users size={16} className="text-blue-600" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700">Jami xodimlar</p>
+          </div>
+          <h3 className="text-3xl font-bold text-slate-900 mb-2">{stats?.total ?? 0}</h3>
+          <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-xs font-medium text-slate-600 border border-slate-200">
+            <span className="mr-1">- 0%</span> o'tgan oydan
+          </div>
+        </div>
+
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-blue-400/10 p-1.5 rounded-lg">
+              <Building2 size={16} className="text-blue-500" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700">bo'limlar</p>
+          </div>
+          <h3 className="text-3xl font-bold text-slate-900 mb-2">{stats?.departmentsCount ?? 0}</h3>
+          <p className="text-xs text-slate-500">Tashkiliy birliklar</p>
+        </div>
+
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-orange-500/10 p-1.5 rounded-lg">
+              <Briefcase size={16} className="text-orange-500" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700">Lavozimlar</p>
+          </div>
+          <h3 className="text-3xl font-bold text-slate-900 mb-2">{stats?.rolesCount ?? 0}</h3>
+          <p className="text-xs text-slate-500">Mavjud lavozimlar</p>
+        </div>
+
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl border-b-4 border-b-green-400">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-green-500/10 p-1.5 rounded-lg">
+              <MapPin size={16} className="text-green-600" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700">joylashuvlar</p>
+          </div>
+          <h3 className="text-3xl font-bold text-slate-900 mb-2">{stats?.departmentsCount ?? 0}</h3>
+          <p className="text-xs text-slate-500">Ofis joylashuvlari</p>
+        </div>
+
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-teal-500/10 p-1.5 rounded-lg">
+              <Clock size={16} className="text-teal-600" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700">O'rtacha ish tajribasi</p>
+          </div>
+          <h3 className="text-3xl font-bold text-slate-900 mb-2">{stats?.avgExperience ?? 0}</h3>
+          <p className="text-xs text-slate-500">O'rtacha yillar</p>
+        </div>
+
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-red-500/10 p-1.5 rounded-lg">
+              <UserX size={16} className="text-red-500" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700">Nofaol xodimlar</p>
+          </div>
+          <h3 className="text-3xl font-bold text-slate-900 mb-2">{stats?.inactive ?? 0}</h3>
+          <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-xs font-medium text-slate-600 border border-slate-200">
+            <span className="mr-1">- 0%</span> o'tgan oydan
+          </div>
+        </div>
+
       </div>
 
-      {/* Top Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary-500/15 flex items-center justify-center text-primary-400 flex-shrink-0">
-            <Users size={24} />
+      {/* Middle Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Yosh taqsimoti */}
+        <div className="card shadow-sm border border-slate-200/60 p-6 rounded-2xl">
+          <h3 className="text-base font-semibold text-slate-800 mb-6 flex items-center gap-2">
+            <Users size={18} className="text-blue-500" /> Yosh taqsimoti
+          </h3>
+          
+          <div className="grid grid-cols-3 gap-3 mb-8">
+            <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-3 text-center">
+              <h4 className="text-2xl font-bold text-blue-600 mb-1">{stats?.ageDist?.under25 ?? 0}</h4>
+              <p className="text-[10px] sm:text-xs text-blue-600 font-medium">Yosh (25 gacha)</p>
+            </div>
+            <div className="bg-fuchsia-50/50 border border-fuchsia-200 rounded-xl p-3 text-center">
+              <h4 className="text-2xl font-bold text-fuchsia-600 mb-1">{(stats?.ageDist?.from25to35 ?? 0) + (stats?.ageDist?.from35to55 ?? 0)}</h4>
+              <p className="text-[10px] sm:text-xs text-fuchsia-600 font-medium">O'rta (25-55)</p>
+            </div>
+            <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-3 text-center">
+              <h4 className="text-2xl font-bold text-emerald-600 mb-1">{stats?.ageDist?.over55 ?? 0}</h4>
+              <p className="text-[10px] sm:text-xs text-emerald-600 font-medium">Katta (55+)</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-slate-600 uppercase tracking-wide font-medium">Jami xodimlar</p>
-            <p className="text-3xl font-bold text-slate-900">{stats?.total ?? 0}</p>
-          </div>
-        </div>
 
-        <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 flex-shrink-0">
-            <UserCheck size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-600 uppercase tracking-wide font-medium">Faol xodimlar</p>
-            <p className="text-3xl font-bold text-emerald-400">{stats?.active ?? 0}</p>
-          </div>
-        </div>
-
-        <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-red-500/15 flex items-center justify-center text-red-400 flex-shrink-0">
-            <UserX size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-600 uppercase tracking-wide font-medium">Nofaol</p>
-            <p className="text-3xl font-bold text-red-400">{stats?.inactive ?? 0}</p>
-          </div>
-        </div>
-
-        <div className="card flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400 flex-shrink-0">
-            <UserPlus size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-slate-600 uppercase tracking-wide font-medium">Bu oy qo'shilgan</p>
-            <p className="text-3xl font-bold text-yellow-400">{stats?.newThisMonth ?? 0}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Role Breakdown */}
-        <div className="card">
-          <h2 className="text-base font-semibold text-slate-900 mb-5 flex items-center gap-2">
-            <UserCog size={18} className="text-primary-400" /> Lavozimlar bo'yicha taqsimot
-          </h2>
-          <div className="space-y-4">
-            {stats?.byRole?.map(({ role, count }) => {
-              const config = roleLabels[role] || { label: role, color: 'bg-slate-500/20 text-slate-600 border-slate-500/30' };
-              const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
-              return (
-                <div key={role}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${config.color}`}>
-                      {config.label}
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">{count} ta <span className="text-slate-600 font-normal">({pct}%)</span></span>
-                  </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-primary-600 to-primary-400 transition-all duration-700"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+          <p className="text-xs text-slate-500 font-medium mb-4">Detailed Breakdown</p>
+          
+          <div className="space-y-5">
+            {/* 25 gacha */}
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                  <span className="text-slate-700">25 gacha</span>
                 </div>
-              );
-            })}
-            {(!stats?.byRole || stats.byRole.length === 0) && (
-              <p className="text-slate-600 text-sm text-center py-4">Ma'lumot yo'q</p>
-            )}
+                <span className="font-semibold text-slate-900">{stats?.ageDist?.under25 ?? 0} <span className="text-slate-400 font-normal text-xs">({Math.round(((stats?.ageDist?.under25 ?? 0) / total) * 100)}%)</span></span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${((stats?.ageDist?.under25 ?? 0) / total) * 100}%` }}></div>
+              </div>
+            </div>
+
+            {/* 25-35 */}
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-fuchsia-500"></div>
+                  <span className="text-slate-700">25-35</span>
+                </div>
+                <span className="font-semibold text-slate-900">{stats?.ageDist?.from25to35 ?? 0} <span className="text-slate-400 font-normal text-xs">({Math.round(((stats?.ageDist?.from25to35 ?? 0) / total) * 100)}%)</span></span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-fuchsia-500 h-2 rounded-full" style={{ width: `${((stats?.ageDist?.from25to35 ?? 0) / total) * 100}%` }}></div>
+              </div>
+            </div>
+            
+            {/* 35-55 */}
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-purple-500"></div>
+                  <span className="text-slate-700">35-55</span>
+                </div>
+                <span className="font-semibold text-slate-900">{stats?.ageDist?.from35to55 ?? 0} <span className="text-slate-400 font-normal text-xs">({Math.round(((stats?.ageDist?.from35to55 ?? 0) / total) * 100)}%)</span></span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${((stats?.ageDist?.from35to55 ?? 0) / total) * 100}%` }}></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Branch Breakdown */}
-        <div className="card">
-          <h2 className="text-base font-semibold text-slate-900 mb-5 flex items-center gap-2">
-            <Building2 size={18} className="text-primary-400" /> Filiallar bo'yicha taqsimot
-          </h2>
-          <div className="space-y-4">
-            {stats?.byBranch?.map(({ branch, total, active }) => {
-              const pct = maxBranchTotal > 0 ? Math.round((total / maxBranchTotal) * 100) : 0;
-              const activePct = total > 0 ? Math.round((active / total) * 100) : 0;
-              return (
-                <div key={branch}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-medium text-slate-900 truncate max-w-[60%]">{branch}</span>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-emerald-400 font-semibold">{active} faol</span>
-                      <span className="text-slate-600">/ {total} jami</span>
+        {/* Jins bo'yicha taqsimot */}
+        <div className="card shadow-sm border border-slate-200/60 p-6 rounded-2xl relative overflow-hidden flex flex-col">
+          <h3 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <User size={18} className="text-blue-400" /> Jins bo'yicha taqsimot
+          </h3>
+          
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="relative h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={genderData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {genderData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Inner Text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold text-slate-800">{stats?.total ?? 0}</span>
+                <span className="text-xs text-slate-500">Jami</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {genderData.map((g) => (
+              <div key={g.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: g.color }}></div>
+                  <span className="text-sm text-slate-600">{g.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-900">{g.value}</span>
+                  <span className="text-xs text-slate-400 w-8 text-right">{Math.round((g.value / total) * 100)}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center text-sm">
+            <span className="font-medium text-slate-700">Jami xodimlar</span>
+            <span className="font-bold text-slate-900">{stats?.total ?? 0}</span>
+          </div>
+        </div>
+
+        {/* Profil to'ldirish */}
+        <div className="card shadow-sm border border-slate-200/60 p-6 rounded-2xl flex flex-col">
+          <h3 className="text-base font-semibold text-slate-800 mb-6 flex items-center gap-2">
+            <User size={18} className="text-blue-400" /> Profil to'ldirish
+          </h3>
+          
+          <div className="grid grid-cols-2 gap-4 flex-1">
+            
+            {/* Email */}
+            <div className="bg-blue-50/40 border border-blue-100 p-4 rounded-xl flex flex-col justify-between">
+              <div className="flex items-center gap-2 text-blue-600 mb-4">
+                <Mail size={16} />
+                <span className="text-sm font-medium">Elektron pochta</span>
+              </div>
+              <div>
+                <h4 className="text-2xl font-bold text-slate-900 mb-1">{stats?.profile?.email ?? 0}</h4>
+                <p className="text-[10px] text-slate-500 mb-2">{profilePcts.email}% complete</p>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full">
+                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${profilePcts.email}%` }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Telegram */}
+            <div className="bg-cyan-50/40 border border-cyan-100 p-4 rounded-xl flex flex-col justify-between">
+              <div className="flex items-center gap-2 text-cyan-600 mb-4">
+                <Send size={16} />
+                <span className="text-sm font-medium">Telegram</span>
+              </div>
+              <div>
+                <h4 className="text-2xl font-bold text-slate-900 mb-1">{stats?.profile?.telegram ?? 0}</h4>
+                <p className="text-[10px] text-slate-500 mb-2">{profilePcts.telegram}% complete</p>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full">
+                  <div className="bg-cyan-500 h-1.5 rounded-full" style={{ width: `${profilePcts.telegram}%` }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Telefon */}
+            <div className="bg-green-50/40 border border-green-100 p-4 rounded-xl flex flex-col justify-between">
+              <div className="flex items-center gap-2 text-green-600 mb-4">
+                <Phone size={16} />
+                <span className="text-sm font-medium">Telefon</span>
+              </div>
+              <div>
+                <h4 className="text-2xl font-bold text-slate-900 mb-1">{stats?.profile?.phone ?? 0}</h4>
+                <p className="text-[10px] text-slate-500 mb-2">{profilePcts.phone}% complete</p>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full">
+                  <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${profilePcts.phone}%` }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Photo */}
+            <div className="bg-purple-50/40 border border-purple-100 p-4 rounded-xl flex flex-col justify-between">
+              <div className="flex items-center gap-2 text-purple-600 mb-4">
+                <ImageIcon size={16} />
+                <span className="text-sm font-medium">Profile Photo</span>
+              </div>
+              <div>
+                <h4 className="text-2xl font-bold text-slate-900 mb-1">{stats?.profile?.photo ?? 0}</h4>
+                <p className="text-[10px] text-slate-500 mb-2">{profilePcts.photo}% complete</p>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full">
+                  <div className="bg-purple-400 h-1.5 rounded-full" style={{ width: `${profilePcts.photo}%` }}></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      {/* Bottom Rows */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* Bo'limlar bo'yicha taqsimot */}
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-50 text-blue-500 p-1.5 rounded-lg">
+                <Building2 size={16} />
+              </div>
+              <span className="font-semibold text-slate-800 text-sm">Bo'limlar bo'yicha taqsimot</span>
+            </div>
+            <button className="text-blue-500 text-[11px] font-medium flex items-center gap-1 hover:text-blue-600 px-2 py-1 rounded-lg border border-blue-100 bg-white shadow-sm">
+              Batafsil ko'rsatish <ChevronRight size={12} />
+            </button>
+          </div>
+          <div className="flex-1 space-y-4">
+            {(stats?.byBranch || []).length === 0 ? (
+              <div className="flex items-center justify-center h-20 text-slate-400 text-sm">No data available</div>
+            ) : (
+              (stats?.byBranch || []).map((b, i) => (
+                <div key={i}>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-slate-600 text-xs">{b.branch}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-900 text-xs">{b.total}</span>
+                      <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">{Math.round((b.total / total) * 100)}%</span>
                     </div>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-700"
-                      style={{ width: `${pct}%` }}
-                    />
+                  <div className="w-full bg-slate-100 rounded-full h-1.5">
+                    <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${(b.total / total) * 100}%` }}></div>
                   </div>
                 </div>
-              );
-            })}
-            {(!stats?.byBranch || stats.byBranch.length === 0) && (
-              <p className="text-slate-600 text-sm text-center py-4">Ma'lumot yo'q</p>
+              ))
             )}
           </div>
+          <div className="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+            <span className="text-slate-500">Total</span>
+            <span className="font-bold text-blue-600">{stats?.total ?? 0}</span>
+          </div>
         </div>
-      </div>
 
-      {/* Faollik overview */}
-      <div className="card">
-        <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <ShieldCheck size={18} className="text-primary-400" /> Umumiy faollik holati
-        </h2>
-        <div className="flex items-center gap-4">
-          <div className="flex-1 h-6 bg-slate-100 rounded-full overflow-hidden flex">
-            {stats?.active > 0 && (
-              <div
-                className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 flex items-center justify-center text-xs font-bold text-white transition-all duration-700"
-                style={{ width: `${stats.total > 0 ? (stats.active / stats.total) * 100 : 0}%` }}
-              >
-                {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
+        {/* Lavozimlar bo'yicha taqsimot */}
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-50 text-blue-500 p-1.5 rounded-lg">
+                <Briefcase size={16} />
+              </div>
+              <span className="font-semibold text-slate-800 text-sm">Lavozimlar bo'yicha taqsimot</span>
+            </div>
+            <button className="text-blue-500 text-[11px] font-medium flex items-center gap-1 hover:text-blue-600 px-2 py-1 rounded-lg border border-blue-100 bg-white shadow-sm">
+              Batafsil ko'rsatish <ChevronRight size={12} />
+            </button>
+          </div>
+          <div className="flex-1 space-y-4">
+            {(stats?.byRole || []).length === 0 ? (
+              <div className="flex items-center justify-center h-20 text-slate-400 text-sm">No data available</div>
+            ) : (
+              (stats?.byRole || []).map((r, i) => (
+                <div key={i}>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-slate-600 text-xs capitalize">{r.role}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-900 text-xs">{r.count}</span>
+                      <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">{Math.round((r.count / total) * 100)}%</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5">
+                    <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${(r.count / total) * 100}%` }}></div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+            <span className="text-slate-500">Total</span>
+            <span className="font-bold text-blue-600">{stats?.total ?? 0}</span>
+          </div>
+        </div>
+
+        {/* Joylashuvlar bo'yicha taqsimot */}
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-50 text-blue-500 p-1.5 rounded-lg">
+                <MapPin size={16} />
+              </div>
+              <span className="font-semibold text-slate-800 text-sm">Joylashuvlar bo'yicha taqsimot</span>
+            </div>
+            <button className="text-blue-500 text-[11px] font-medium flex items-center gap-1 hover:text-blue-600 px-2 py-1 rounded-lg border border-blue-100 bg-white shadow-sm">
+              Batafsil ko'rsatish <ChevronRight size={12} />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center min-h-[80px]">
+            <span className="text-sm text-slate-400">No data available</span>
+          </div>
+        </div>
+
+        {/* Xodim holati */}
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-50 text-blue-500 p-1.5 rounded-lg">
+                <User size={16} />
+              </div>
+              <span className="font-semibold text-slate-800 text-sm">Xodim holati</span>
+            </div>
+            <button className="text-blue-500 text-[11px] font-medium flex items-center gap-1 hover:text-blue-600 px-2 py-1 rounded-lg border border-blue-100 bg-white shadow-sm">
+              Batafsil ko'rsatish <ChevronRight size={12} />
+            </button>
+          </div>
+          <div className="flex-1 space-y-4">
+            {[
+              { name: 'Faol', count: stats?.active ?? 0 },
+              { name: 'Faol emas', count: stats?.inactive ?? 0 }
+            ].map((s, i) => (
+              <div key={i}>
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="text-slate-600 text-xs">{s.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-900 text-xs">{s.count}</span>
+                    <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">{Math.round((s.count / total) * 100)}%</span>
+                  </div>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${(s.count / total) * 100}%` }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+            <span className="text-slate-500">Total</span>
+            <span className="font-bold text-blue-600">{stats?.total ?? 0}</span>
+          </div>
+        </div>
+
+        {/* Eng ko'p millatlar */}
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-50 text-blue-500 p-1.5 rounded-lg">
+                <MapPin size={16} />
+              </div>
+              <span className="font-semibold text-slate-800 text-sm">Eng ko'p millatlar</span>
+            </div>
+            <button className="text-blue-500 text-[11px] font-medium flex items-center gap-1 hover:text-blue-600 px-2 py-1 rounded-lg border border-blue-100 bg-white shadow-sm">
+              Batafsil ko'rsatish <ChevronRight size={12} />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center min-h-[80px]">
+            <span className="text-sm text-slate-400">No data available</span>
+          </div>
+        </div>
+
+        {/* Yaqinlashayotgan tug'ilgan kunlar */}
+        <div className="card shadow-sm border border-slate-200/60 p-5 rounded-2xl flex flex-col">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="bg-pink-50 text-pink-500 p-1.5 rounded-lg">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+              </div>
+              <span className="font-semibold text-slate-800 text-sm">Yaqinlashayotgan tug'ilgan kunlar</span>
+            </div>
+            <button className="text-blue-500 text-[11px] font-medium flex items-center gap-1 hover:text-blue-600 px-2 py-1 rounded-lg border border-blue-100 bg-white shadow-sm">
+              Batafsil ko'rsatish <ChevronRight size={12} />
+            </button>
+          </div>
+          <div className="flex-1 min-h-[80px]">
+            {(!stats?.upcomingBirthdays || stats.upcomingBirthdays.length === 0) ? (
+              <div className="flex items-center justify-center h-full text-slate-400 text-sm">Keyingi 30 kun ichida hech kimning tug'ilgan kuni yo'q</div>
+            ) : (
+              <div className="space-y-3">
+                {stats.upcomingBirthdays.map((b, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-slate-700">{b.name}</span>
+                    <span className="text-slate-500 text-xs">{b.daysLeft === 0 ? 'Bugun!' : `${b.daysLeft} kundan so'ng`} ({b.ageTurning} yosh)</span>
+                  </div>
+                ))}
               </div>
             )}
-            {stats?.inactive > 0 && (
-              <div
-                className="h-full bg-gradient-to-r from-red-700 to-red-500 flex items-center justify-center text-xs font-bold text-white transition-all duration-700"
-                style={{ width: `${stats.total > 0 ? (stats.inactive / stats.total) * 100 : 0}%` }}
-              />
-            )}
           </div>
         </div>
-        <div className="flex items-center gap-6 mt-3 text-xs text-slate-600">
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" /> Faol: {stats?.active}</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" /> Nofaol: {stats?.inactive}</span>
-        </div>
+
       </div>
+
     </div>
   );
 }

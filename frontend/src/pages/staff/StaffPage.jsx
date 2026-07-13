@@ -10,12 +10,14 @@ const roleConfig = {
   director: { label: 'Direktor', icon: ShieldCheck, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
   supervisor: { label: 'Nazoratchi', icon: UserCog, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
   admin: { label: 'Admin', icon: UserCog, color: 'text-primary-400 bg-primary-500/10 border-primary-500/20' },
+  hr: { label: 'HR Menejer', icon: Users, color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
   cleaner: { label: 'Tozalik xodimi', icon: User, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
 };
 
 const emptyForm = {
   name: '', username: '', password: '', role: 'admin',
-  phone: '', salary: '', salaryType: 'static', kpiPercentage: '', branchId: ''
+  phone: '', salary: '', salaryType: 'static', kpiPercentage: '', branchId: '',
+  birthDate: '', gender: '', telegram: ''
 };
 
 export default function StaffPage() {
@@ -42,7 +44,7 @@ export default function StaffPage() {
 
   useEffect(() => {
     fetchStaff();
-    if (user?.role === 'owner' || user?.role === 'supervisor') fetchBranches();
+    if (['owner', 'supervisor', 'hr'].includes(user?.role)) fetchBranches();
   }, [filterBranch, filterRole]);
 
   const fetchStaff = async () => {
@@ -150,7 +152,10 @@ export default function StaffPage() {
       salary: userItem.salary || '',
       salaryType: userItem.salaryType || 'static',
       kpiPercentage: userItem.kpiPercentage || '',
-      branchId: userItem.branch?.id ? String(userItem.branch.id) : ''
+      branchId: userItem.branch?.id ? String(userItem.branch.id) : '',
+      birthDate: userItem.birthDate ? new Date(userItem.birthDate).toISOString().split('T')[0] : '',
+      gender: userItem.gender || '',
+      telegram: userItem.telegram || ''
     });
     setShowForm(true);
   };
@@ -176,6 +181,9 @@ export default function StaffPage() {
         salaryType: form.salaryType,
         kpiPercentage: form.kpiPercentage,
         branchId: form.branchId || undefined,
+        birthDate: form.birthDate || undefined,
+        gender: form.gender || undefined,
+        telegram: form.telegram || undefined,
       };
       if (form.password) payload.password = form.password;
 
@@ -240,7 +248,7 @@ export default function StaffPage() {
         </div>
         <div className="flex gap-3">
 
-          {user?.role === 'owner' && (
+          {['owner', 'hr'].includes(user?.role) && (
             <button id="add-staff-btn" onClick={openAdd} className="btn-primary">
               <UserPlus size={18} /> Yangi xodim qo'shish
             </button>
@@ -250,7 +258,7 @@ export default function StaffPage() {
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
-        {(user?.role === 'owner' || user?.role === 'supervisor') && (
+        {['owner', 'supervisor', 'hr'].includes(user?.role) && (
           <select
             className="input-field w-auto min-w-[200px]"
             value={filterBranch}
@@ -288,7 +296,7 @@ export default function StaffPage() {
             <UserPlus size={18} /> Birinchi xodimni qo'shish
           </button>
         </div>
-      ) : (user?.role === 'owner' || user?.role === 'supervisor') ? (
+      ) : ['owner', 'supervisor', 'hr'].includes(user?.role) ? (
         // Owner/Supervisor: filial bo'yicha guruhlangan
         Object.entries(grouped).map(([branchName, members]) => (
           <div key={branchName} className="card p-0 overflow-hidden mb-6">
@@ -306,10 +314,10 @@ export default function StaffPage() {
             <div className="p-4">
               <StaffTable
                 staff={members}
-                onEdit={(user?.role === 'owner' || user?.role === 'supervisor') ? handleEdit : null}
-                onToggle={(user?.role === 'owner' || user?.role === 'supervisor') ? handleToggleActive : null}
-                onFaceId={(user?.role === 'owner' || user?.role === 'supervisor' || user?.role === 'director') ? openFaceModal : null}
-                onDelete={(user?.role === 'owner') ? handleDeleteClick : null}
+                onEdit={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleEdit : null}
+                onToggle={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleToggleActive : null}
+                onFaceId={['owner', 'supervisor', 'director', 'hr'].includes(user?.role) ? openFaceModal : null}
+                onDelete={['owner', 'hr'].includes(user?.role) ? handleDeleteClick : null}
               />
             </div>
           </div>
@@ -318,10 +326,10 @@ export default function StaffPage() {
         <div className="card">
           <StaffTable
             staff={staff}
-            onEdit={(user?.role === 'owner' || user?.role === 'supervisor' || user?.role === 'director') ? handleEdit : null}
-            onToggle={(user?.role === 'owner' || user?.role === 'supervisor' || user?.role === 'director') ? handleToggleActive : null}
-            onFaceId={(user?.role === 'owner' || user?.role === 'supervisor' || user?.role === 'director') ? openFaceModal : null}
-            onDelete={(user?.role === 'owner') ? handleDeleteClick : null}
+            onEdit={['owner', 'supervisor', 'director', 'hr'].includes(user?.role) ? handleEdit : null}
+            onToggle={['owner', 'supervisor', 'director', 'hr'].includes(user?.role) ? handleToggleActive : null}
+            onFaceId={['owner', 'supervisor', 'director', 'hr'].includes(user?.role) ? openFaceModal : null}
+            onDelete={['owner', 'hr'].includes(user?.role) ? handleDeleteClick : null}
           />
         </div>
       )}
@@ -369,7 +377,7 @@ export default function StaffPage() {
                 </div>
 
                 {/* Branch (owner/supervisor only) */}
-                {(user?.role === 'owner' || user?.role === 'supervisor') && (
+                {['owner', 'supervisor', 'hr'].includes(user?.role) && (
                   <div>
                     <label className="label">Filial *</label>
                     <select
@@ -422,6 +430,43 @@ export default function StaffPage() {
                       }}
                       maxLength={17}
                     />
+                  </div>
+                </div>
+
+                {/* HR Info: BirthDate, Gender, Telegram */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="label">Tug'ilgan sana</label>
+                    <input
+                      type="date"
+                      className="input-field"
+                      value={form.birthDate}
+                      onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Jinsi</label>
+                    <select
+                      className="input-field"
+                      value={form.gender}
+                      onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                    >
+                      <option value="">Tanlang</option>
+                      <option value="male">Erkak</option>
+                      <option value="female">Ayol</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Telegram</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">@</span>
+                      <input
+                        className="input-field pl-8"
+                        placeholder="username"
+                        value={form.telegram ? form.telegram.replace('@', '') : ''}
+                        onChange={(e) => setForm({ ...form, telegram: e.target.value ? '@' + e.target.value.replace('@', '') : '' })}
+                      />
+                    </div>
                   </div>
                 </div>
 

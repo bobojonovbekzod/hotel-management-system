@@ -51,6 +51,7 @@ function getDefaultRoute(role) {
   if (role === 'supervisor') return '/supervisor/dashboard';
   if (role === 'director') return '/director/dashboard';
   if (role === 'admin') return '/admin/front-desk';
+  if (role === 'hr') return '/owner/hr';
   return '/login';
 }
 
@@ -169,7 +170,7 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
       <Route path="/owner/staff" element={
-        <ProtectedRoute allowedRoles={['owner']}>
+        <ProtectedRoute allowedRoles={['owner', 'hr']}>
           <StaffPage />
         </ProtectedRoute>
       } />
@@ -179,7 +180,7 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
       <Route path="/owner/hr" element={
-        <ProtectedRoute allowedRoles={['owner']}>
+        <ProtectedRoute allowedRoles={['owner', 'hr']}>
           <HRDashboardPage />
         </ProtectedRoute>
       } />

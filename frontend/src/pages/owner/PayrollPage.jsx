@@ -109,57 +109,91 @@ export default function PayrollPage() {
     window.print();
   };
 
+  const totalAdvances = report.reduce((sum, item) => sum + item.stats.totalAdvances, 0);
+  const totalPayable = report.reduce((sum, item) => sum + item.stats.totalPayable, 0);
+  
+  const [year, monthNum] = filterMonth.split('-');
+  const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+  const monthName = months[parseInt(monthNum, 10) - 1];
+  const branchName = branches.find(b => String(b.id) === String(filterBranch))?.name || 'Barcha filiallar';
+
   return (
     <div className="p-4 sm:p-8 space-y-6">
 
       {/* Print View Only */}
-      <div className="print-only hidden p-8 text-black bg-white min-h-screen">
-        <h1 className="text-2xl font-bold mb-2 uppercase text-center">Oylik maosh vedomosti</h1>
-        <p className="text-center mb-6 font-semibold">
-          Oy: {filterMonth} | Filial: {branches.find(b => String(b.id) === String(filterBranch))?.name || 'Barchasi'}
-        </p>
+      <div className="hidden print:block print-area p-8 text-black bg-white min-h-screen font-serif">
+        <h1 className="text-2xl font-bold mb-1 uppercase text-center text-[#2f5597] tracking-wide">
+          FAMILY HOTELS ({branchName})
+        </h1>
+        <div className="w-full flex justify-center mb-6">
+          <p className="text-center font-bold text-[#4472c4] italic border-b border-[#8faadc] inline-block px-10 pb-1 uppercase text-sm">
+            oylik maoshni olganligi to'g'risida blank
+          </p>
+        </div>
 
-        <table className="w-full border-collapse mb-10 text-sm">
+        <div className="mb-4 space-y-4 ml-10">
+          <div className="flex items-center gap-2 font-semibold text-lg border-b border-black inline-block pr-10 pb-1">
+            <span role="img" aria-label="calendar">📅</span> Oy: <span className="underline decoration-dotted">{monthName}. {year} uchun</span>
+          </div>
+        </div>
+
+        <table className="w-full border-collapse mb-10 text-sm mt-6 mx-auto" style={{ maxWidth: '95%' }}>
           <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-black p-2 font-bold w-10 text-center">T/r</th>
-              <th className="border border-black p-2 font-bold text-left">F.I.O</th>
-              <th className="border border-black p-2 font-bold text-left">Lavozim</th>
-              <th className="border border-black p-2 font-bold text-right">Asosiy maosh</th>
-              <th className="border border-black p-2 font-bold text-right">KPI qo'shimcha</th>
-              <th className="border border-black p-2 font-bold text-right">Qolgan summa</th>
-              <th className="border border-black p-2 font-bold w-32 text-center">Imzo</th>
+            <tr className="bg-white">
+              <th className="border border-black p-2 font-bold w-10 text-center">№</th>
+              <th className="border border-black p-2 font-bold text-center">Xodimning<br/>F.I.Sh.</th>
+              <th className="border border-black p-2 font-bold text-center">Lavozimi</th>
+              <th className="border border-black p-2 font-bold text-center">Avans<br/>Summa<br/>(so'm)</th>
+              <th className="border border-black p-2 font-bold text-center">Olingan<br/>sana</th>
+              <th className="border border-black p-2 font-bold text-center">Xodim<br/>imzosi</th>
+              <th className="border border-black p-2 font-bold text-center">Ostatok<br/>oylik<br/>summa</th>
+              <th className="border border-black p-2 font-bold text-center">Olingan<br/>sana</th>
+              <th className="border border-black p-2 font-bold text-center w-24">Xodim<br/>imzosi</th>
             </tr>
           </thead>
           <tbody>
             {report.map((item, idx) => (
               <tr key={item.user.id}>
-                <td className="border border-black p-2 text-center">{idx + 1}</td>
-                <td className="border border-black p-2 font-bold">{item.user.name}</td>
-                <td className="border border-black p-2 uppercase text-xs">{item.user.role}</td>
-                <td className="border border-black p-2 text-right">{item.stats.baseSalary.toLocaleString()}</td>
-                <td className="border border-black p-2 text-right">{item.stats.kpiEarnings.toLocaleString()}</td>
-                <td className="border border-black p-2 text-right font-bold text-lg">{item.stats.totalPayable.toLocaleString()}</td>
-                <td className="border border-black p-4"></td>
+                <td className="border border-black p-2 text-center font-medium">{idx + 1}</td>
+                <td className="border border-black p-2 font-semibold text-center">{item.user.name}</td>
+                <td className="border border-black p-2 text-center capitalize font-medium">{item.user.role}</td>
+                <td className="border border-black p-2 text-center font-semibold">{item.stats.totalAdvances ? item.stats.totalAdvances.toLocaleString() : ''}</td>
+                <td className="border border-black p-2 text-center"></td>
+                <td className="border border-black p-2"></td>
+                <td className="border border-black p-2 text-center font-bold text-base">{item.stats.totalPayable ? item.stats.totalPayable.toLocaleString() : ''}</td>
+                <td className="border border-black p-2 text-center"></td>
+                <td className="border border-black p-2"></td>
               </tr>
             ))}
+            {/* Total Row */}
+            <tr className="bg-white font-bold text-base">
+              <td colSpan="3" className="border border-black p-2 text-right">Jami</td>
+              <td className="border border-black p-2 text-center">{totalAdvances ? totalAdvances.toLocaleString() : ''}</td>
+              <td colSpan="2" className="border border-black p-2"></td>
+              <td className="border border-black p-2 text-center">{totalPayable ? totalPayable.toLocaleString() : ''}</td>
+              <td colSpan="2" className="border border-black p-2"></td>
+            </tr>
           </tbody>
         </table>
 
-        <div className="flex justify-between items-end mt-20">
-          <div className="text-center">
-            <div className="w-48 border-b border-black mb-2"></div>
-            <p className="font-bold text-sm uppercase">Tashkilot rahbari (M.O')</p>
+        <div className="mt-8 space-y-6 text-lg font-medium ml-10">
+          <div className="flex items-center gap-2">
+            <span role="img" aria-label="pin" className="text-xl">📌</span> Oylik maoshni berish uchun mas'ul shaxs:
           </div>
-          <div className="text-center">
-            <div className="w-48 border-b border-black mb-2"></div>
-            <p className="font-bold text-sm uppercase">Buxgalter / Kassa</p>
+          <div className="flex items-center gap-2 ml-8">
+            <span className="underline decoration-black underline-offset-4">F.I.Sh.:</span> <div className="border-b border-black flex-1 max-w-sm ml-2"></div>
+          </div>
+          <div className="flex items-center gap-2 ml-8">
+            <span className="underline decoration-black underline-offset-4">Lavozimi:</span> <div className="border-b border-black flex-1 max-w-sm ml-2"></div>
+          </div>
+          <div className="flex items-center gap-2 ml-8">
+            <span className="underline decoration-black underline-offset-4">Imzo:</span> <div className="border-b border-black flex-1 max-w-sm ml-2"></div>
           </div>
         </div>
       </div>
 
       {/* Screen View */}
-      <div className="hide-on-print">
+      <div className="print:hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
