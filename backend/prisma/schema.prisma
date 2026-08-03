@@ -19,19 +19,25 @@ model Company {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  users               User[]
-  branches            Branch[]
-  rooms               Room[]
-  bookings            Booking[]
-  shifts              Shift[]
-  expenses            Expense[]
-  expenseCategories   ExpenseCategory[]
-  attendance          Attendance[]
-  devices             Device[]
-  guests              Guest[]
-  payrollTransactions PayrollTransaction[]
-  cleaningTasks       CleaningTask[]
-  roomCategories      RoomCategory[]
+  users                 User[]
+  branches              Branch[]
+  rooms                 Room[]
+  bookings              Booking[]
+  shifts                Shift[]
+  expenses              Expense[]
+  expenseCategories     ExpenseCategory[]
+  attendance            Attendance[]
+  devices               Device[]
+  guests                Guest[]
+  payrollTransactions   PayrollTransaction[]
+  cleaningTasks         CleaningTask[]
+  roomCategories        RoomCategory[]
+  inventoryCategories   InventoryCategory[]
+  inventoryProducts     InventoryProduct[]
+  inventoryBatches      InventoryBatch[]
+  inventoryRequests     InventoryRequest[]
+  inventoryTransactions InventoryTransaction[]
+  tasks                 Task[]
 
   @@map("companies")
 }
@@ -59,16 +65,20 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company             Company              @relation(fields: [companyId], references: [id])
-  users               User[]
-  rooms               Room[]
-  bookings            Booking[]
-  shifts              Shift[]
-  expenses            Expense[]
-  attendance          Attendance[]
-  devices             Device[]
-  payrollTransactions PayrollTransaction[]
-  cleaningTasks       CleaningTask[]
+  company               Company                @relation(fields: [companyId], references: [id])
+  users                 User[]
+  rooms                 Room[]
+  bookings              Booking[]
+  shifts                Shift[]
+  expenses              Expense[]
+  attendance            Attendance[]
+  devices               Device[]
+  payrollTransactions   PayrollTransaction[]
+  cleaningTasks         CleaningTask[]
+  inventoryBatches      InventoryBatch[]
+  inventoryRequests     InventoryRequest[]
+  inventoryTransactions InventoryTransaction[]
+  tasks                 Task[]
 
   @@map("branches")
 }
@@ -95,16 +105,22 @@ model User {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  company             Company?             @relation(fields: [companyId], references: [id])
-  branch              Branch?              @relation(fields: [branchId], references: [id])
-  bookings            Booking[]
-  shifts              Shift[]
-  expenses            Expense[]
-  attendance          Attendance[]
-  payrollTransactions PayrollTransaction[] @relation("UserPayroll")
-  givenTransactions   PayrollTransaction[] @relation("AdminPayroll")
-  notifications       Notification[]
-  cleaningTasks       CleaningTask[]
+  company                   Company?               @relation(fields: [companyId], references: [id])
+  branch                    Branch?                @relation(fields: [branchId], references: [id])
+  bookings                  Booking[]
+  shifts                    Shift[]
+  expenses                  Expense[]
+  attendance                Attendance[]
+  payrollTransactions       PayrollTransaction[]   @relation("UserPayroll")
+  givenTransactions         PayrollTransaction[]   @relation("AdminPayroll")
+  notifications             Notification[]
+  cleaningTasks             CleaningTask[]
+  resolvedShiftIssues       Shift[]                @relation("ResolvedShiftIssues")
+  inventoryRequestsMade     InventoryRequest[]     @relation("RequestInitiator")
+  inventoryRequestsApproved InventoryRequest[]     @relation("RequestApprover")
+  inventoryTransactions     InventoryTransaction[] @relation("TransactionAdmin")
+  tasksCreated              Task[]                 @relation("TaskCreator")
+  tasksAssigned             Task[]                 @relation("TaskAssignee")
 
   @@map("users")
 }
@@ -112,6 +128,7 @@ model User {
 enum SalaryType {
   static
   per_shift
+  per_room
 }
 
 enum Role {
@@ -146,7 +163,6 @@ model Room {
   @@unique([branchId, roomNumber])
   @@map("rooms")
 }
-
 
 enum RoomStatus {
   available
@@ -224,11 +240,13 @@ enum PaymentMethod {
   qrcode
   terminal
   mixed
+  transfer
 }
 
 model Payment {
   id          Int           @id @default(autoincrement())
   bookingId   Int
+  shiftId     Int?
   amount      Float
   method      PaymentMethod
   type        String        @default("room") // room, penalty, advance
@@ -238,6 +256,7 @@ model Payment {
   createdAt   DateTime      @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id])
+  shift   Shift?  @relation(fields: [shiftId], references: [id])
 
   @@map("payments")
 }
@@ -252,29 +271,37 @@ enum BookingStatus {
 enum ShiftType {
   morning
   night
+  daily
 }
 
 // Smenalar
 model Shift {
-  id             Int         @id @default(autoincrement())
-  companyId      Int
-  branchId       Int
-  adminId        Int
-  shiftType      ShiftType
-  startTime      DateTime
-  endTime        DateTime?
-  totalIncome    Float       @default(0)
-  totalBookings  Int         @default(0)
-  totalPenalties Float       @default(0)
-  notes          String?
-  status         ShiftStatus @default(active)
-  createdAt      DateTime    @default(now())
+  id                Int         @id @default(autoincrement())
+  companyId         Int
+  branchId          Int
+  adminId           Int
+  shiftType         ShiftType
+  startTime         DateTime
+  endTime           DateTime?
+  totalIncome       Float       @default(0)
+  totalBookings     Int         @default(0)
+  totalPenalties    Float       @default(0)
+  startPhotoUrl     String?
+  notes             String?
+  hasIssue          Boolean     @default(false)
+  issueDescription  String?
+  isIssueResolved   Boolean     @default(true)
+  issueResolvedById Int?
+  status            ShiftStatus @default(active)
+  createdAt         DateTime    @default(now())
 
-  company  Company   @relation(fields: [companyId], references: [id])
-  branch   Branch    @relation(fields: [branchId], references: [id])
-  admin    User      @relation(fields: [adminId], references: [id])
-  bookings Booking[]
-  expenses Expense[]
+  company         Company   @relation(fields: [companyId], references: [id])
+  issueResolvedBy User?     @relation("ResolvedShiftIssues", fields: [issueResolvedById], references: [id])
+  branch          Branch    @relation(fields: [branchId], references: [id])
+  admin           User      @relation(fields: [adminId], references: [id])
+  bookings        Booking[]
+  expenses        Expense[]
+  payments        Payment[]
 
   @@map("shifts")
 }
@@ -419,4 +446,137 @@ model Device {
   branch  Branch  @relation(fields: [branchId], references: [id])
 
   @@map("devices")
+}
+
+// --- OMBORXONA (INVENTORY) TIZIMI ---
+
+// Kategoriya (Masalan: Xo'jalik mollari, Choyshablar)
+model InventoryCategory {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  name      String
+  createdAt DateTime @default(now())
+
+  company  Company            @relation(fields: [companyId], references: [id])
+  products InventoryProduct[]
+
+  @@map("inventory_categories")
+}
+
+// Mahsulot (Masalan: Oq sochiq 50x100, Sovun)
+model InventoryProduct {
+  id              Int      @id @default(autoincrement())
+  companyId       Int
+  categoryId      Int
+  name            String
+  measurementUnit String   @default("dona") // dona, kg, litr
+  hasLifespan     Boolean  @default(false)
+  lifespanDays    Int? // Necha kun xizmat qiladi
+  createdAt       DateTime @default(now())
+
+  company      Company                @relation(fields: [companyId], references: [id])
+  category     InventoryCategory      @relation(fields: [categoryId], references: [id])
+  batches      InventoryBatch[]
+  requests     InventoryRequest[]
+  transactions InventoryTransaction[]
+
+  @@map("inventory_products")
+}
+
+// Mahsulot partiyasi (Kirim bo'lganida yoki filialga o'tganida)
+model InventoryBatch {
+  id             Int       @id @default(autoincrement())
+  companyId      Int
+  branchId       Int? // Null bo'lsa Bosh Omborda
+  productId      Int
+  quantity       Float
+  purchasePrice  Float?
+  purchaseDate   DateTime  @default(now())
+  expirationDate DateTime? // hasLifespan=true bo'lsa hisoblanadi
+  status         String    @default("active") // active, expired, exhausted
+
+  company Company          @relation(fields: [companyId], references: [id])
+  branch  Branch?          @relation(fields: [branchId], references: [id])
+  product InventoryProduct @relation(fields: [productId], references: [id])
+
+  @@map("inventory_batches")
+}
+
+// Filialdan Bosh omborga (Ownerga) so'rov
+model InventoryRequest {
+  id                Int      @id @default(autoincrement())
+  companyId         Int
+  branchId          Int
+  productId         Int
+  requestedQuantity Float
+  status            String   @default("pending") // pending, approved, rejected
+  requestedById     Int
+  approvedById      Int?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company     Company          @relation(fields: [companyId], references: [id])
+  branch      Branch           @relation(fields: [branchId], references: [id])
+  product     InventoryProduct @relation(fields: [productId], references: [id])
+  requestedBy User             @relation("RequestInitiator", fields: [requestedById], references: [id])
+  approvedBy  User?            @relation("RequestApprover", fields: [approvedById], references: [id])
+
+  @@map("inventory_requests")
+}
+
+// Tarix (Kirim, Chiqim, Filialga berish)
+model InventoryTransaction {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  branchId  Int? // Qaysi filialga aloqador (Chiqim/So'rov bo'lsa)
+  productId Int
+  type      String // IN (Kirim), OUT (Brak/Chiqim), TRANSFER (Filialga)
+  quantity  Float
+  adminId   Int
+  notes     String?
+  createdAt DateTime @default(now())
+
+  company Company          @relation(fields: [companyId], references: [id])
+  branch  Branch?          @relation(fields: [branchId], references: [id])
+  product InventoryProduct @relation(fields: [productId], references: [id])
+  admin   User             @relation("TransactionAdmin", fields: [adminId], references: [id])
+
+  @@map("inventory_transactions")
+}
+
+// Vazifalar Boshqaruvi (Jira)
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id          Int          @id @default(autoincrement())
+  companyId   Int
+  branchId    Int
+  title       String
+  description String?      @db.Text
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  creatorId   Int
+  assigneeId  Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  company  Company @relation(fields: [companyId], references: [id])
+  branch   Branch  @relation(fields: [branchId], references: [id])
+  creator  User    @relation("TaskCreator", fields: [creatorId], references: [id])
+  assignee User    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  @@map("tasks")
 }

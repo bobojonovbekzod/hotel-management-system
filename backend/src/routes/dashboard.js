@@ -13,23 +13,36 @@ router.get('/summary', authenticate, async (req, res) => {
     let startDate, endDate;
     if (start && end) {
       startDate = new Date(start);
-      startDate.setHours(0, 0, 0, 0);
+      startDate.setHours(8, 0, 0, 0);
       endDate = new Date(end);
-      endDate.setHours(23, 59, 59, 999);
+      endDate.setDate(endDate.getDate() + 1);
+      endDate.setHours(7, 59, 59, 999);
     } else {
       const now = new Date();
-      const targetMonth = month ? parseInt(month) : now.getMonth() + 1;
-      const targetYear = year ? parseInt(year) : now.getFullYear();
+      // Biznes kuni (Sutka) ertalab 08:00 dan boshlanadi.
+      // Agar hozirgi vaqt tungi 00:00 dan 07:59 gacha bo'lsa, u kechagi kunga tegishli!
+      const businessNow = new Date(now);
+      if (businessNow.getHours() < 8) {
+        businessNow.setDate(businessNow.getDate() - 1);
+      }
 
-      startDate = new Date(targetYear, targetMonth - 1, 1);
-      endDate = new Date(targetYear, targetMonth, 0, 23, 59, 59);
+      const targetMonth = month ? parseInt(month) : businessNow.getMonth() + 1;
+      const targetYear = year ? parseInt(year) : businessNow.getFullYear();
+
+      // Oy boshi: 1-sana soat 08:00
+      startDate = new Date(targetYear, targetMonth - 1, 1, 8, 0, 0);
+      // Oy oxiri: Keyingi oyning 1-sanasi soat 07:59:59
+      endDate = new Date(targetYear, targetMonth, 1, 7, 59, 59, 999);
     }
 
     const branchFilter = { companyId: req.user.companyId };
+    let targetBranchId = null;
     if (req.user.role === 'admin' || req.user.role === 'director') {
       branchFilter.branchId = req.user.branchId;
+      targetBranchId = req.user.branchId;
     } else if (branchId) {
       branchFilter.branchId = parseInt(branchId);
+      targetBranchId = parseInt(branchId);
     }
 
     // Oylik tushum
@@ -61,11 +74,18 @@ router.get('/summary', authenticate, async (req, res) => {
 
     const totalRooms = await prisma.room.count({ where: branchFilter });
 
-    // Bugungi bronlar
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    // Bugungi bronlar (Biznes kun: bugun 08:00 dan ertaga 07:59 gacha)
+    const nowForToday = new Date();
+    const businessToday = new Date(nowForToday);
+    if (businessToday.getHours() < 8) {
+      businessToday.setDate(businessToday.getDate() - 1);
+    }
+    
+    const todayStart = new Date(businessToday);
+    todayStart.setHours(8, 0, 0, 0);
+    const todayEnd = new Date(businessToday);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+    todayEnd.setHours(7, 59, 59, 999);
 
     const todayBookings = await prisma.booking.count({
       where: {
@@ -185,9 +205,9 @@ router.get('/summary', authenticate, async (req, res) => {
         include: {
           admin: { select: { name: true } },
           branch: { select: { name: true } },
-          bookings: {
-            where: { paymentMethod: { in: ['terminal', 'qrcode'] } },
-            select: { paidAmount: true, paymentMethod: true }
+          payments: {
+            where: { method: { in: ['terminal', 'qrcode', 'transfer'] } },
+            select: { amount: true, method: true }
           },
           expenses: {
             select: { amount: true }
@@ -197,10 +217,11 @@ router.get('/summary', authenticate, async (req, res) => {
       });
 
       shiftReports = shiftReportsRaw.map(shift => {
-        const terminal = shift.bookings.filter(b => b.paymentMethod === 'terminal').reduce((sum, b) => sum + b.paidAmount, 0);
-        const qrcode = shift.bookings.filter(b => b.paymentMethod === 'qrcode').reduce((sum, b) => sum + b.paidAmount, 0);
+        const terminal = shift.payments.filter(p => p.method === 'terminal').reduce((sum, p) => sum + p.amount, 0);
+        const qrcode = shift.payments.filter(p => p.method === 'qrcode').reduce((sum, p) => sum + p.amount, 0);
+        const transfer = shift.payments.filter(p => p.method === 'transfer').reduce((sum, p) => sum + p.amount, 0);
         const chiqim = shift.expenses.reduce((sum, e) => sum + e.amount, 0);
-        const qoldiq = shift.totalIncome - terminal - qrcode - chiqim;
+        const qoldiq = shift.totalIncome - terminal - qrcode - transfer - chiqim;
 
         return {
           id: shift.id,
@@ -212,6 +233,7 @@ router.get('/summary', authenticate, async (req, res) => {
           totalIncome: shift.totalIncome,
           terminal,
           qrcode,
+          transfer,
           chiqim,
           qoldiq
         };
@@ -222,7 +244,7 @@ router.get('/summary', authenticate, async (req, res) => {
     const paymentMethodStats = await prisma.payment.groupBy({
       by: ['method'],
       where: {
-        booking: { companyId: req.user.companyId, ...(branchId ? { branchId: parseInt(branchId) } : {}) },
+        booking: { companyId: req.user.companyId, ...(targetBranchId ? { branchId: targetBranchId } : {}) },
         createdAt: { gte: startDate, lte: endDate }
       },
       _sum: { amount: true }
@@ -232,6 +254,7 @@ router.get('/summary', authenticate, async (req, res) => {
       { name: 'Naqd', value: paymentMethodStats.find(p => p.method === 'cash')?._sum.amount || 0 },
       { name: 'Terminal', value: paymentMethodStats.find(p => p.method === 'terminal')?._sum.amount || 0 },
       { name: 'QrCode', value: paymentMethodStats.find(p => p.method === 'qrcode')?._sum.amount || 0 },
+      { name: 'Karta/Karta', value: paymentMethodStats.find(p => p.method === 'transfer')?._sum.amount || 0 },
     ];
 
     // Barcha filiallar statistikasi (owner, supervisor, director uchun)
@@ -282,9 +305,8 @@ router.get('/summary', authenticate, async (req, res) => {
       );
     }
 
-    // Xonalar bandligi dinamikasi (kunlik, joriy oy yoki oraliq uchun)
+    // Xonalar bandligi dinamikasi (kunlik)
     const occupancyStats = [];
-    const endDay = (endDate < new Date()) ? endDate.getDate() : Math.min(new Date().getDate(), endDate.getDate());
     
     // Oydagi barcha bronlarni olish
     const overlappingBookings = await prisma.booking.findMany({
@@ -297,30 +319,45 @@ router.get('/summary', authenticate, async (req, res) => {
           { checkOutExpected: { gte: startDate }, status: 'active' }
         ]
       },
-      select: { checkIn: true, checkOutActual: true, checkOutExpected: true, status: true }
+      select: { roomId: true, checkIn: true, checkOutActual: true, checkOutExpected: true, status: true }
     });
 
-    for (let day = 1; day <= endDay; day++) {
-      const currentDay = new Date(startDate.getFullYear(), startDate.getMonth(), day);
-      currentDay.setHours(12, 0, 0, 0);
+    let loopDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 12, 0, 0);
+    let finalLoopDate;
+    const nowMoment = new Date();
 
-      let occupiedCount = 0;
-      for (const b of overlappingBookings) {
-        const checkIn = new Date(b.checkIn);
-        const checkOut = b.status === 'checked_out' && b.checkOutActual ? new Date(b.checkOutActual) : new Date(b.checkOutExpected);
-        
-        const checkInDay = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
-        const checkOutDay = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+    if (start && end) {
+      finalLoopDate = new Date(end);
+      finalLoopDate.setHours(12, 0, 0, 0);
+    } else {
+      const daysInTargetMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+      finalLoopDate = new Date(startDate.getFullYear(), startDate.getMonth(), daysInTargetMonth, 12, 0, 0);
+    }
 
-        if (currentDay >= checkInDay && currentDay <= checkOutDay) {
-          occupiedCount++;
+    while (loopDate <= finalLoopDate) {
+      const curDayStart = new Date(loopDate.getFullYear(), loopDate.getMonth(), loopDate.getDate(), 0, 0, 0);
+      const curDayEnd = new Date(loopDate.getFullYear(), loopDate.getMonth(), loopDate.getDate(), 23, 59, 59, 999);
+
+      let bandVal = null;
+      if (curDayStart <= nowMoment) {
+        const occupiedRooms = new Set();
+        for (const b of overlappingBookings) {
+          const checkIn = new Date(b.checkIn);
+          const checkOut = b.status === 'checked_out' && b.checkOutActual ? new Date(b.checkOutActual) : new Date(b.checkOutExpected);
+
+          if (checkIn <= curDayEnd && checkOut >= curDayStart) {
+            occupiedRooms.add(b.roomId);
+          }
         }
+        bandVal = occupiedRooms.size;
       }
 
       occupancyStats.push({
-        date: currentDay.getDate().toString().padStart(2, '0') + '-' + (currentDay.getMonth() + 1).toString().padStart(2, '0'),
-        band: occupiedCount
+        date: loopDate.getDate().toString().padStart(2, '0') + '-' + (loopDate.getMonth() + 1).toString().padStart(2, '0'),
+        band: bandVal
       });
+
+      loopDate.setDate(loopDate.getDate() + 1);
     }
 
     const terminalTotal = paymentStats[1].value;
@@ -364,8 +401,13 @@ router.get('/summary', authenticate, async (req, res) => {
 router.get('/admin', authenticate, authorize('admin'), async (req, res) => {
   try {
     const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const businessNow = new Date(now);
+    if (businessNow.getHours() < 8) {
+      businessNow.setDate(businessNow.getDate() - 1);
+    }
+    
+    const startDate = new Date(businessNow.getFullYear(), businessNow.getMonth(), 1, 8, 0, 0);
+    const endDate = new Date(businessNow.getFullYear(), businessNow.getMonth() + 1, 1, 7, 59, 59, 999);
 
     const shifts = await prisma.shift.count({
       where: {
