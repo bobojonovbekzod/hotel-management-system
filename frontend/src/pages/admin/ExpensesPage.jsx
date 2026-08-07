@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
 import { WalletCards, Plus, Inbox, Trash2 } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
+import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
 export default function ExpensesPage() {
   const { user } = useAuth();
@@ -56,7 +57,14 @@ export default function ExpensesPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.amount || parseFloat(form.amount) <= 0) {
+
+    if (user?.role === 'admin' && !activeShift) {
+      toast.error('Avval smena boshlang!');
+      return;
+    }
+
+    const parsedAmount = parseFloat(parseNumberInput(form.amount));
+    if (!parsedAmount || parsedAmount <= 0) {
       toast.error('Summa kiriting!');
       return;
     }
@@ -69,7 +77,7 @@ export default function ExpensesPage() {
       await api.post('/expenses', {
         ...form,
         shiftId: activeShift?.id,
-        amount: parseFloat(form.amount),
+        amount: parsedAmount,
       });
       toast.success('Xarajat qo\'shildi!');
       setForm(prev => ({ ...prev, amount: '', description: '' }));
@@ -262,10 +270,12 @@ export default function ExpensesPage() {
               <div>
                 <label className="block text-sm text-slate-600 mb-1">Summa (so'm)</label>
                 <input
-                  type="number"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  type="text"
+                  inputMode="decimal"
+                  value={formatNumberInput(form.amount)}
+                  onChange={(e) => setForm({ ...form, amount: parseNumberInput(e.target.value) })}
                   className="input-field"
+                  placeholder="Masalan: 50 000"
                   required
                 />
               </div>

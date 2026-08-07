@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
+import PWAInstallPrompt from './components/common/PWAInstallPrompt';
 
 // Admin pages
 import AdminExpensesPage from './pages/admin/ExpensesPage';
@@ -23,11 +24,27 @@ import CompaniesPage from './pages/superadmin/CompaniesPage';
 import OwnerDashboard from './pages/owner/DashboardPage';
 import BranchesPage from './pages/owner/BranchesPage';
 import RoomsPage from './pages/owner/RoomsPage';
+import ShiftIssuesPage from './pages/owner/ShiftIssuesPage';
 import StaffPage from './pages/staff/StaffPage';
 import DevicesPage from './pages/admin/DevicesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import PayrollPage from './pages/owner/PayrollPage';
 import HRDashboardPage from './pages/owner/HRDashboardPage';
+
+// Inventory pages
+import InventoryPage from './pages/owner/InventoryPage';
+import RequestApprovalsPage from './pages/owner/RequestApprovalsPage';
+import InventoryRequestsPage from './pages/director/InventoryRequestsPage';
+
+// Tasks (Jira-like)
+import TasksPage from './pages/tasks/TasksPage';
+
+// Shared Pages
+import CleaningTasksPage from './pages/shared/CleaningTasksPage';
+import CleanerDashboardPage from './pages/cleaner/CleanerDashboardPage';
+
+// Bot Pages
+import TelegramCameraPage from './pages/bot/TelegramCameraPage';
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
@@ -52,6 +69,7 @@ function getDefaultRoute(role) {
   if (role === 'director') return '/director/dashboard';
   if (role === 'admin') return '/admin/front-desk';
   if (role === 'hr') return '/owner/hr';
+  if (role === 'cleaner') return '/cleaner/dashboard';
   return '/login';
 }
 
@@ -60,6 +78,21 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={getDefaultRoute(user.role)} replace />} />
+      <Route path="/bot-camera" element={<TelegramCameraPage />} />
+
+      <Route path="/tasks" element={
+        <ProtectedRoute allowedRoles={['owner', 'director', 'admin', 'supervisor']}>
+          <TasksPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/cleaner/dashboard" element={
+        <ProtectedRoute allowedRoles={['cleaner']}>
+          <CleanerDashboardPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/" element={<Navigate to={getDefaultRoute(user?.role)} replace />} />
 
       {/* Super Admin routes */}
       <Route path="/superadmin/companies" element={
@@ -84,6 +117,11 @@ function AppRoutes() {
           <ReservationsPage />
         </ProtectedRoute>
       } />
+      <Route path="/admin/bookings" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminBookingsPage />
+        </ProtectedRoute>
+      } />
       <Route path="/admin/shifts" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <AdminShiftPage />
@@ -97,6 +135,11 @@ function AppRoutes() {
       <Route path="/admin/salary" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <MySalaryPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/cleaning-tasks" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <CleaningTasksPage />
         </ProtectedRoute>
       } />
 
@@ -131,14 +174,20 @@ function AppRoutes() {
           <AdminExpensesPage />
         </ProtectedRoute>
       } />
-      <Route path="/director/shifts" element={
+
+      <Route path="/director/payroll" element={
         <ProtectedRoute allowedRoles={['director', 'owner']}>
-          <AdminShiftPage />
+          <PayrollPage />
         </ProtectedRoute>
       } />
       <Route path="/director/staff" element={
-        <ProtectedRoute allowedRoles={['director', 'owner']}>
+        <ProtectedRoute allowedRoles={['director', 'owner', 'hr']}>
           <StaffPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/director/shift-issues" element={
+        <ProtectedRoute allowedRoles={['director', 'owner']}>
+          <ShiftIssuesPage />
         </ProtectedRoute>
       } />
       <Route path="/director/transactions" element={
@@ -150,6 +199,16 @@ function AppRoutes() {
       <Route path="/director/attendance" element={
         <ProtectedRoute allowedRoles={['director', 'owner']}>
           <AttendancePage />
+        </ProtectedRoute>
+      } />
+      <Route path="/director/cleaning-tasks" element={
+        <ProtectedRoute allowedRoles={['director', 'owner']}>
+          <CleaningTasksPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/director/inventory-requests" element={
+        <ProtectedRoute allowedRoles={['director', 'admin']}>
+          <InventoryRequestsPage />
         </ProtectedRoute>
       } />
 
@@ -189,6 +248,11 @@ function AppRoutes() {
           <AttendancePage />
         </ProtectedRoute>
       } />
+      <Route path="/owner/cleaning-tasks" element={
+        <ProtectedRoute allowedRoles={['owner']}>
+          <CleaningTasksPage />
+        </ProtectedRoute>
+      } />
       <Route path="/owner/room-analytics" element={
         <ProtectedRoute allowedRoles={['owner', 'director']}>
           <RoomAnalyticsPage />
@@ -209,9 +273,24 @@ function AppRoutes() {
           <SettingsPage />
         </ProtectedRoute>
       } />
+      <Route path="/owner/shift-issues" element={
+        <ProtectedRoute allowedRoles={['owner', 'hr']}>
+          <ShiftIssuesPage />
+        </ProtectedRoute>
+      } />
       <Route path="/owner/reports" element={
         <ProtectedRoute allowedRoles={['owner']}>
           <OwnerDashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/owner/inventory" element={
+        <ProtectedRoute allowedRoles={['owner', 'superadmin']}>
+          <InventoryPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/owner/inventory-approvals" element={
+        <ProtectedRoute allowedRoles={['owner', 'superadmin']}>
+          <RequestApprovalsPage />
         </ProtectedRoute>
       } />
 
@@ -309,6 +388,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <PWAInstallPrompt />
         <Toaster
           position="top-right"
           toastOptions={{

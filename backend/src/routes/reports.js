@@ -38,40 +38,51 @@ router.get('/rooms-activity', authenticate, authorize('owner', 'director'), asyn
       endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
     }
 
-    const report = [];
+    // Barcha xonalar IDlarini ajratib olamiz
+    const roomIds = rooms.map(r => r.id);
 
-    for (const room of rooms) {
-      const monthlyBookings = await prisma.booking.findMany({
-        where: {
-          roomId: room.id,
-          createdAt: { gte: startDate, lte: endDate }
-        },
-        orderBy: { createdAt: 'desc' }
-      });
+    // 1-so'rov: Bir vaqtning o'zida hamma xonalar bo'yicha jami tushum va band qilishlar sonini guruhlab olamiz
+    const monthlyStats = await prisma.booking.groupBy({
+      by: ['roomId'],
+      where: {
+        roomId: { in: roomIds },
+        createdAt: { gte: startDate, lte: endDate }
+      },
+      _count: { id: true },
+      _sum: { totalPrice: true }
+    });
 
-      const totalBookings = monthlyBookings.length;
-      const totalIncome = monthlyBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
-
-      // Find the absolute last occupied date ever
-      const lastBooking = await prisma.booking.findFirst({
-        where: { roomId: room.id },
-        orderBy: { checkOutExpected: 'desc' }
-      });
-
-      const lastOccupiedDate = lastBooking 
-        ? (lastBooking.checkOutActual || lastBooking.checkOutExpected) 
-        : null;
-
-      report.push({
-        id: room.id,
-        roomNumber: room.roomNumber,
-        branchName: room.branch?.name,
-        pricePerNight: room.pricePerNight,
-        totalBookings,
-        totalIncome,
-        lastOccupiedDate
-      });
+    const statsMap = {};
+    for (const stat of monthlyStats) {
+      statsMap[stat.roomId] = {
+        totalBookings: stat._count.id,
+        totalIncome: stat._sum.totalPrice || 0
+      };
     }
+
+    // 2-so'rov: Bir vaqtning o'zida barcha xonalar uchun faqat eng oxirgi band qilingan tarixni olamiz
+    const latestBookings = await prisma.booking.findMany({
+      where: { roomId: { in: roomIds } },
+      distinct: ['roomId'],
+      orderBy: { checkOutExpected: 'desc' },
+      select: { roomId: true, checkOutExpected: true, checkOutActual: true }
+    });
+
+    const lastOccupiedMap = {};
+    for (const booking of latestBookings) {
+      lastOccupiedMap[booking.roomId] = booking.checkOutActual || booking.checkOutExpected;
+    }
+
+    // Olingan natijalarni xonalarga tezkorlik bilan biriktiramiz
+    const report = rooms.map(room => ({
+      id: room.id,
+      roomNumber: room.roomNumber,
+      branchName: room.branch?.name,
+      pricePerNight: room.pricePerNight,
+      totalBookings: statsMap[room.id]?.totalBookings || 0,
+      totalIncome: statsMap[room.id]?.totalIncome || 0,
+      lastOccupiedDate: lastOccupiedMap[room.id] || null
+    }));
 
     res.json({ success: true, data: report });
   } catch (error) {

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../lib/api';
-import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 import { Download, Printer, Filter, Calendar, Wallet, CheckCircle, Search, TrendingUp, TrendingDown, DollarSign, X, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
 export default function PayrollPage() {
   const { user } = useAuth();
@@ -157,20 +158,20 @@ export default function PayrollPage() {
                 <td className="border border-black p-2 text-center font-medium">{idx + 1}</td>
                 <td className="border border-black p-2 font-semibold text-center">{item.user.name}</td>
                 <td className="border border-black p-2 text-center capitalize font-medium">{item.user.role}</td>
-                <td className="border border-black p-2 text-center font-semibold">{item.stats.totalAdvances ? item.stats.totalAdvances.toLocaleString() : ''}</td>
+                <td className="border border-black p-2 text-right tabular-nums pr-4 font-semibold">{item.stats.totalAdvances ? item.stats.totalAdvances.toLocaleString() : ''}</td>
                 <td className="border border-black p-2 text-center"></td>
                 <td className="border border-black p-2"></td>
-                <td className="border border-black p-2 text-center font-bold text-base">{item.stats.totalPayable ? item.stats.totalPayable.toLocaleString() : ''}</td>
+                <td className="border border-black p-2 text-right tabular-nums pr-4 font-bold text-base">{item.stats.totalPayable ? item.stats.totalPayable.toLocaleString() : ''}</td>
                 <td className="border border-black p-2 text-center"></td>
                 <td className="border border-black p-2"></td>
               </tr>
             ))}
             {/* Total Row */}
             <tr className="bg-white font-bold text-base">
-              <td colSpan="3" className="border border-black p-2 text-right">Jami</td>
-              <td className="border border-black p-2 text-center">{totalAdvances ? totalAdvances.toLocaleString() : ''}</td>
+              <td colSpan="3" className="border border-black p-2 text-right pr-4">Jami:</td>
+              <td className="border border-black p-2 text-right tabular-nums pr-4">{totalAdvances ? totalAdvances.toLocaleString() : ''}</td>
               <td colSpan="2" className="border border-black p-2"></td>
-              <td className="border border-black p-2 text-center">{totalPayable ? totalPayable.toLocaleString() : ''}</td>
+              <td className="border border-black p-2 text-right tabular-nums pr-4">{totalPayable ? totalPayable.toLocaleString() : ''}</td>
               <td colSpan="2" className="border border-black p-2"></td>
             </tr>
           </tbody>
@@ -263,7 +264,7 @@ export default function PayrollPage() {
                 <thead>
                   <tr className="bg-slate-50">
                     <th className="table-th text-left">Xodim</th>
-                    <th className="table-th text-center">Smenalar</th>
+                    <th className="table-th text-center">Ish kunlari / Smenalar</th>
                     <th className="table-th text-right">Kassa Tushumi</th>
                     <th className="table-th text-right border-l border-slate-300 bg-indigo-500/5 text-indigo-300">Asosiy Oylik</th>
                     <th className="table-th text-right border-l border-slate-300 bg-indigo-500/5 text-indigo-300">KPI Daromadi</th>
@@ -284,32 +285,75 @@ export default function PayrollPage() {
                         </div>
                       </td>
                       <td className="table-td text-center">
-                        {item.user.salaryType === 'per_shift' ? (
-                          <div className="text-xs">
-                            <span className="text-amber-400 mr-2" title="Kunduzgi smena">☀️ {item.stats.dayShifts}</span>
-                            <span className="text-indigo-400" title="Tungi smena">🌙 {item.stats.nightShifts}</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-600">Statik oylik</span>
-                        )}
+                        <div className="flex flex-col gap-1 text-xs items-center">
+                          {/* Davomat */}
+                          {item.stats.attendances > 0 && (
+                            <span className="text-blue-600 font-medium" title="Davomat">🟢 {item.stats.attendances} kun kelgan</span>
+                          )}
+                          
+                          {/* Tozalik */}
+                          {item.stats.cleanedRoomsCount > 0 && (
+                            <span className="text-purple-600 font-medium" title="Tozalangan xonalar">🧽 {item.stats.cleanedRoomsCount} ta xona</span>
+                          )}
+
+                          {/* Smenalar */}
+                          {(item.stats.dayShifts > 0 || item.stats.nightShifts > 0) && (
+                            <div className="flex gap-2 justify-center">
+                              {item.stats.dayShifts > 0 && <span className="text-amber-500 font-medium" title="Kunduzgi smena">☀️ {item.stats.dayShifts}</span>}
+                              {item.stats.nightShifts > 0 && <span className="text-indigo-500 font-medium" title="Tungi smena">🌙 {item.stats.nightShifts}</span>}
+                            </div>
+                          )}
+
+                          {/* Agar hech narsa bo'lmasa */}
+                          {!item.stats.attendances && !item.stats.cleanedRoomsCount && !item.stats.dayShifts && !item.stats.nightShifts && (
+                            <span className="text-slate-500">{item.user.salaryType === 'static' ? 'Statik oylik' : '—'}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="table-td text-right font-mono text-sm text-slate-800">
                         {item.stats.totalShiftIncome > 0 ? item.stats.totalShiftIncome.toLocaleString() : '-'}
                       </td>
 
                       <td className="table-td text-right border-l border-slate-300">
-                        <span className="text-sm font-bold text-indigo-300">
-                          {item.stats.baseSalary.toLocaleString()}
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-bold text-indigo-300">
+                            {item.stats.baseSalary.toLocaleString()}
+                          </span>
+                          {item.user.appliedFixedSalary && (
+                            <span className="text-[9px] text-slate-500 max-w-[120px] text-right mt-0.5" title={`Filial tushumi bo'yicha maxsus fiksa oylik belgilangan`}>
+                              (Maxsus Fiksa)
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="table-td text-right border-l border-slate-300">
                         {item.stats.kpiEarnings > 0 ? (
-                          <span className="text-sm font-semibold text-emerald-400">
-                            {item.stats.kpiEarnings.toLocaleString()}
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm font-semibold text-emerald-400">
+                              {item.stats.kpiEarnings.toLocaleString()}
+                            </span>
+                            {item.user.appliedKpiThreshold ? (
+                              <span className="text-[9px] text-slate-500 max-w-[120px] text-right mt-0.5" title={`Filialning umumiy kassasi: ${item.user.branchTotalIncomeForKpi?.toLocaleString()} so'm\nBelgilangan KPI qadam: ${item.user.appliedKpiThreshold?.toLocaleString()} so'm = ${item.user.kpiPercentage}%`}>
+                                (Tushum {item.user.branchTotalIncomeForKpi >= 1000000 ? (item.user.branchTotalIncomeForKpi/1000000).toFixed(1)+'M' : item.user.branchTotalIncomeForKpi} ➔ {item.user.kpiPercentage}%)
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 mt-0.5">({item.user.kpiPercentage}%)</span>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-slate-700 text-sm">—</span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-slate-700 text-sm">—</span>
+                            {item.user.appliedFixedSalary ? (
+                               <span className="text-[9px] text-slate-500 max-w-[120px] text-right mt-0.5">
+                                 (Maxsus fiksa qo'llanildi)
+                               </span>
+                            ) : item.user.appliedKpiThreshold === null && item.user.branchTotalIncomeForKpi > 0 && item.user.role === 'admin' && (
+                              <span className="text-[9px] text-slate-500 max-w-[120px] text-right mt-0.5">
+                                (KPI rejasiga yetilmadi: {item.user.branchTotalIncomeForKpi >= 1000000 ? (item.user.branchTotalIncomeForKpi/1000000).toFixed(1)+'M' : item.user.branchTotalIncomeForKpi})
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
 
@@ -405,14 +449,15 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!txAmount || Number(txAmount) <= 0) return toast.error('Summani kiriting');
+    const parsedAmount = parseFloat(parseNumberInput(txAmount));
+    if (!parsedAmount || parsedAmount <= 0) return toast.error('Summani kiriting');
 
     setSubmitting(true);
     try {
       await api.post('/payroll', {
         userId: user.id,
         type: txType,
-        amount: Number(txAmount),
+        amount: parsedAmount,
         description: txDesc
       });
       toast.success('Saqlandi');
@@ -476,7 +521,7 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
 
             <div>
               <label className="label">Summa (so'm)</label>
-              <input type="number" className="input-field text-lg font-bold text-slate-900 bg-slate-950" placeholder="100000" value={txAmount} onChange={e => setTxAmount(e.target.value)} required />
+              <input type="text" inputMode="decimal" className="input-field text-lg font-bold text-slate-900 bg-slate-100" placeholder="Masalan: 100 000" value={formatNumberInput(txAmount)} onChange={e => setTxAmount(parseNumberInput(e.target.value))} required />
             </div>
 
             <div>

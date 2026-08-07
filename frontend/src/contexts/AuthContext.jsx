@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('hotel_token');
     localStorage.removeItem('hotel_user');
     setUser(null);
+    window.location.href = '/login';
   };
 
   return (

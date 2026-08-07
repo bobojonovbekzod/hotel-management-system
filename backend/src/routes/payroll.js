@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 const canManagePayroll = (role) => ['owner', 'director', 'supervisor'].includes(role);
 
 // GET /api/payroll - Filial bo'yicha barcha xodimlarning maosh hisobotini olish
-router.get('/', authenticate, authorize('owner'), async (req, res) => {
+router.get('/', authenticate, authorize('owner', 'director'), async (req, res) => {
   try {
     const { branchId, month } = req.query; // month formati: 'YYYY-MM'
     
@@ -24,7 +24,7 @@ router.get('/', authenticate, authorize('owner'), async (req, res) => {
 
     const allUsers = await prisma.user.findMany({
       where: whereUser,
-      include: { branch: { select: { name: true } } }
+      include: { branch: { select: { id: true, name: true, adminKpiTiers: true } } }
     });
 
     let startDate, endDate;
@@ -44,30 +44,104 @@ router.get('/', authenticate, authorize('owner'), async (req, res) => {
 
     const report = [];
 
+    const userIds = allUsers.map(u => u.id);
+
+    // 1. Smenalarni (shifts) guruhlab tortish
+    const shiftsStats = await prisma.shift.groupBy({
+      by: ['adminId', 'shiftType'],
+      where: {
+        adminId: { in: userIds },
+        branchId: targetBranchId ? targetBranchId : undefined,
+        status: 'closed',
+        createdAt: { gte: startDate, lte: endDate }
+      },
+      _count: { id: true },
+      _sum: { totalIncome: true }
+    });
+
+    const branchIncomeStats = await prisma.shift.groupBy({
+      by: ['branchId'],
+      where: {
+        branchId: targetBranchId ? targetBranchId : undefined,
+        status: 'closed',
+        createdAt: { gte: startDate, lte: endDate }
+      },
+      _sum: { totalIncome: true }
+    });
+
+    const branchIncomeMap = {};
+    for (const b of branchIncomeStats) {
+      branchIncomeMap[b.branchId] = b._sum.totalIncome || 0;
+    }
+
+    // 2. Davomatlarni (attendances) guruhlab tortish
+    const attendanceStats = await prisma.attendance.groupBy({
+      by: ['userId'],
+      where: {
+        userId: { in: userIds },
+        branchId: targetBranchId ? targetBranchId : undefined,
+        checkIn: { not: null },
+        workDate: { gte: startDate, lte: endDate }
+      },
+      _count: { id: true }
+    });
+
+    // 3. Tozalangan xonalar sonini tortish (Farroshlar uchun ishbay)
+    const cleaningStats = await prisma.cleaningTask.groupBy({
+      by: ['cleanerId'],
+      where: {
+        cleanerId: { in: userIds },
+        branchId: targetBranchId ? targetBranchId : undefined,
+        createdAt: { gte: startDate, lte: endDate },
+        status: 'completed'
+      },
+      _count: { id: true }
+    });
+
+    // 4. Tranzaksiyalarni (avans, jarimalar) guruhlab tortish
+    const transactionStats = await prisma.payrollTransaction.groupBy({
+      by: ['userId', 'type'],
+      where: {
+        userId: { in: userIds },
+        branchId: targetBranchId ? targetBranchId : undefined,
+        date: { gte: startDate, lte: endDate }
+      },
+      _sum: { amount: true }
+    });
+
+    // Olingan ma'lumotlarni JavaScript yordamida tezkor obyektlarga (Map) joylash
+    const shiftMap = {};
+    for (const s of shiftsStats) {
+      if (!shiftMap[s.adminId]) shiftMap[s.adminId] = { morning: 0, night: 0, totalIncome: 0 };
+      if (s.shiftType === 'morning') shiftMap[s.adminId].morning += s._count.id;
+      if (s.shiftType === 'night') shiftMap[s.adminId].night += s._count.id;
+      shiftMap[s.adminId].totalIncome += (s._sum.totalIncome || 0);
+    }
+
+    const attMap = {};
+    for (const a of attendanceStats) {
+      attMap[a.userId] = a._count.id;
+    }
+
+    const cleaningMap = {};
+    for (const c of cleaningStats) {
+      cleaningMap[c.cleanerId] = c._count.id;
+    }
+
+    const txMap = {};
+    for (const t of transactionStats) {
+      if (!txMap[t.userId]) txMap[t.userId] = { advance: 0, penalty: 0, bonus: 0, salary_payment: 0 };
+      if (t.type === 'advance') txMap[t.userId].advance += (t._sum.amount || 0);
+      if (t.type === 'penalty') txMap[t.userId].penalty += (t._sum.amount || 0);
+      if (t.type === 'bonus') txMap[t.userId].bonus += (t._sum.amount || 0);
+      if (t.type === 'salary_payment') txMap[t.userId].salary_payment += (t._sum.amount || 0);
+    }
+
     for (const user of allUsers) {
-      // Smenalarni topish (oy oralig'ida va faqat tanlangan filial uchun)
-      const shifts = await prisma.shift.findMany({
-        where: {
-          adminId: user.id,
-          branchId: targetBranchId ? targetBranchId : undefined,
-          status: 'closed',
-          createdAt: { gte: startDate, lte: endDate }
-        }
-      });
-
-      const dayShifts = shifts.filter(s => s.shiftType === 'morning').length;
-      const nightShifts = shifts.filter(s => s.shiftType === 'night').length;
-      const totalShiftIncome = shifts.reduce((sum, s) => sum + (s.totalIncome || 0), 0);
-
-      // Davomatlarni topish (cleanerlar uchun, filial bo'yicha)
-      const attendances = await prisma.attendance.count({
-        where: {
-          userId: user.id,
-          branchId: targetBranchId ? targetBranchId : undefined,
-          checkIn: { not: null },
-          workDate: { gte: startDate, lte: endDate }
-        }
-      });
+      const dayShifts = shiftMap[user.id]?.morning || 0;
+      const nightShifts = shiftMap[user.id]?.night || 0;
+      const totalShiftIncome = shiftMap[user.id]?.totalIncome || 0;
+      const attendances = attMap[user.id] || 0;
 
       let shiftEarnings = 0;
       let kpiEarnings = 0;
@@ -78,46 +152,76 @@ router.get('/', authenticate, authorize('owner'), async (req, res) => {
         } else {
           shiftEarnings = attendances * (user.salary || 0);
         }
+      } else if (user.salaryType === 'per_room') {
+        const cleanedRoomsCount = cleaningMap[user.id] || 0;
+        shiftEarnings = cleanedRoomsCount * (user.salary || 0);
       }
 
-      if (user.kpiPercentage && user.kpiPercentage > 0) {
-        kpiEarnings = totalShiftIncome * (user.kpiPercentage / 100);
-      }
+      let effectiveKpiPercentage = user.kpiPercentage || 0;
+      let appliedKpiThreshold = null;
+      let branchTotalIncomeForKpi = 0;
+      let appliedFixedSalary = null;
 
-      const baseSalary = user.salaryType === 'static' ? (user.salary || 0) : shiftEarnings;
-
-      // Tranzaksiyalar (avans, jarima, bonus - tanlangan filial bo'yicha)
-      const transactions = await prisma.payrollTransaction.findMany({
-        where: {
-          userId: user.id,
-          branchId: targetBranchId ? targetBranchId : undefined,
-          date: { gte: startDate, lte: endDate }
+      if (user.role === 'admin' && user.branch && user.branch.adminKpiTiers) {
+        let tiers = [];
+        try {
+          tiers = typeof user.branch.adminKpiTiers === 'string' ? JSON.parse(user.branch.adminKpiTiers) : user.branch.adminKpiTiers;
+        } catch (e) {}
+        
+        if (Array.isArray(tiers) && tiers.length > 0) {
+          const branchTotal = branchIncomeMap[user.branchId] || 0;
+          branchTotalIncomeForKpi = branchTotal;
+          tiers.sort((a, b) => b.threshold - a.threshold);
+          
+          let tierMet = false;
+          for (const tier of tiers) {
+            if (branchTotal >= tier.threshold) {
+              effectiveKpiPercentage = tier.percentage !== undefined && tier.percentage !== '' ? Number(tier.percentage) : 0;
+              appliedKpiThreshold = tier.threshold;
+              appliedFixedSalary = tier.fixedSalary !== undefined && tier.fixedSalary !== '' ? Number(tier.fixedSalary) : null;
+              tierMet = true;
+              break;
+            }
+          }
+          if (!tierMet) {
+            effectiveKpiPercentage = 0;
+          }
         }
-      });
+      }
 
-      let totalAdvances = 0;
-      let totalPenalties = 0;
-      let totalBonuses = 0;
-      let totalPaid = 0;
+      if (effectiveKpiPercentage > 0) {
+        kpiEarnings = totalShiftIncome * (effectiveKpiPercentage / 100);
+      }
 
-      transactions.forEach(t => {
-        if (t.type === 'advance') totalAdvances += t.amount;
-        if (t.type === 'penalty') totalPenalties += t.amount;
-        if (t.type === 'bonus') totalBonuses += t.amount;
-        if (t.type === 'salary_payment') totalPaid += t.amount;
-      });
+      const baseSalary = appliedFixedSalary !== null ? appliedFixedSalary : (user.salaryType === 'static' ? (user.salary || 0) : shiftEarnings);
+
+      const userTx = txMap[user.id] || { advance: 0, penalty: 0, bonus: 0, salary_payment: 0 };
+      const totalAdvances = userTx.advance;
+      const totalPenalties = userTx.penalty;
+      const totalBonuses = userTx.bonus;
+      const totalPaid = userTx.salary_payment;
 
       const totalPayable = baseSalary + kpiEarnings + totalBonuses - totalAdvances - totalPenalties - totalPaid;
 
-      // Agar xodim shu filialda umuman ishlamagan bo'lsa (smena, davomat yoki tranzaksiya yo'q), uni hisobotga qo'shmaymiz
-      // Lekin agar xodimning ASOSIY filiali shu filial bo'lsa, uni nol oylik bilan bo'lsa ham ro'yxatda chiqaramiz
-      const hasWorkInBranch = dayShifts > 0 || nightShifts > 0 || attendances > 0 || transactions.length > 0;
+      const hasWorkInBranch = dayShifts > 0 || nightShifts > 0 || attendances > 0 || (cleaningMap[user.id] || 0) > 0 || (totalAdvances+totalPenalties+totalBonuses+totalPaid) > 0;
       if (targetBranchId && user.branchId !== targetBranchId && !hasWorkInBranch) {
         continue;
       }
 
       report.push({
-        user: { id: user.id, name: user.name, role: user.role, branchName: user.branch?.name, salaryType: user.salaryType, salary: user.salary, kpiPercentage: user.kpiPercentage },
+        user: { 
+          id: user.id, 
+          name: user.name, 
+          role: user.role, 
+          branchName: user.branch?.name, 
+          salaryType: user.salaryType, 
+          salary: user.salary, 
+          kpiPercentage: effectiveKpiPercentage,
+          originalKpiPercentage: user.kpiPercentage,
+          appliedKpiThreshold,
+          branchTotalIncomeForKpi,
+          appliedFixedSalary
+        },
         stats: {
           dayShifts,
           nightShifts,
@@ -241,6 +345,19 @@ router.post('/', authenticate, async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
     if (!user || user.companyId !== req.user.companyId) {
       return res.status(404).json({ success: false, message: 'Xodim topilmadi.' });
+    }
+
+    // DIRECTOR PERMISSION CHECK
+    if (req.user.role === 'director') {
+      if (type !== 'penalty') {
+        return res.status(403).json({ success: false, message: 'Siz faqatgina xodimlarga jarima yoza olasiz xolos. Oylik to\'lash yoki bonus berishga ruxsatingiz yo\'q.' });
+      }
+      if (user.role !== 'admin' && user.role !== 'cleaner') {
+        return res.status(403).json({ success: false, message: 'Siz faqat Admin va Tozalik xodimlariga jarima yoza olasiz.' });
+      }
+      if (user.branchId !== req.user.branchId) {
+        return res.status(403).json({ success: false, message: 'Siz faqat o\'z filialingizdagi xodimlarga jarima yoza olasiz.' });
+      }
     }
 
     const tx = await prisma.payrollTransaction.create({

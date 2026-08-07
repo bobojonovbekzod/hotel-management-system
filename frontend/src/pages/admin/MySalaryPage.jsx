@@ -75,35 +75,35 @@ export default function MySalaryPage() {
           </p>
         </div>
 
-        <div className="card bg-primary-500/10 border-primary-500/20">
+        <div className="card bg-primary-50 border-primary-200">
           <div className="flex items-center gap-3 mb-2">
-            <DollarSign className="text-primary-400" size={20} />
-            <span className="text-primary-200">Hisoblangan jami maosh</span>
+            <DollarSign className="text-primary-600" size={20} />
+            <span className="text-primary-900 font-medium">Hisoblangan jami maosh</span>
           </div>
-          <p className="text-4xl font-bold text-primary-400 mb-2">
-            {data.netSalary.toLocaleString()} <span className="text-lg">so'm</span>
+          <p className="text-4xl font-bold text-primary-700 mb-2">
+            {data.netSalary.toLocaleString()} <span className="text-lg text-primary-600">so'm</span>
           </p>
-          <div className="text-sm text-primary-200/60 border-t border-primary-500/20 pt-2 mt-2 space-y-1">
+          <div className="text-sm text-primary-800 border-t border-primary-200 pt-2 mt-2 space-y-1">
             <div className="flex justify-between">
               <span>Asosiy ish haqi:</span>
-              <span>{data.baseSalary.toLocaleString()}</span>
+              <span className="font-medium">{data.baseSalary.toLocaleString()}</span>
             </div>
             {data.bonuses > 0 && (
-              <div className="flex justify-between text-emerald-400">
+              <div className="flex justify-between text-emerald-600">
                 <span>Bonuslar (+):</span>
-                <span>{data.bonuses.toLocaleString()}</span>
+                <span className="font-medium">{data.bonuses.toLocaleString()}</span>
               </div>
             )}
             {data.penalties > 0 && (
-              <div className="flex justify-between text-red-400">
+              <div className="flex justify-between text-red-600">
                 <span>Jarimalar (-):</span>
-                <span>{data.penalties.toLocaleString()}</span>
+                <span className="font-medium">{data.penalties.toLocaleString()}</span>
               </div>
             )}
             {data.advances > 0 && (
-              <div className="flex justify-between text-yellow-400">
+              <div className="flex justify-between text-yellow-600">
                 <span>Avans (-):</span>
-                <span>{data.advances.toLocaleString()}</span>
+                <span className="font-medium">{data.advances.toLocaleString()}</span>
               </div>
             )}
           </div>

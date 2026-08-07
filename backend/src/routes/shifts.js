@@ -2,6 +2,9 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 
+const fs = require('fs');
+const path = require('path');
+
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -60,8 +63,31 @@ router.post('/start', authenticate, authorize('admin', 'director'), async (req, 
     }
 
     const now = new Date();
-    const hour = now.getHours();
-    const shiftType = (hour >= 8 && hour < 19) ? 'morning' : 'night';
+    
+    // Smena turi frontend'dan kelishi shart
+    const shiftType = req.body.shiftType;
+    if (!shiftType) {
+      return res.status(400).json({ success: false, message: "Smena turini tanlang." });
+    }
+
+    let startPhotoUrl = null;
+    if (req.body.base64Photo) {
+      try {
+        const base64Data = req.body.base64Photo.replace(/^data:image\/\w+;base64,/, "");
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const filename = `shift_${req.user.id}_${Date.now()}.jpg`;
+        const uploadDir = path.join(__dirname, '../../uploads/shifts');
+        
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        fs.writeFileSync(path.join(uploadDir, filename), imageBuffer);
+        startPhotoUrl = `/api/uploads/shifts/${filename}`;
+      } catch (err) {
+        console.error("Failed to save shift photo:", err);
+      }
+    }
 
     const shift = await prisma.shift.create({
       data: {
@@ -71,6 +97,7 @@ router.post('/start', authenticate, authorize('admin', 'director'), async (req, 
         shiftType,
         startTime: now,
         status: 'active',
+        startPhotoUrl,
       },
     });
 
@@ -80,10 +107,80 @@ router.post('/start', authenticate, authorize('admin', 'director'), async (req, 
   }
 });
 
+// GET /api/shifts/issues/active - Hal qilinmagan muammoli smenalar
+router.get('/issues/active', authenticate, authorize('admin', 'director', 'owner', 'hr'), async (req, res) => {
+  try {
+    const targetBranchId = req.user.role === 'owner' || req.user.role === 'hr' ? undefined : req.user.branchId;
+
+    const issues = await prisma.shift.findMany({
+      where: {
+        branchId: targetBranchId,
+        companyId: req.user.companyId,
+        hasIssue: true,
+        isIssueResolved: false
+      },
+      include: {
+        admin: { select: { name: true, username: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, data: issues });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
+// GET /api/shifts/issues/history - Barcha smena muammolari tarixi (KPI uchun)
+router.get('/issues/history', authenticate, authorize('admin', 'director', 'owner', 'hr'), async (req, res) => {
+  try {
+    const { branchId } = req.query;
+    
+    // Owner can see all branches or filter by branchId. Director/Admin only sees their own branch.
+    const targetBranchId = req.user.role === 'owner' || req.user.role === 'hr'
+      ? (branchId ? parseInt(branchId) : undefined)
+      : req.user.branchId;
+
+    const history = await prisma.shift.findMany({
+      where: {
+        companyId: req.user.companyId,
+        branchId: targetBranchId,
+        hasIssue: true
+      },
+      include: {
+        admin: { select: { name: true, username: true, role: true } },
+        issueResolvedBy: { select: { name: true, username: true, role: true } },
+        branch: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    res.json({ success: true, data: history });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
+// PUT /api/shifts/issues/:id/resolve - Smena muammosini hal qilish
+router.put('/issues/:id/resolve', authenticate, authorize('admin', 'director', 'owner'), async (req, res) => {
+  try {
+    const shiftId = parseInt(req.params.id);
+    const shift = await prisma.shift.update({
+      where: { id: shiftId, companyId: req.user.companyId },
+      data: {
+        isIssueResolved: true,
+        issueResolvedById: req.user.id
+      }
+    });
+    res.json({ success: true, data: shift, message: 'Muammo hal qilindi!' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
 // PUT /api/shifts/:id/close - Smenani yopish
 router.put('/:id/close', authenticate, authorize('admin', 'director'), async (req, res) => {
   try {
-    const { notes } = req.body;
+    const { notes, hasIssue, issueDescription } = req.body;
     const shiftId = parseInt(req.params.id);
 
     const shift = await prisma.shift.findUnique({ where: { id: shiftId } });
@@ -110,7 +207,14 @@ router.put('/:id/close', authenticate, authorize('admin', 'director'), async (re
 
     const updatedShift = await prisma.shift.update({
       where: { id: shiftId, companyId: req.user.companyId },
-      data: { status: 'closed', endTime: new Date(), notes },
+      data: { 
+        status: 'closed', 
+        endTime: new Date(), 
+        notes,
+        hasIssue: hasIssue || false,
+        issueDescription: hasIssue ? issueDescription : null,
+        isIssueResolved: hasIssue ? false : true
+      },
     });
 
     res.json({ success: true, data: updatedShift, message: 'Smena yopildi!' });
@@ -120,7 +224,7 @@ router.put('/:id/close', authenticate, authorize('admin', 'director'), async (re
 });
 
 // GET /api/shifts/active - Faol smena
-router.get('/my/active', authenticate, authorize('admin'), async (req, res) => {
+router.get('/my/active', authenticate, authorize('admin', 'director', 'supervisor', 'owner'), async (req, res) => {
   try {
     const shift = await prisma.shift.findFirst({
       where: { branchId: req.user.branchId, adminId: req.user.id, status: 'active', companyId: req.user.companyId },
@@ -129,7 +233,18 @@ router.get('/my/active', authenticate, authorize('admin'), async (req, res) => {
         bookings: {
           include: { room: true, primaryGuest: true },
         },
-        expenses: true
+        expenses: true,
+        payments: {
+          include: {
+            booking: {
+              include: {
+                room: true,
+                primaryGuest: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        }
       },
     });
     res.json({ success: true, data: shift });

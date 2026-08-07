@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 
@@ -62,8 +64,6 @@ router.get('/', authenticate, authorize('owner', 'admin', 'director'), async (re
     res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 });
-const fs = require('fs');
-const path = require('path');
 
 // GET /api/cleaning-tasks/pending - Farrosh uchun tozalanadigan xonalar (Branch bo'yicha)
 router.get('/pending', authenticate, authorize('cleaner', 'admin', 'director', 'owner'), async (req, res) => {

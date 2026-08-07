@@ -27,8 +27,16 @@ router.post('/', authenticate, async (req, res) => {
     if (req.user.role !== 'owner' && req.user.role !== 'supervisor') {
       return res.status(403).json({ success: false, message: 'Faqat biznes egasi filial qo\'sha oladi.' });
     }
-    const { name, address, phone } = req.body;
-    const branch = await prisma.branch.create({ data: { companyId: req.user.companyId, name, address, phone } });
+    const { name, address, phone, adminKpiTiers } = req.body;
+    const branch = await prisma.branch.create({ 
+      data: { 
+        companyId: req.user.companyId, 
+        name, 
+        address, 
+        phone,
+        adminKpiTiers: adminKpiTiers ? JSON.stringify(adminKpiTiers) : undefined
+      } 
+    });
     res.status(201).json({ success: true, data: branch });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server xatosi.' });
@@ -42,19 +50,23 @@ router.put('/:id', authenticate, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Faqat biznes egasi filialni tahrirlay oladi.' });
     }
     const branchId = parseInt(req.params.id);
-    const { name, address, phone } = req.body;
-    
-    // Check ownership
-    const existing = await prisma.branch.findUnique({ where: { id: branchId } });
-    if (!existing || existing.companyId !== req.user.companyId) {
+    const { name, address, phone, adminKpiTiers } = req.body;
+
+    const branch = await prisma.branch.findFirst({ where: { id: branchId, companyId: req.user.companyId } });
+    if (!branch) {
       return res.status(404).json({ success: false, message: 'Filial topilmadi.' });
     }
 
-    const branch = await prisma.branch.update({
+    const updated = await prisma.branch.update({
       where: { id: branchId },
-      data: { name, address, phone }
+      data: { 
+        name, 
+        address, 
+        phone,
+        adminKpiTiers: adminKpiTiers ? JSON.stringify(adminKpiTiers) : undefined
+      }
     });
-    res.json({ success: true, data: branch });
+    res.json({ success: true, data: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server xatosi.' });
   }

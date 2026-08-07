@@ -145,7 +145,7 @@ export default function CheckInsPage() {
         isOpen={!!selectedBooking}
         onClose={() => setSelectedBooking(null)}
         booking={selectedBooking}
-        onSuccess={fetchActiveBookings}
+        onSuccess={() => { fetchActiveBookings(); setSelectedBooking(null); }}
       />
     </div>
   );

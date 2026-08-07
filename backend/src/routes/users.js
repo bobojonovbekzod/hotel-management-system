@@ -3,17 +3,33 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
-const HikvisionService = require('../services/hikvision');
+const multer = require('multer');
 const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Multer setup for user photos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads/users');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'photo-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
+
 // GET /api/users - Foydalanuvchilar ro'yxati
-router.get('/', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
+router.get('/', authenticate, authorize('owner', 'director', 'hr', 'admin'), async (req, res) => {
   try {
     const where = { companyId: req.user.companyId };
-    if (req.user.role === 'director') {
+    if (req.user.role === 'director' || req.user.role === 'admin') {
       where.branchId = req.user.branchId;
     } else if (req.query.branchId) {
       where.branchId = parseInt(req.query.branchId);
@@ -31,7 +47,8 @@ router.get('/', authenticate, authorize('owner', 'director', 'hr'), async (req, 
       orderBy: [{ branchId: 'asc' }, { role: 'asc' }, { name: 'asc' }],
     });
 
-    res.json({ success: true, data: users });
+    const safeUsers = req.user.role === 'admin' ? users.map(u => ({ ...u, salary: null, kpiPercentage: null })) : users;
+    res.json({ success: true, data: safeUsers });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server xatosi.' });
   }
@@ -99,105 +116,61 @@ router.put('/:id', authenticate, authorize('owner', 'director', 'hr'), async (re
   }
 });
 
-// POST /api/users/:id/face - Yuz rasmini yuklash va Hikvisionga jo'natish
-router.post('/:id/face', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
+// POST /api/users/:id/photo - Xodim profil rasmini yuklash
+router.post('/:id/photo', authenticate, authorize('owner', 'director', 'hr'), upload.single('photo'), async (req, res) => {
   try {
-    const { deviceId, base64Image } = req.body;
     const userId = parseInt(req.params.id);
 
-    if (!deviceId || !base64Image) {
-      return res.status(400).json({ success: false, message: 'Qurilma ID si va rasm kerak.' });
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Rasm tanlanmagan.' });
     }
-
-    const device = await prisma.device.findUnique({ where: { id: parseInt(deviceId) } });
-    if (!device) return res.status(404).json({ success: false, message: 'Qurilma topilmadi.' });
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return res.status(404).json({ success: false, message: 'Xodim topilmadi.' });
-
-    // Base64 dan bufferni olish (masalan: "data:image/jpeg;base64,/9j/4AAQSkZJRg...")
-    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
-    const imageBuffer = Buffer.from(base64Data, 'base64');
-
-    const branchIdStr = device.branchId.toString();
-    const socketId = req.connectedAgents.get(branchIdStr);
-
-    if (socketId) {
-      const agentSocket = req.agentNamespace.sockets.get(socketId);
-      if (agentSocket) {
-        const agentResponse = await new Promise((resolve) => {
-          agentSocket.emit('ADD_FACE', {
-            userId: user.id.toString(),
-            name: user.name,
-            device,
-            image: imageBuffer
-          }, (res) => resolve(res));
-          setTimeout(() => resolve({ success: false, message: 'Agentdan javob kutilmadi (Timeout)' }), 20000);
-        });
-
-        if (!agentResponse.success) {
-          throw new Error(agentResponse.message || 'Agent orqali rasm yuklashda xatolik');
-        }
-      } else {
-        throw new Error("Filial agenti tarmoqdan uzilgan.");
-      }
-    } else {
-      throw new Error(`Filial (${device.branchId}) agenti onlayn emas. Avval resepshndagi Agent dasturini ishga tushiring.`);
+    if (!user) {
+      // Clean up uploaded file if user not found
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({ success: false, message: 'Xodim topilmadi.' });
     }
 
-    // Rasmni server diskida saqlash
-    const uploadDir = path.join(__dirname, '../../uploads/faces');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    const filename = `${userId}_${Date.now()}.jpg`;
-    const filePath = path.join(uploadDir, filename);
-    await fs.promises.writeFile(filePath, imageBuffer);
-    const photoUrlPath = `/api/uploads/faces/${filename}`;
+    const photoUrlPath = `/api/uploads/users/${req.file.filename}`;
 
-    // Tizim bazasida belgilash
-    await prisma.user.update({
+    // Tizim bazasida yangilash
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { isFaceRegistered: true, photoUrl: photoUrlPath }
+      data: { photoUrl: photoUrlPath }
     });
 
-    res.json({ success: true, message: 'Yuz qurilmaga muvaffaqiyatli yuklandi.' });
+    res.json({ success: true, data: updatedUser, message: 'Rasm muvaffaqiyatli saqlandi.' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: error.message || 'Server xatosi' });
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 });
 
-// DELETE /api/users/:id/face
-router.delete('/:id/face', authenticate, authorize('owner', 'director', 'supervisor', 'admin', 'hr'), async (req, res) => {
+// DELETE /api/users/:id/photo - Xodim profil rasmini o'chirish
+router.delete('/:id/photo', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ success: false, message: 'Xodim topilmadi.' });
 
-    // Hamma qurilmalarni topamiz
-    const devices = await prisma.device.findMany({ where: { companyId: user.companyId } });
-    
-    for (let device of devices) {
-      const branchIdStr = device.branchId.toString();
-      const socketId = req.connectedAgents.get(branchIdStr);
-      if (socketId) {
-        const agentSocket = req.agentNamespace.sockets.get(socketId);
-        if (agentSocket) {
-          agentSocket.emit('DELETE_FACE', {
-            userId: user.id.toString(),
-            device
-          });
-        }
+    if (user.photoUrl) {
+      const filename = path.basename(user.photoUrl);
+      const filePath = path.join(__dirname, '../../uploads/users', filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
       }
     }
 
     await prisma.user.update({
       where: { id: userId },
-      data: { isFaceRegistered: false, photoUrl: null }
+      data: { photoUrl: null }
     });
 
-    res.json({ success: true, message: 'Yuz o\'chirildi.' });
+    res.json({ success: true, message: 'Rasm o\'chirildi.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server xatosi.' });
@@ -293,8 +266,8 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
     // Gender distribution
     const genderDist = { male: 0, female: 0, other: 0 };
     allStaff.forEach(u => {
-      if (u.gender === 'Erkak') genderDist.male++;
-      else if (u.gender === 'Ayol') genderDist.female++;
+      if (u.gender === 'male' || u.gender === 'Erkak') genderDist.male++;
+      else if (u.gender === 'female' || u.gender === 'Ayol') genderDist.female++;
       else if (u.gender) genderDist.other++;
     });
 

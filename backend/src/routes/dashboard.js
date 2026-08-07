@@ -12,11 +12,10 @@ router.get('/summary', authenticate, async (req, res) => {
     
     let startDate, endDate;
     if (start && end) {
-      startDate = new Date(start);
-      startDate.setHours(8, 0, 0, 0);
-      endDate = new Date(end);
-      endDate.setDate(endDate.getDate() + 1);
-      endDate.setHours(7, 59, 59, 999);
+      const [startYear, startMonth, startDay] = start.split('-').map(Number);
+      const [endYear, endMonth, endDay] = end.split('-').map(Number);
+      startDate = new Date(startYear, startMonth - 1, startDay, 8, 0, 0);
+      endDate = new Date(endYear, endMonth - 1, endDay + 1, 7, 59, 59, 999);
     } else {
       const now = new Date();
       // Biznes kuni (Sutka) ertalab 08:00 dan boshlanadi.
@@ -45,16 +44,37 @@ router.get('/summary', authenticate, async (req, res) => {
       targetBranchId = parseInt(branchId);
     }
 
-    // Oylik tushum
-    const monthlyBookings = await prisma.booking.findMany({
-      where: {
-        ...branchFilter,
-        status: { in: ['active', 'checked_out'] },
-        createdAt: { gte: startDate, lte: endDate },
+    const paymentWhere = {
+      booking: {
+        companyId: req.user.companyId,
+        ...(targetBranchId ? { branchId: targetBranchId } : {})
       },
-    });
+      createdAt: { gte: startDate, lte: endDate }
+    };
 
-    const totalIncome = monthlyBookings.reduce((sum, b) => sum + b.paidAmount, 0);
+    // To'lov turlari bo'yicha aniq hisobot (Payment table orqali)
+    const paymentMethodStats = await prisma.payment.groupBy({
+      by: ['method'],
+      where: paymentWhere,
+      _sum: { amount: true }
+    });
+    
+    const cashTotal = paymentMethodStats.find(p => p.method === 'cash')?._sum.amount || 0;
+    const terminalTotal = paymentMethodStats.find(p => p.method === 'terminal')?._sum.amount || 0;
+    const qrcodeTotal = paymentMethodStats.find(p => p.method === 'qrcode')?._sum.amount || 0;
+    const transferTotal = paymentMethodStats.find(p => p.method === 'transfer')?._sum.amount || 0;
+    const otherPayments = paymentMethodStats
+      .filter(p => !['cash', 'terminal', 'qrcode', 'transfer'].includes(p.method))
+      .reduce((sum, p) => sum + (p._sum.amount || 0), 0);
+
+    const totalIncome = cashTotal + terminalTotal + qrcodeTotal + transferTotal + otherPayments;
+
+    const paymentStats = [
+      { name: 'Naqd', value: cashTotal },
+      { name: 'Terminal', value: terminalTotal },
+      { name: 'QrCode', value: qrcodeTotal },
+      { name: 'Karta/Karta', value: transferTotal },
+    ];
 
     // Oylik xarajatlar
     const monthlyExpenses = await prisma.expense.aggregate({
@@ -105,13 +125,13 @@ router.get('/summary', authenticate, async (req, res) => {
     const monthlyShifts = await prisma.shift.findMany({
       where: {
         ...branchFilter,
-        createdAt: { gte: startDate, lte: endDate },
+        startTime: { gte: startDate, lte: endDate },
         status: 'closed',
       },
       include: {
         admin: { select: { name: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startTime: 'desc' },
     });
 
     // Xonalar bandlik foizi bo'yicha
@@ -121,27 +141,32 @@ router.get('/summary', authenticate, async (req, res) => {
       _count: true,
     });
 
-    // Oylik kunlik tushum (grafik uchun)
-    const dailyIncome = await prisma.booking.groupBy({
-      by: ['checkIn'],
-      where: {
-        ...branchFilter,
-        checkIn: { gte: startDate, lte: endDate },
-      },
-      _sum: { paidAmount: true },
+    // Oylik kunlik tushum (grafik uchun - Payment jadvalidan)
+    const dailyPayments = await prisma.payment.findMany({
+      where: paymentWhere,
+      select: { amount: true, createdAt: true }
     });
 
-    // To'lov turlari bo'yicha tushum
-    const paymentMethods = await prisma.booking.groupBy({
-      by: ['paymentMethod'],
-      where: {
-        ...branchFilter,
-        status: { in: ['active', 'checked_out'] },
-        createdAt: { gte: startDate, lte: endDate },
-        paymentMethod: { not: null }
-      },
-      _sum: { paidAmount: true },
-    });
+    const dailyIncomeMap = {};
+    for (const p of dailyPayments) {
+      const pDate = new Date(p.createdAt);
+      if (pDate.getHours() < 8) {
+        pDate.setDate(pDate.getDate() - 1);
+      }
+      const dateStr = pDate.toISOString().split('T')[0];
+      dailyIncomeMap[dateStr] = (dailyIncomeMap[dateStr] || 0) + p.amount;
+    }
+
+    const dailyIncome = Object.entries(dailyIncomeMap).map(([checkIn, sum]) => ({
+      checkIn: new Date(checkIn),
+      _sum: { paidAmount: sum }
+    }));
+
+    // To'lov turlari bo'yicha tushum (moslik uchun)
+    const paymentMethods = paymentMethodStats.map(p => ({
+      paymentMethod: p.method,
+      _sum: { paidAmount: p._sum.amount || 0 }
+    }));
 
     // Xarajatlar toifasi bo'yicha
     const expensesByCategoryRaw = await prisma.expense.groupBy({
@@ -171,7 +196,7 @@ router.get('/summary', authenticate, async (req, res) => {
         by: ['adminId'],
         where: {
           ...branchFilter,
-          createdAt: { gte: startDate, lte: endDate },
+          startTime: { gte: startDate, lte: endDate },
           status: 'closed'
         },
         _sum: { totalIncome: true },
@@ -200,7 +225,7 @@ router.get('/summary', authenticate, async (req, res) => {
         where: {
           ...branchFilter,
           status: { in: ['closed', 'active'] },
-          createdAt: { gte: startDate, lte: endDate },
+          startTime: { gte: startDate, lte: endDate },
         },
         include: {
           admin: { select: { name: true } },
@@ -239,23 +264,6 @@ router.get('/summary', authenticate, async (req, res) => {
         };
       });
     }
-
-    // To'lov turlari bo'yicha aniq hisobot (Payment table orqali)
-    const paymentMethodStats = await prisma.payment.groupBy({
-      by: ['method'],
-      where: {
-        booking: { companyId: req.user.companyId, ...(targetBranchId ? { branchId: targetBranchId } : {}) },
-        createdAt: { gte: startDate, lte: endDate }
-      },
-      _sum: { amount: true }
-    });
-    
-    const paymentStats = [
-      { name: 'Naqd', value: paymentMethodStats.find(p => p.method === 'cash')?._sum.amount || 0 },
-      { name: 'Terminal', value: paymentMethodStats.find(p => p.method === 'terminal')?._sum.amount || 0 },
-      { name: 'QrCode', value: paymentMethodStats.find(p => p.method === 'qrcode')?._sum.amount || 0 },
-      { name: 'Karta/Karta', value: paymentMethodStats.find(p => p.method === 'transfer')?._sum.amount || 0 },
-    ];
 
     // Barcha filiallar statistikasi (owner, supervisor, director uchun)
     let branchStats = null;
@@ -327,8 +335,8 @@ router.get('/summary', authenticate, async (req, res) => {
     const nowMoment = new Date();
 
     if (start && end) {
-      finalLoopDate = new Date(end);
-      finalLoopDate.setHours(12, 0, 0, 0);
+      const [endYear, endMonth, endDay] = end.split('-').map(Number);
+      finalLoopDate = new Date(endYear, endMonth - 1, endDay, 12, 0, 0);
     } else {
       const daysInTargetMonth = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
       finalLoopDate = new Date(startDate.getFullYear(), startDate.getMonth(), daysInTargetMonth, 12, 0, 0);
@@ -360,9 +368,6 @@ router.get('/summary', authenticate, async (req, res) => {
       loopDate.setDate(loopDate.getDate() + 1);
     }
 
-    const terminalTotal = paymentStats[1].value;
-    const qrcodeTotal = paymentStats[2].value;
-    const cashTotal = paymentStats[0].value;
     const cashBalance = cashTotal - totalExpenses;
 
     res.json({

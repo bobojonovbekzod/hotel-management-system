@@ -23,8 +23,12 @@ export default function LoginPage() {
       toast.success(`Xush kelibsiz, ${user.name}!`);
       // Roli bo'yicha yo'naltirish
       if (user.role === 'owner') navigate('/owner/dashboard');
+      else if (user.role === 'superadmin') navigate('/superadmin/companies');
+      else if (user.role === 'supervisor') navigate('/supervisor/dashboard');
       else if (user.role === 'director') navigate('/director/dashboard');
       else if (user.role === 'admin') navigate('/admin/rooms');
+      else if (user.role === 'hr') navigate('/owner/hr');
+      else if (user.role === 'cleaner') navigate('/cleaner/dashboard');
       else navigate('/');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login xatosi. Qaytadan urinib ko\'ring.');
@@ -56,7 +60,7 @@ export default function LoginPage() {
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="label">Foydalanuvchi nomi</label>
+              <label className="label">Login</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-lg">👤</span>
                 <input

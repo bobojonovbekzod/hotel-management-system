@@ -35,33 +35,79 @@ import {
   Archive,
   CreditCard,
   Shield,
-  UserCog
+  UserCog,
+  Sparkles
 } from 'lucide-react';
+import NotificationBell from './common/NotificationBell';
+
 
 const superadminNav = [
   { path: '/superadmin/companies', icon: ShieldCheck, label: 'Kompaniyalar' },
 ];
 
 const adminNav = [
-  { path: '/admin/front-desk', icon: Key, label: 'Qabul (Shahmatka)' },
+  { path: '/admin/front-desk', icon: Key, label: 'Qabulxona' },
   { path: '/admin/renters', icon: CalendarDays, label: 'Ijarachilar' },
   { path: '/admin/reservations', icon: CalendarClock, label: 'Oldindan Bronlar' },
+  { path: '/admin/bookings', icon: ClipboardList, label: 'Mijozlar' },
   { path: '/admin/shifts', icon: Clock, label: 'Smenalar' },
   { path: '/admin/expenses', icon: Wallet, label: 'Xarajatlar' },
+  { path: '/admin/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
   { path: '/admin/salary', icon: UserCheck, label: 'Mening Oyligim' },
+  { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
 ];
 
-const directorNav = [
-  { path: '/director/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/director/rooms', icon: Key, label: 'Qabul (Shahmatka)' },
-  { path: '/director/renters', icon: CalendarDays, label: 'Ijarachilar' },
-  { path: '/director/reservations', icon: CalendarClock, label: 'Oldindan Bronlar' },
-  { path: '/director/bookings', icon: ClipboardList, label: 'Bronlar' },
-  { path: '/director/expenses', icon: Wallet, label: 'Xarajatlar' },
-  { path: '/director/staff', icon: Users, label: 'Xodimlar' },
-  { path: '/director/attendance', icon: CalendarClock, label: 'Davomat' },
-  { path: '/director/shifts', icon: Clock, label: 'Smenalar' },
-  { path: '/director/transactions', icon: Banknote, label: 'Kassa (Tranzaksiyalar)' },
+const directorNav = null; // director uses directorNavGroups below
+
+const directorNavGroups = [
+  {
+    type: 'single',
+    path: '/director/dashboard',
+    icon: LayoutDashboard,
+    label: 'Dashboard',
+  },
+  {
+    type: 'group',
+    label: 'Qabulxona',
+    icon: Key,
+    key: 'qabul',
+    items: [
+      { path: '/director/rooms', icon: Key, label: 'Qabulxona' },
+      { path: '/director/renters', icon: CalendarDays, label: 'Ijarachilar' },
+      { path: '/director/reservations', icon: CalendarClock, label: 'Oldindan Bronlar' },
+      { path: '/director/bookings', icon: ClipboardList, label: 'Mijozlar' },
+    ],
+  },
+  {
+    type: 'group',
+    label: 'Moliya va Kassa',
+    icon: Wallet,
+    key: 'moliya',
+    items: [
+      { path: '/director/transactions', icon: Banknote, label: 'Kassa (Tranzaksiyalar)' },
+      { path: '/director/expenses', icon: Wallet, label: 'Xarajatlar' },
+      { path: '/director/payroll', icon: Banknote, label: 'Oylik maosh' },
+      { path: '/director/shift-issues', icon: ShieldAlert, label: 'Smena Muammolari' },
+    ],
+  },
+  {
+    type: 'group',
+    label: 'Xodimlar',
+    icon: Users,
+    key: 'xodimlar',
+    items: [
+      { path: '/director/staff', icon: Users, label: 'Xodimlar' },
+      { path: '/director/attendance', icon: CalendarClock, label: 'Davomat' },
+      { path: '/director/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
+      { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
+    ],
+  },
+  {
+    type: 'single',
+    path: '/director/inventory-requests',
+    icon: Archive,
+    label: 'Omborxona',
+  }
 ];
 
 // Flat array for non-owner roles
@@ -92,6 +138,7 @@ const ownerNavGroups = [
     items: [
       { path: '/owner/hr', icon: LayoutDashboard, label: 'HR Dashboard' },
       { path: '/owner/staff', icon: Users, label: 'Xodimlar' },
+      { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
     ],
   },
   {
@@ -104,7 +151,8 @@ const ownerNavGroups = [
       { path: '/owner/rooms', icon: BedDouble, label: 'Xonalar' },
       { path: '/owner/room-analytics', icon: Activity, label: 'Xonalar Tahlili' },
       { path: '/owner/attendance', icon: CalendarClock, label: 'Davomat' },
-      { path: '/owner/devices', icon: Server, label: 'Face ID Qurilmalari' },
+      { path: '/owner/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
+      { path: '/owner/shift-issues', icon: ShieldAlert, label: 'Smena Muammolari' },
     ],
   },
   {
@@ -112,8 +160,10 @@ const ownerNavGroups = [
     label: "Omborxona",
     icon: Archive,
     key: 'ombor',
-    items: [],
-    comingSoon: true,
+    items: [
+      { path: '/owner/inventory', icon: Archive, label: 'Bosh Ombor' },
+      { path: '/owner/inventory-approvals', icon: ClipboardList, label: "So'rovlar" }
+    ],
   },
 ];
 
@@ -121,13 +171,13 @@ const supervisorNav = [
   { path: '/supervisor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/supervisor/rooms', icon: BedDouble, label: 'Xonalar' },
   { path: '/supervisor/checkin', icon: CheckSquare, label: 'Check-in' },
-  { path: '/supervisor/bookings', icon: ClipboardList, label: 'Bronlar' },
+  { path: '/supervisor/bookings', icon: ClipboardList, label: 'Mijozlar' },
   { path: '/supervisor/expenses', icon: Wallet, label: 'Xarajatlar' },
   { path: '/supervisor/shifts', icon: Clock, label: 'Smenalar' },
   { path: '/supervisor/staff', icon: Users, label: 'Xodimlar' },
   { path: '/supervisor/attendance', icon: CalendarClock, label: 'Davomat' },
   { path: '/supervisor/branches', icon: Building2, label: 'Filiallar' },
-  { path: '/supervisor/devices', icon: Server, label: 'Face ID Qurilmalari' },
+  { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
 ];
 
 const hrNav = [
@@ -179,11 +229,26 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingTasksCount, setPendingTasksCount] = useState(0);
+
+
+  useEffect(() => {
+    if (user) {
+      api.get('/tasks/my-pending-count')
+        .then(res => {
+          if (res.data.success) {
+            setPendingTasksCount(res.data.count);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user]);
 
   const [openGroups, setOpenGroups] = useState(() => {
     // Auto-open the group that contains the current path
     const initial = {};
-    ownerNavGroups.forEach(g => {
+    const targetGroups = user?.role === 'owner' ? ownerNavGroups : (user?.role === 'director' ? directorNavGroups : []);
+    targetGroups.forEach(g => {
       if (g.type === 'group' && g.items?.some(i => location.pathname.startsWith(i.path))) {
         initial[g.key] = true;
       }
@@ -227,6 +292,10 @@ export default function Layout({ children }) {
   const badge = getRoleBadge();
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
+  if (user?.role === 'cleaner') {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Mobile overlay */}
@@ -248,7 +317,7 @@ export default function Layout({ children }) {
           <div className="flex items-center gap-3">
             {user?.company?.logoUrl ? (
               <img 
-                src={`${api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : ''}${user.company.logoUrl}`} 
+                src={`${api.defaults.baseURL || '/api'}${user.company.logoUrl}`} 
                 alt="Logo" 
                 className="w-10 h-10 rounded-full object-cover shadow-lg border border-slate-700/50 flex-shrink-0 bg-white" 
               />
@@ -299,10 +368,10 @@ export default function Layout({ children }) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {user?.role === 'owner' ? (
-            // Grouped nav for owner
+          {(user?.role === 'owner' || user?.role === 'director') ? (
+            // Grouped nav for owner and director
             <div className="space-y-0.5">
-              {ownerNavGroups.map((group) => {
+              {(user?.role === 'owner' ? ownerNavGroups : directorNavGroups).map((group) => {
                 if (group.type === 'single') {
                   const Icon = group.icon;
                   const active = isActive(group.path);
@@ -317,7 +386,12 @@ export default function Layout({ children }) {
                       onClick={() => setSidebarOpen(false)}
                     >
                       <Icon size={18} className={active ? "text-primary-500" : "text-slate-400"} />
-                      <span>{group.label}</span>
+                      <span className="flex-1">{group.label}</span>
+                      {group.label === 'Vazifalar' && pendingTasksCount > 0 && (
+                        <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-auto animate-pulse">
+                          {pendingTasksCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 }
@@ -365,7 +439,12 @@ export default function Layout({ children }) {
                               onClick={() => setSidebarOpen(false)}
                             >
                               <ItemIcon size={16} className={active ? "text-primary-500" : "text-slate-400"} />
-                              <span>{item.label}</span>
+                              <span className="flex-1">{item.label}</span>
+                              {item.label === 'Vazifalar' && pendingTasksCount > 0 && (
+                                <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-auto animate-pulse">
+                                  {pendingTasksCount}
+                                </span>
+                              )}
                             </Link>
                           );
                         })}
@@ -391,7 +470,12 @@ export default function Layout({ children }) {
                   onClick={() => setSidebarOpen(false)}
                 >
                   <Icon size={18} className={active ? "text-primary-500" : "text-slate-400"} />
-                  <span>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
+                  {item.label === 'Vazifalar' && pendingTasksCount > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-auto animate-pulse">
+                      {pendingTasksCount}
+                    </span>
+                  )}
                 </Link>
               );
             })
@@ -449,6 +533,7 @@ export default function Layout({ children }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {(user?.role === 'owner' || user?.role === 'director') && <NotificationBell />}
             <div className="text-right hidden sm:block">
               <p className="text-lg font-bold text-white tabular-nums tracking-tight">
                 <ClockDisplay />

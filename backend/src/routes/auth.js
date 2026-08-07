@@ -16,8 +16,15 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Username va parol kiritilishi shart.' });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { username },
+    const normalizedUsername = username.trim().toLowerCase();
+
+    const user = await prisma.user.findFirst({
+      where: { 
+        username: {
+          equals: normalizedUsername,
+          mode: 'insensitive' // case-insensitive izlash
+        }
+      },
       include: { branch: true, company: true },
     });
 
@@ -38,6 +45,17 @@ router.post('/login', async (req, res) => {
 
     const { password: _, ...userWithoutPassword } = user;
 
+    if (!userWithoutPassword.photoUrl) {
+      const lastShift = await prisma.shift.findFirst({
+        where: { adminId: user.id, startPhotoUrl: { not: null } },
+        orderBy: { createdAt: 'desc' },
+        select: { startPhotoUrl: true }
+      });
+      if (lastShift) {
+        userWithoutPassword.photoUrl = lastShift.startPhotoUrl;
+      }
+    }
+
     res.json({
       success: true,
       message: 'Muvaffaqiyatli kirdingiz!',
@@ -53,6 +71,18 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/me
 router.get('/me', authenticate, async (req, res) => {
   const { password: _, ...userWithoutPassword } = req.user;
+
+  if (!userWithoutPassword.photoUrl) {
+    const lastShift = await prisma.shift.findFirst({
+      where: { adminId: req.user.id, startPhotoUrl: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      select: { startPhotoUrl: true }
+    });
+    if (lastShift) {
+      userWithoutPassword.photoUrl = lastShift.startPhotoUrl;
+    }
+  }
+
   res.json({ success: true, user: userWithoutPassword });
 });
 

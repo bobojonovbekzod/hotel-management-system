@@ -15,17 +15,36 @@ export default function RoomAnalyticsPage() {
   const [filterMonth, setFilterMonth] = useState(format(new Date(), 'yyyy-MM'));
 
   useEffect(() => {
-    fetchData();
+    fetchBranches();
   }, []);
 
-  const fetchData = async () => {
+  const fetchBranches = async () => {
     try {
-      const [resRooms, resBranches] = await Promise.all([
-        api.get('/reports/rooms-activity', { params: { month: filterMonth } }),
-        api.get('/branches')
-      ]);
+      const res = await api.get('/branches');
+      setBranches(res.data.data);
+    } catch (err) {
+      toast.error("Filiallarni yuklashda xatolik yuz berdi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRooms = async () => {
+    if (!branchFilter) {
+      toast.error("Iltimos, avval bitta filialni tanlang!");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const branch = branches.find(b => b.name === branchFilter);
+      const resRooms = await api.get('/reports/rooms-activity', { 
+        params: { 
+          month: filterMonth,
+          branchId: branch?.id 
+        } 
+      });
       setRooms(resRooms.data.data);
-      setBranches(resBranches.data.data);
     } catch (err) {
       toast.error("Ma'lumotlarni yuklashda xatolik yuz berdi");
     } finally {
@@ -67,9 +86,12 @@ export default function RoomAnalyticsPage() {
           <select 
             className="input-field" 
             value={branchFilter}
-            onChange={(e) => setBranchFilter(e.target.value)}
+            onChange={(e) => {
+              setBranchFilter(e.target.value);
+              setRooms([]); // Filial o'zgarganda jadvalni tozalash
+            }}
           >
-            <option value="">Barcha filiallar</option>
+            <option value="" disabled>Filialni tanlang...</option>
             {branches.map(b => (
               <option key={b.id} value={b.name}>{b.name}</option>
             ))}
@@ -85,7 +107,7 @@ export default function RoomAnalyticsPage() {
           />
         </div>
         <button
-          onClick={fetchData}
+          onClick={fetchRooms}
           className="btn-primary w-full sm:w-auto flex items-center justify-center"
         >
           Filtrlash
@@ -127,8 +149,8 @@ export default function RoomAnalyticsPage() {
               ))}
               {filteredRooms.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-slate-600">
-                    Ma'lumot topilmadi
+                  <td colSpan="4" className="px-6 py-12 text-center text-slate-600 border-dashed">
+                    {branchFilter ? "Ma'lumot topilmadi" : "Filialni tanlang va 'Filtrlash' tugmasini bosing"}
                   </td>
                 </tr>
               )}

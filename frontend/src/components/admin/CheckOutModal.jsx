@@ -3,12 +3,14 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import api from '../../lib/api';
-import { DoorOpen, CheckCircle2, Banknote, CreditCard, Smartphone } from 'lucide-react';
+import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
+import { DoorOpen, CheckCircle2, Banknote, CreditCard, Smartphone, ArrowRightLeft } from 'lucide-react';
 
 const paymentMethods = [
   { value: 'cash', label: 'Naqd', icon: <Banknote size={16} /> },
   { value: 'terminal', label: 'Terminal', icon: <CreditCard size={16} /> },
   { value: 'qrcode', label: 'QR', icon: <Smartphone size={16} /> },
+  { value: 'transfer', label: 'O\'tkazma', icon: <ArrowRightLeft size={16} /> },
 ];
 
 function CheckOutModal({ booking, onClose, onSuccess }) {
@@ -25,7 +27,7 @@ function CheckOutModal({ booking, onClose, onSuccess }) {
     setLoading(true);
     try {
       await api.put(`/bookings/${booking.id}/checkout`, {
-        additionalPayment: parseFloat(additionalPayment) || 0,
+        additionalPayment: parseFloat(parseNumberInput(additionalPayment)) || 0,
         paymentMethod,
       });
       toast.success('Mehmon muvaffaqiyatli chiqdi! 👋');
@@ -118,11 +120,12 @@ function CheckOutModal({ booking, onClose, onSuccess }) {
               <div className="relative">
                 <input
                   id="checkout-payment"
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   className="input-field pr-16"
                   placeholder={remaining.toString()}
-                  value={additionalPayment}
-                  onChange={(e) => setAdditionalPayment(e.target.value)}
+                  value={formatNumberInput(additionalPayment)}
+                  onChange={(e) => setAdditionalPayment(parseNumberInput(e.target.value))}
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 text-sm">so'm</span>
               </div>

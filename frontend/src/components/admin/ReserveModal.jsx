@@ -2,6 +2,7 @@ import ModalPortal from '../common/ModalPortal';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
+import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
 function ReserveModal({ onClose, onSuccess, shift }) {
   const [rooms, setRooms] = useState([]);
@@ -30,12 +31,16 @@ function ReserveModal({ onClose, onSuccess, shift }) {
       return;
     }
 
+    const payload = {
+      ...formData,
+      totalPrice: parseFloat(parseNumberInput(formData.totalPrice)) || 0,
+      advanceAmount: parseFloat(parseNumberInput(formData.advanceAmount)) || 0,
+      shiftId: shift ? shift.id : null
+    };
+
     setLoading(true);
     try {
-      await api.post('/bookings/reserve', {
-        ...formData,
-        shiftId: shift ? shift.id : null
-      });
+      await api.post('/bookings/reserve', payload);
       toast.success("Xona muvaffaqiyatli bron qilindi!");
       onSuccess();
     } catch (err) {
@@ -79,22 +84,70 @@ function ReserveModal({ onClose, onSuccess, shift }) {
             </div>
           </div>
 
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-800 mb-1">Kelish kuni va vaqti</label>
+              <div className="flex gap-2 items-center">
+                <input 
+                  type="date" 
+                  className="input-field flex-1" 
+                  value={formData.checkIn.split('T')[0]} 
+                  onChange={e => setFormData({...formData, checkIn: `${e.target.value}T${formData.checkIn.split('T')[1] || '12:00'}`})} 
+                  required 
+                />
+                <select 
+                  className="input-field w-16 px-1 text-center" 
+                  value={formData.checkIn.split('T')[1]?.split(':')[0] || '12'} 
+                  onChange={e => setFormData({...formData, checkIn: `${formData.checkIn.split('T')[0]}T${e.target.value}:${formData.checkIn.split('T')[1]?.split(':')[1] || '00'}`})}
+                >
+                  {Array.from({length: 24}).map((_, i) => <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>)}
+                </select>
+                <span className="font-bold text-slate-400">:</span>
+                <select 
+                  className="input-field w-16 px-1 text-center" 
+                  value={formData.checkIn.split('T')[1]?.split(':')[1] || '00'} 
+                  onChange={e => setFormData({...formData, checkIn: `${formData.checkIn.split('T')[0]}T${formData.checkIn.split('T')[1]?.split(':')[0] || '12'}:${e.target.value}`})}
+                >
+                  {Array.from({length: 60}).map((_, i) => <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-800 mb-1">Ketish kuni va vaqti</label>
+              <div className="flex gap-2 items-center">
+                <input 
+                  type="date" 
+                  className="input-field flex-1" 
+                  value={formData.checkOutExpected.split('T')[0]} 
+                  onChange={e => setFormData({...formData, checkOutExpected: `${e.target.value}T${formData.checkOutExpected.split('T')[1] || '12:00'}`})} 
+                  required 
+                />
+                <select 
+                  className="input-field w-16 px-1 text-center" 
+                  value={formData.checkOutExpected.split('T')[1]?.split(':')[0] || '12'} 
+                  onChange={e => setFormData({...formData, checkOutExpected: `${formData.checkOutExpected.split('T')[0]}T${e.target.value}:${formData.checkOutExpected.split('T')[1]?.split(':')[1] || '00'}`})}
+                >
+                  {Array.from({length: 24}).map((_, i) => <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>)}
+                </select>
+                <span className="font-bold text-slate-400">:</span>
+                <select 
+                  className="input-field w-16 px-1 text-center" 
+                  value={formData.checkOutExpected.split('T')[1]?.split(':')[1] || '00'} 
+                  onChange={e => setFormData({...formData, checkOutExpected: `${formData.checkOutExpected.split('T')[0]}T${formData.checkOutExpected.split('T')[1]?.split(':')[0] || '12'}:${e.target.value}`})}
+                >
+                  {Array.from({length: 60}).map((_, i) => <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Kelish kuni</label>
-              <input type="datetime-local" className="input-field" value={formData.checkIn} onChange={e => setFormData({...formData, checkIn: e.target.value})} required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Ketish kuni</label>
-              <input type="datetime-local" className="input-field" value={formData.checkOutExpected} onChange={e => setFormData({...formData, checkOutExpected: e.target.value})} required />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-slate-800 mb-1">Kelishilgan umumiy narx</label>
-              <input type="number" className="input-field" value={formData.totalPrice} onChange={e => setFormData({...formData, totalPrice: e.target.value})} required placeholder="Masalan: 500000" />
+              <input type="text" inputMode="decimal" className="input-field" value={formatNumberInput(formData.totalPrice)} onChange={e => setFormData({...formData, totalPrice: parseNumberInput(e.target.value)})} required placeholder="Masalan: 500000" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-800 mb-1">Zaklad summasi (Oldindan to'lov)</label>
-              <input type="number" className="input-field" value={formData.advanceAmount} onChange={e => setFormData({...formData, advanceAmount: e.target.value})} placeholder="Masalan: 100000" required />
+              <input type="text" inputMode="decimal" className="input-field" value={formatNumberInput(formData.advanceAmount)} onChange={e => setFormData({...formData, advanceAmount: parseNumberInput(e.target.value)})} placeholder="Masalan: 100000" required />
             </div>
           </div>
 

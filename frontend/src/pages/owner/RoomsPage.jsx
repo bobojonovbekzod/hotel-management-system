@@ -34,7 +34,6 @@ export default function RoomsPage() {
   const [roomType, setRoomType] = useState('');
   const [floor, setFloor] = useState('1');
   const [capacity, setCapacity] = useState('1');
-  const [pricePerNight, setPricePerNight] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -112,7 +111,6 @@ export default function RoomsPage() {
     setRoomType('');
     setFloor('1');
     setCapacity('1');
-    setPricePerNight('');
     setDescription('');
     setShowModal(true);
   };
@@ -123,7 +121,6 @@ export default function RoomsPage() {
     setRoomType(room.roomType);
     setFloor(room.floor.toString());
     setCapacity(room.capacity.toString());
-    setPricePerNight(room.pricePerNight.toString());
     setDescription(room.description || '');
     setShowModal(true);
   };
@@ -138,7 +135,7 @@ export default function RoomsPage() {
         roomType,
         floor: parseInt(floor),
         capacity: parseInt(capacity),
-        pricePerNight: parseFloat(pricePerNight),
+        pricePerNight: 0,
         description
       };
 
@@ -208,11 +205,9 @@ export default function RoomsPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50">
-                  <th className="table-th">Xona raqami</th>
+                  <th className="table-th w-24">Xona №</th>
                   <th className="table-th">Turi</th>
-                  <th className="table-th">Qavat / Sig'im</th>
-                  <th className="table-th">Narxi (1 kecha)</th>
-                  <th className="table-th">Holati</th>
+                  <th className="table-th">Sig'imi</th>
                   {user?.role === 'owner' && <th className="table-th text-center">Boshqaruv</th>}
                 </tr>
               </thead>
@@ -230,16 +225,6 @@ export default function RoomsPage() {
                     <td className="table-td text-slate-800">
                       <div>{room.floor}-qavat</div>
                       <div className="text-sm text-slate-600">{room.capacity} kishilik</div>
-                    </td>
-                    <td className="table-td">
-                      <div className="font-bold text-emerald-400">
-                        {room.pricePerNight.toLocaleString()} so'm
-                      </div>
-                    </td>
-                    <td className="table-td">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[room.status]}`}>
-                        {statusLabels[room.status]}
-                      </span>
                     </td>
                     {user?.role === 'owner' && (
                       <td className="table-td text-center">
@@ -336,19 +321,6 @@ export default function RoomsPage() {
                       onChange={e => setCapacity(e.target.value)}
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="label">Narxi (1 kecha uchun)</label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    className="input-field"
-                    placeholder="Masalan: 450000"
-                    value={pricePerNight}
-                    onChange={e => setPricePerNight(e.target.value)}
-                  />
                 </div>
 
                 <div>

@@ -68,11 +68,25 @@ export default function RentersPage() {
                   const paid = Number(r.paidAmount || 0);
                   const isZeroPaid = paid <= 0;
                   const isPartialPaid = paid > 0 && paid < expectedAmount;
+                  const isFullyPaid = paid >= expectedAmount;
                   
                   let rowClass = "border-b border-slate-200 transition-colors duration-150";
-                  if (isZeroPaid) rowClass += " bg-red-500/20 hover:bg-red-500/30";
-                  else if (isPartialPaid) rowClass += " bg-yellow-500/20 hover:bg-yellow-500/30";
-                  else rowClass += " hover:bg-slate-50"; // fully paid
+                  
+                  // Har doim to'lov holatiga qarab rang beramiz (Overstay bo'lishi yoki bo'lmasligidan qat'i nazar)
+                  if (isFullyPaid) {
+                    rowClass += " bg-emerald-500/10 hover:bg-emerald-500/20";
+                  } else if (isPartialPaid) {
+                    rowClass += " bg-yellow-500/10 hover:bg-yellow-500/20";
+                  } else {
+                    rowClass += " bg-red-500/10 hover:bg-red-500/20";
+                  }
+                  
+                  // Agar vaqti tugagan bo'lsa (Overstay), ranglarni biroz to'qroq (ko'zga tashlanadigan) qilamiz
+                  if (r.isOverstay) {
+                    if (isFullyPaid) rowClass = rowClass.replace('10', '20').replace('20', '30');
+                    else if (isPartialPaid) rowClass = rowClass.replace('10', '20').replace('20', '30');
+                    else rowClass = rowClass.replace('10', '20').replace('20', '30');
+                  }
 
                   return (
                     <tr key={r.id} className={rowClass}>
@@ -102,12 +116,12 @@ export default function RentersPage() {
                       </td>
                       <td className="table-td text-center">
                         {r.isOverstay ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
-                            <AlertTriangle size={12} /> To'lov muddati o'tgan
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${isFullyPaid ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                            <AlertTriangle size={12} /> Muddati o'tgan
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            Aktiv (To'langan)
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-500 border border-blue-500/30">
+                            Aktiv
                           </span>
                         )}
                       </td>

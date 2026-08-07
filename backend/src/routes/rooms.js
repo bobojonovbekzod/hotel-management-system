@@ -71,8 +71,21 @@ router.put('/:id/status', authenticate, authorize('owner', 'director', 'admin'),
     const { status } = req.body;
     const roomId = parseInt(req.params.id);
 
+    const existingRoom = await prisma.room.findUnique({ where: { id: roomId, companyId: req.user.companyId } });
+    if (!existingRoom) return res.status(404).json({ success: false, message: 'Xona topilmadi.' });
+
+    // Smart Control logic - VAQTINCHA O'CHIRILDI (Mijoz talabiga ko'ra)
+    if (status === 'available' && (existingRoom.status === 'cleaning' || existingRoom.status === 'maintenance') && req.user.role === 'admin') {
+      const cleanersCount = await prisma.user.count({
+        where: { branchId: existingRoom.branchId, role: 'cleaner', isActive: true }
+      });
+      if (cleanersCount > 0) {
+        // return res.status(403).json({ success: false, message: 'SMART_CONTROL_ERROR' });
+      }
+    }
+
     const room = await prisma.room.update({
-      where: { id: roomId, companyId: req.user.companyId },
+      where: { id: roomId },
       data: { status },
     });
 

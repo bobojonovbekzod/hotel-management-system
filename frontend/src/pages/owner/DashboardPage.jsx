@@ -7,7 +7,8 @@ import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { DollarSign, TrendingUp, Bed, LogOut, CheckCircle, Clock, Building2, ClipboardList, Wallet, Smartphone, CreditCard } from 'lucide-react';
+import { DollarSign, TrendingUp, Bed, LogOut, CheckCircle, Clock, Building2, ClipboardList, Wallet, Smartphone, CreditCard, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import ActiveIssuesBar from '../../components/admin/ActiveIssuesBar';
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ export default function OwnerDashboard() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [shiftPage, setShiftPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
 
   useEffect(() => {
     fetchBranches();
@@ -83,6 +85,29 @@ export default function OwnerDashboard() {
     );
   }
 
+  const handleSort = (key) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return <ArrowUpDown size={14} className="text-slate-400 opacity-50 group-hover:opacity-100 transition-opacity" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-primary-500" /> : <ArrowDown size={14} className="text-primary-500" />;
+  };
+
+  const sortedBranchStats = [...(data?.branchStats || [])].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const key = sortConfig.key;
+    const aValue = a[key] || 0;
+    const bValue = b[key] || 0;
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   // E-mehmon uslubidagi gradient kartochkalar
   const kpis = [
     {
@@ -117,12 +142,14 @@ export default function OwnerDashboard() {
     }
   ];
 
-  const totalBandDays = data?.occupancyStats?.reduce((sum, item) => sum + item.band, 0) || 0;
-  const totalAvailableDays = (ov?.totalRooms || 0) * (data?.occupancyStats?.length || 1);
+  const totalBandDays = data?.occupancyStats?.reduce((sum, item) => sum + (item.band || 0), 0) || 0;
+  const daysWithData = data?.occupancyStats?.filter(item => item.band !== null)?.length || 1;
+  const totalAvailableDays = (ov?.totalRooms || 0) * daysWithData;
   const monthlyOccupancyRate = totalAvailableDays > 0 ? ((totalBandDays / totalAvailableDays) * 100).toFixed(1) : 0;
 
   return (
     <div className="space-y-6">
+      <ActiveIssuesBar />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -247,7 +274,7 @@ export default function OwnerDashboard() {
               {(!data?.paymentStats || data.paymentStats.length === 0) ? (
                 <p className="text-slate-500 text-sm">Ma'lumot yo'q</p>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="99%" height={250}>
                   <PieChart>
                     <Pie
                       data={data.paymentStats}
@@ -259,7 +286,7 @@ export default function OwnerDashboard() {
                       dataKey="value"
                     >
                       {data.paymentStats.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#10b981', '#3b82f6', '#8b5cf6'][index % 3]} />
+                        <Cell key={`cell-${index}`} fill={['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b'][index % 4]} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -279,8 +306,8 @@ export default function OwnerDashboard() {
               <LogOut size={20} className="text-red-500" /> Xarajatlar toifasi bo'yicha
             </h3>
             <div className="space-y-4">
-              {data?.expensesByCategory?.map(ec => (
-                <div key={ec.category} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+              {data?.expensesByCategory?.map((ec, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <span className="font-medium text-slate-800 capitalize">{ec.category}</span>
                   <span className="font-bold text-red-600">{ec._sum.amount?.toLocaleString() || 0} so'm</span>
                 </div>
@@ -306,18 +333,18 @@ export default function OwnerDashboard() {
             </p>
           </div>
           <div className="h-72 w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="99%" height={280}>
               <AreaChart
                 data={data.occupancyStats.map(item => ({
                   ...item,
-                  percentage: ov?.totalRooms ? parseFloat(((item.band / ov.totalRooms) * 100).toFixed(1)) : 0
+                  percentage: (item.band !== null && ov?.totalRooms) ? parseFloat(((item.band / ov.totalRooms) * 100).toFixed(1)) : null
                 }))}
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
               >
                 <defs>
                   <linearGradient id="colorPercentage" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#007bff" stopOpacity={0.6}/>
-                    <stop offset="95%" stopColor="#007bff" stopOpacity={0.1}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.5}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={true} horizontal={true} />
@@ -327,23 +354,27 @@ export default function OwnerDashboard() {
                   tickLine={false}
                   tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
                   label={{ value: "Xonalar bo'yicha % bandlik", angle: -90, position: 'insideLeft', offset: -5, style: { textAnchor: 'middle', fill: '#475569', fontSize: 12, fontWeight: 600 } }}
-                  ticks={[0, 25, 50, 75, 100, 125]}
-                  domain={[0, 125]}
+                  ticks={[0, 25, 50, 75, 100]}
+                  domain={[0, 100]}
                 />
                 <Tooltip
                   contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(v) => [`${v}%`, 'Bandlik']}
+                  formatter={(v, name, props) => [
+                    v !== null ? `${v}% (${props.payload.band} ta xona band)` : 'Ma\'lumot yo\'q',
+                    'Bandlik'
+                  ]}
                   labelStyle={{ color: '#475569', fontWeight: 600, marginBottom: '4px' }}
                 />
                 <Area
                   type="linear"
                   dataKey="percentage"
-                  stroke="#007bff"
-                  strokeWidth={2}
+                  stroke="#3b82f6"
+                  strokeWidth={2.5}
                   fillOpacity={1}
                   fill="url(#colorPercentage)"
-                  activeDot={{ r: 5, fill: '#007bff', stroke: '#fff', strokeWidth: 2 }}
-                  dot={{ r: 3, fill: '#007bff', strokeWidth: 0 }}
+                  connectNulls={false}
+                  activeDot={{ r: 5, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                  dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -364,11 +395,13 @@ export default function OwnerDashboard() {
                   <th className="table-th">Sana</th>
                   <th className="table-th">Admin</th>
                   {user?.role !== 'director' && <th className="table-th">Filial</th>}
-                  <th className="table-th text-right">Jami kassa</th>
+                  <th className="table-th text-right">Jami tushum</th>
+                  <th className="table-th text-right">Naqd</th>
                   <th className="table-th text-right">Terminal</th>
                   <th className="table-th text-right">QR Code</th>
+                  <th className="table-th text-right">Karta/Karta</th>
                   <th className="table-th text-right">Chiqim</th>
-                  <th className="table-th text-right font-bold text-emerald-600">Qoldiq (Naqd)</th>
+                  <th className="table-th text-right font-bold text-emerald-600">Qoldiq kassa</th>
                 </tr>
               </thead>
               <tbody>
@@ -390,8 +423,10 @@ export default function OwnerDashboard() {
                     <td className="table-td font-medium text-slate-800">{sr.adminName}</td>
                     {user?.role !== 'director' && <td className="table-td text-slate-600">{sr.branchName}</td>}
                     <td className="table-td text-right font-bold text-slate-900">{sr.totalIncome.toLocaleString()}</td>
+                    <td className="table-td text-right text-slate-700">{(sr.totalIncome - sr.terminal - sr.qrcode - (sr.transfer || 0)).toLocaleString()}</td>
                     <td className="table-td text-right text-slate-700">{sr.terminal.toLocaleString()}</td>
                     <td className="table-td text-right text-slate-700">{sr.qrcode.toLocaleString()}</td>
+                    <td className="table-td text-right text-slate-700">{(sr.transfer || 0).toLocaleString()}</td>
                     <td className="table-td text-right text-red-500">{sr.chiqim.toLocaleString()}</td>
                     <td className="table-td text-right font-bold text-emerald-600 bg-emerald-50">{sr.qoldiq.toLocaleString()}</td>
                   </tr>
@@ -451,16 +486,28 @@ export default function OwnerDashboard() {
               <thead>
                 <tr>
                   <th className="table-th text-left">Filial</th>
-                  <th className="table-th text-right">Jami tushum</th>
-                  <th className="table-th text-right">Qo'sh. xizmatlar</th>
-                  <th className="table-th text-right">Terminal</th>
-                  <th className="table-th text-right">QrCode</th>
-                  <th className="table-th text-right text-red-500">Xarajatlar</th>
-                  <th className="table-th text-right font-bold text-emerald-600">Qoldiq</th>
+                  <th className="table-th text-right cursor-pointer group select-none" onClick={() => handleSort('totalIncome')}>
+                    <div className="flex items-center justify-end gap-1">Jami tushum {renderSortIcon('totalIncome')}</div>
+                  </th>
+                  <th className="table-th text-right cursor-pointer group select-none" onClick={() => handleSort('additionalServices')}>
+                    <div className="flex items-center justify-end gap-1">Qo'sh. xizmatlar {renderSortIcon('additionalServices')}</div>
+                  </th>
+                  <th className="table-th text-right cursor-pointer group select-none" onClick={() => handleSort('terminal')}>
+                    <div className="flex items-center justify-end gap-1">Terminal {renderSortIcon('terminal')}</div>
+                  </th>
+                  <th className="table-th text-right cursor-pointer group select-none" onClick={() => handleSort('qrcode')}>
+                    <div className="flex items-center justify-end gap-1">QrCode {renderSortIcon('qrcode')}</div>
+                  </th>
+                  <th className="table-th text-right text-red-500 cursor-pointer group select-none" onClick={() => handleSort('totalExpenses')}>
+                    <div className="flex items-center justify-end gap-1">Xarajatlar {renderSortIcon('totalExpenses')}</div>
+                  </th>
+                  <th className="table-th text-right font-bold text-emerald-600 cursor-pointer group select-none" onClick={() => handleSort('balance')}>
+                    <div className="flex items-center justify-end gap-1">Qoldiq {renderSortIcon('balance')}</div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {data.branchStats.map((bs, idx) => (
+                {sortedBranchStats.map((bs, idx) => (
                   <tr key={bs.branch.id} className="table-row hover:bg-slate-50 transition-colors">
                     <td className="table-td font-medium text-slate-800">
                       <div className="flex items-center gap-3">

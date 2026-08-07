@@ -19,9 +19,18 @@ function initCron(io) {
       });
 
       if (expiredBookings.length > 0) {
-        console.log(`[AutoCheckout] ${expiredBookings.length} ta muddati o'tgan bron topildi. Check-out qilinmoqda...`);
+        // Filter out monthly bookings and bookings with debt
+        const bookingsToCheckout = expiredBookings.filter(b => {
+          const expectedAmount = Number(b.totalPrice || 0);
+          const paid = Number(b.paidAmount || 0);
+          const hasDebt = expectedAmount > paid;
+          return b.bookingType !== 'monthly' && !hasDebt;
+        });
 
-        for (const booking of expiredBookings) {
+        if (bookingsToCheckout.length > 0) {
+          console.log(`[AutoCheckout] ${bookingsToCheckout.length} ta muddati o'tgan (qarzsiz) bron topildi. Check-out qilinmoqda...`);
+
+          for (const booking of bookingsToCheckout) {
           // 1. Bron holatini checked_out qilish
           await prisma.booking.update({
             where: { id: booking.id },
@@ -45,6 +54,7 @@ function initCron(io) {
 
           console.log(`[AutoCheckout] Booking ID ${booking.id} muvaffaqiyatli check-out qilindi. (Xona: ${booking.room?.roomNumber})`);
         }
+      }
       }
     } catch (error) {
       console.error('[AutoCheckout Error] Avtomatik check-out paytida xatolik yuz berdi:', error);

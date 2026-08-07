@@ -20,8 +20,9 @@ const attendanceRoutes = require('./routes/attendance');
 const companiesRoutes = require('./routes/companies');
 const payrollRoutes = require('./routes/payroll');
 const profileRoutes = require('./routes/profile');
-const setupBot = require('./bot/telegramBot');
+const { setupBot } = require('./bot/telegramBot');
 const initAutoCheckout = require('./cron/autoCheckout');
+const cleanOldImages = require('./cron/cleanImages');
 
 const app = express();
 const server = http.createServer(app);
@@ -97,12 +98,26 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/companies', companiesRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/cleaning-tasks', require('./routes/cleaningTasks'));
 app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/reports', require('./routes/reports'));
-
+app.use('/api/inventory', require('./routes/inventory'));
+app.use('/api/inventory/requests', require('./routes/inventory-requests'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/tasks', require('./routes/tasks'));
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Hotel Management API ishlayapti!', timestamp: new Date() });
+});
+
+// Global Error Handler (Production himoyasi uchun)
+app.use((err, req, res, next) => {
+  console.error('[Global Xatolik]:', err);
+  res.status(500).json({ 
+    success: false, 
+    message: 'Ichki server xatosi yuz berdi.',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 // Socket.io
@@ -150,4 +165,5 @@ server.listen(PORT, '0.0.0.0', async () => {
 
   // Cron joblarni ishga tushirish
   initAutoCheckout(io);
+  cleanOldImages();
 });

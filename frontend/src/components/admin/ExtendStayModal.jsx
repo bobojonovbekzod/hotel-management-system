@@ -4,6 +4,7 @@ import { X, Calendar, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
+import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
 function ExtendStayModal({ isOpen, onClose, booking, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -18,7 +19,11 @@ function ExtendStayModal({ isOpen, onClose, booking, onSuccess }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let finalValue = value;
+    if (name === 'additionalPrice' || name === 'additionalPayment') {
+      finalValue = parseNumberInput(value);
+    }
+    setFormData(prev => ({ ...prev, [name]: finalValue }));
   };
 
   const handleSubmit = async (e) => {
@@ -91,9 +96,10 @@ function ExtendStayModal({ isOpen, onClose, booking, onSuccess }) {
               <div className="relative">
                 <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   name="additionalPrice"
-                  value={formData.additionalPrice}
+                  value={formatNumberInput(formData.additionalPrice)}
                   onChange={handleChange}
                   className="input-field pl-10"
                   placeholder="0"
@@ -107,9 +113,10 @@ function ExtendStayModal({ isOpen, onClose, booking, onSuccess }) {
               <div className="relative">
                 <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   name="additionalPayment"
-                  value={formData.additionalPayment}
+                  value={formatNumberInput(formData.additionalPayment)}
                   onChange={handleChange}
                   className="input-field pl-10"
                   placeholder="0"

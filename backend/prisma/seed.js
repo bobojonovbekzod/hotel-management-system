@@ -6,31 +6,39 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Database seeding boshlanmoqda...');
 
+  // 1. Kompaniya yaratish
+  const company = await prisma.company.upsert({
+    where: { id: 1 },
+    update: { name: 'Hotel Chain SaaS' },
+    create: { name: 'Hotel Chain SaaS' },
+  });
+  console.log('✅ Kompaniya yaratildi');
+
   // Filiallar yaratish - ID ni avval bilib olamiz
   const branch1 = await prisma.branch.upsert({
     where: { id: 1 },
     update: { name: 'Filial #1 - Chilonzor' },
-    create: { name: 'Filial #1 - Chilonzor', address: 'Chilonzor tumani, Toshkent', phone: '+998712001001' },
+    create: { id: 1, companyId: company.id, name: 'Filial #1 - Chilonzor', address: 'Chilonzor tumani, Toshkent', phone: '+998712001001' },
   });
   const branch2 = await prisma.branch.upsert({
     where: { id: 2 },
     update: { name: 'Filial #2 - Yunusobod' },
-    create: { name: 'Filial #2 - Yunusobod', address: 'Yunusobod tumani, Toshkent', phone: '+998712002002' },
+    create: { id: 2, companyId: company.id, name: 'Filial #2 - Yunusobod', address: 'Yunusobod tumani, Toshkent', phone: '+998712002002' },
   });
   const branch3 = await prisma.branch.upsert({
     where: { id: 3 },
     update: { name: 'Filial #3 - Mirzo Ulugbek' },
-    create: { name: 'Filial #3 - Mirzo Ulugbek', address: 'Mirzo Ulugbek tumani, Toshkent', phone: '+998712003003' },
+    create: { id: 3, companyId: company.id, name: 'Filial #3 - Mirzo Ulugbek', address: 'Mirzo Ulugbek tumani, Toshkent', phone: '+998712003003' },
   });
   const branch4 = await prisma.branch.upsert({
     where: { id: 4 },
     update: { name: 'Filial #4 - Shayxontohur' },
-    create: { name: 'Filial #4 - Shayxontohur', address: 'Shayxontohur tumani, Toshkent', phone: '+998712004004' },
+    create: { id: 4, companyId: company.id, name: 'Filial #4 - Shayxontohur', address: 'Shayxontohur tumani, Toshkent', phone: '+998712004004' },
   });
   const branch5 = await prisma.branch.upsert({
     where: { id: 5 },
     update: { name: 'Filial #5 - Sergeli' },
-    create: { name: 'Filial #5 - Sergeli', address: 'Sergeli tumani, Toshkent', phone: '+998712005005' },
+    create: { id: 5, companyId: company.id, name: 'Filial #5 - Sergeli', address: 'Sergeli tumani, Toshkent', phone: '+998712005005' },
   });
 
   const branches = [branch1, branch2, branch3, branch4, branch5];
@@ -43,6 +51,7 @@ async function main() {
     where: { username: 'owner' },
     update: { name: 'Aziz Tursunov' },
     create: {
+      companyId: company.id,
       name: 'Aziz Tursunov',
       username: 'owner',
       password: hashedPassword,
@@ -56,6 +65,7 @@ async function main() {
     where: { username: 'director1' },
     update: {},
     create: {
+      companyId: company.id,
       branchId: branch1.id,
       name: 'Bobur Yusupov',
       username: 'director1',
@@ -70,6 +80,7 @@ async function main() {
     where: { username: 'director2' },
     update: {},
     create: {
+      companyId: company.id,
       branchId: branch2.id,
       name: 'Sardor Toshmatov',
       username: 'director2',
@@ -85,6 +96,7 @@ async function main() {
     where: { username: 'admin1' },
     update: {},
     create: {
+      companyId: company.id,
       branchId: branch1.id,
       name: 'Malika Rahimova',
       username: 'admin1',
@@ -99,6 +111,7 @@ async function main() {
     where: { username: 'admin2' },
     update: {},
     create: {
+      companyId: company.id,
       branchId: branch1.id,
       name: 'Nilufar Hasanova',
       username: 'admin2',
@@ -113,6 +126,7 @@ async function main() {
     where: { username: 'admin3' },
     update: {},
     create: {
+      companyId: company.id,
       branchId: branch2.id,
       name: 'Kamola Mirzayeva',
       username: 'admin3',
@@ -153,11 +167,26 @@ async function main() {
     await prisma.room.upsert({
       where: { branchId_roomNumber: { branchId: room.branchId, roomNumber: room.roomNumber } },
       update: {},
-      create: room,
+      create: { companyId: company.id, ...room },
     });
   }
 
   console.log(`✅ ${roomsData.length} ta xona yaratildi`);
+
+  // Xarajat kategoriyalarini yaratish
+  const expenseCategoriesData = ['food', 'cleaning', 'repair', 'utilities', 'other'];
+  const expenseCategories = [];
+  for (const catName of expenseCategoriesData) {
+    const cat = await prisma.expenseCategory.create({
+      data: {
+        companyId: company.id,
+        name: catName,
+        isActive: true,
+      }
+    });
+    expenseCategories.push(cat);
+  }
+  console.log('✅ Xarajat kategoriyalari yaratildi');
 
   // --- FAKE DATA SEEDING ---
   console.log('⏳ Fake ma\'lumotlar yozilmoqda...');
@@ -170,6 +199,7 @@ async function main() {
   for (let i = 1; i <= 10; i++) {
     const g = await prisma.guest.create({
       data: {
+        companyId: company.id,
         firstName: `Mehmon ${i}`,
         lastName: `Familiyasi ${i}`,
         phone: `+99890111223${i % 10}`,
@@ -179,10 +209,7 @@ async function main() {
     guests.push(g);
   }
 
-  // Categories and Payment methods
   const paymentMethods = ['cash', 'terminal', 'qrcode'];
-  const expenseCategories = ['food', 'cleaning', 'repair', 'utilities', 'other'];
-
   const now = new Date();
 
   // For each admin, create a closed shift and some bookings + expenses
@@ -197,6 +224,7 @@ async function main() {
 
     const shift = await prisma.shift.create({
       data: {
+        companyId: company.id,
         branchId: admin.branchId,
         adminId: admin.id,
         shiftType: 'morning',
@@ -226,6 +254,7 @@ async function main() {
 
       await prisma.booking.create({
         data: {
+          companyId: company.id,
           branchId: admin.branchId,
           roomId: room.id,
           primaryGuestId: guest.id,
@@ -254,13 +283,15 @@ async function main() {
 
     // Create 2 fake expenses
     for (let i = 0; i < 2; i++) {
+      const randomCategory = expenseCategories[Math.floor(Math.random() * expenseCategories.length)];
       await prisma.expense.create({
         data: {
+          companyId: company.id,
           branchId: admin.branchId,
           adminId: admin.id,
           shiftId: shift.id,
-          category: expenseCategories[Math.floor(Math.random() * expenseCategories.length)],
-          amount: (Math.floor(Math.random() * 5) + 1) * 5000, // 5,000 dan 25,000 gacha arzimagan xarajat
+          categoryId: randomCategory.id,
+          amount: (Math.floor(Math.random() * 5) + 1) * 5000,
           description: `Fake xarajat ${i + 1}`,
           expenseDate: new Date(shiftStart.getTime() + (i * 3600000)),
         }

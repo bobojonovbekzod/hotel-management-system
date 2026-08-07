@@ -8,7 +8,7 @@ export default function BranchesPage() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', address: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', address: '', phone: '', adminKpiTiers: [] });
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -53,7 +53,7 @@ export default function BranchesPage() {
       }
       setIsModalOpen(false);
       fetchBranches();
-      setFormData({ name: '', address: '', phone: '' });
+      setFormData({ name: '', address: '', phone: '', adminKpiTiers: [] });
       setEditingId(null);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Xatolik yuz berdi');
@@ -63,7 +63,12 @@ export default function BranchesPage() {
   };
 
   const handleEdit = (branch) => {
-    setFormData({ name: branch.name, address: branch.address, phone: branch.phone || '' });
+    setFormData({ 
+      name: branch.name, 
+      address: branch.address, 
+      phone: branch.phone || '',
+      adminKpiTiers: typeof branch.adminKpiTiers === 'string' ? JSON.parse(branch.adminKpiTiers) : branch.adminKpiTiers || []
+    });
     setEditingId(branch.id);
     setIsModalOpen(true);
   };
@@ -104,7 +109,7 @@ export default function BranchesPage() {
         <button
           onClick={() => {
             setEditingId(null);
-            setFormData({ name: '', address: '', phone: '' });
+            setFormData({ name: '', address: '', phone: '', adminKpiTiers: [] });
             setIsModalOpen(true);
           }}
           className="btn-primary flex items-center gap-2"
@@ -251,6 +256,84 @@ export default function BranchesPage() {
                   }}
                   maxLength={17}
                 />
+              </div>
+              
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="label mb-0">Adminlar uchun Kassa KPI Rejasi (Oylik)</label>
+                  <button 
+                    type="button"
+                    onClick={() => setFormData({ ...formData, adminKpiTiers: [...formData.adminKpiTiers, { threshold: '', percentage: '', fixedSalary: '' }] })}
+                    className="text-xs font-bold text-primary-500 hover:text-primary-600 bg-primary-500/10 px-2 py-1 rounded"
+                  >
+                    + Qator qo'shish
+                  </button>
+                </div>
+                {formData.adminKpiTiers.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic">Hali KPI rejasi qo'shilmagan. Adminlar faqat smena oyligini oladi.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {formData.adminKpiTiers.map((tier, index) => (
+                      <div key={index} className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                        <div className="flex-1">
+                          <label className="text-[10px] uppercase font-bold text-slate-500">Qaysi summadan oshsa (so'm)</label>
+                          <input 
+                            type="text" 
+                            className="input-field py-1.5 text-sm font-mono" 
+                            value={tier.threshold !== '' && tier.threshold !== undefined ? Number(tier.threshold).toLocaleString() : ''} 
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '');
+                              const newTiers = [...formData.adminKpiTiers];
+                              newTiers[index].threshold = val !== '' ? Number(val) : '';
+                              setFormData({ ...formData, adminKpiTiers: newTiers });
+                            }} 
+                            placeholder="Masalan: 180 000 000"
+                          />
+                        </div>
+                        <div className="w-24">
+                          <label className="text-[10px] uppercase font-bold text-slate-500">Foiz (%)</label>
+                          <input 
+                            type="number" 
+                            className="input-field py-1.5 text-sm font-mono" 
+                            value={tier.percentage !== '' && tier.percentage !== undefined ? tier.percentage : ''} 
+                            onChange={(e) => {
+                              const newTiers = [...formData.adminKpiTiers];
+                              newTiers[index].percentage = e.target.value !== '' ? Number(e.target.value) : '';
+                              setFormData({ ...formData, adminKpiTiers: newTiers });
+                            }} 
+                            placeholder="Masalan: 5"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] uppercase font-bold text-slate-500" title="Agar foiz o'rniga fiksa oylik berilsa">Yoki Fiksa (so'm)</label>
+                          <input 
+                            type="text" 
+                            className="input-field py-1.5 text-sm font-mono" 
+                            value={tier.fixedSalary !== '' && tier.fixedSalary !== undefined ? Number(tier.fixedSalary).toLocaleString() : ''} 
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '');
+                              const newTiers = [...formData.adminKpiTiers];
+                              newTiers[index].fixedSalary = val !== '' ? Number(val) : '';
+                              setFormData({ ...formData, adminKpiTiers: newTiers });
+                            }} 
+                            placeholder="Masalan: 2 500 000"
+                          />
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const newTiers = [...formData.adminKpiTiers];
+                            newTiers.splice(index, 1);
+                            setFormData({ ...formData, adminKpiTiers: newTiers });
+                          }}
+                          className="p-2 mt-4 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-lg"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="pt-4 flex justify-end gap-3 border-t border-slate-200">
                 <button

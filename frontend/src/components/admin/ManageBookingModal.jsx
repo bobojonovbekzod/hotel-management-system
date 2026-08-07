@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import api from '../../lib/api';
-import { DoorOpen, ArrowRightLeft, CreditCard, Banknote, Smartphone, Plus } from 'lucide-react';
+import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
+import { DoorOpen, ArrowRightLeft, CreditCard, Banknote, Smartphone, Plus, Trash2 } from 'lucide-react';
 
 const paymentMethods = [
   { value: 'cash', label: 'Naqd' },
   { value: 'terminal', label: 'Terminal' },
   { value: 'qrcode', label: 'QR' },
+  { value: 'transfer', label: "Kartadan kartaga" },
 ];
 
 function ManageBookingModal({ bookingId, onClose, onSuccess }) {
@@ -26,6 +28,8 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
   const [freeRooms, setFreeRooms] = useState([]);
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [additionalPrice, setAdditionalPrice] = useState('');
+  const [transferPaymentMethod, setTransferPaymentMethod] = useState('cash');
+
   // Extend state
   const [extendDate, setExtendDate] = useState('');
   const [extendPrice, setExtendPrice] = useState('');
@@ -77,10 +81,11 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
 
   const handleAddPayment = async (e) => {
     e.preventDefault();
-    if (!paymentAmount || parseFloat(paymentAmount) <= 0) return;
+    const parsedAmount = parseFloat(parseNumberInput(paymentAmount));
+    if (!parsedAmount || parsedAmount <= 0) return;
     try {
       await api.post(`/bookings/${bookingId}/payments`, {
-        amount: paymentAmount,
+        amount: parsedAmount,
         method: paymentMethod,
         periodStart: paymentPeriodStart || undefined,
         periodEnd: paymentPeriodEnd || undefined
@@ -88,6 +93,7 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
       toast.success('To\'lov qabul qilindi');
       fetchBooking();
       setPaymentAmount('');
+      onSuccess();
     } catch (err) {
       toast.error('To\'lov qabul qilishda xato');
     }
@@ -99,7 +105,8 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
     try {
       await api.put(`/bookings/${bookingId}/transfer`, {
         newRoomId: selectedRoomId,
-        additionalPrice
+        additionalPrice: additionalPrice ? parseFloat(parseNumberInput(additionalPrice)) : 0,
+        paymentMethod: transferPaymentMethod
       });
       toast.success('Xona ko\'chirildi');
       onSuccess();
@@ -116,6 +123,18 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
       toast.success('Hamroh qo\'shildi');
       setCompanion({ firstName: '', lastName: '', phone: '', passportNumber: '' });
       fetchBooking();
+      onSuccess();
+    } catch (err) {
+      toast.error('Xato yuz berdi');
+    }
+  };
+
+  const handleRemoveCompanion = async (guestId) => {
+    if (!window.confirm("Rostdan ham ushbu mehmonni ro'yxatdan o'chirmoqchimisiz?")) return;
+    try {
+      await api.delete(`/bookings/${bookingId}/guests/${guestId}`);
+      toast.success("Hamroh o'chirildi");
+      fetchBooking();
     } catch (err) {
       toast.error('Xato yuz berdi');
     }
@@ -127,12 +146,13 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
     try {
       await api.post(`/bookings/${bookingId}/extend`, {
         newCheckOutDate: extendDate,
-        additionalPrice: extendPrice,
-        paymentAmount: extendPaymentAmount,
+        additionalPrice: extendPrice ? parseFloat(parseNumberInput(extendPrice)) : 0,
+        paymentAmount: extendPaymentAmount ? parseFloat(parseNumberInput(extendPaymentAmount)) : 0,
         paymentMethod: extendPaymentMethod,
       });
       toast.success('Muddat uzaytirildi');
       fetchBooking();
+      onSuccess();
     } catch (err) {
       toast.error('Xato yuz berdi');
     }
@@ -140,10 +160,11 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
 
   const handlePenalty = async (e) => {
     e.preventDefault();
-    if (!penaltyAmount) return;
+    const parsedPenalty = parseFloat(parseNumberInput(penaltyAmount));
+    if (!parsedPenalty || parsedPenalty <= 0) return;
     try {
       await api.post(`/bookings/${bookingId}/penalty`, {
-        amount: penaltyAmount,
+        amount: parsedPenalty,
         description: penaltyDescription,
         method: penaltyMethod
       });
@@ -151,6 +172,7 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
       setPenaltyAmount('');
       setPenaltyDescription('');
       fetchBooking();
+      onSuccess();
     } catch (err) {
       toast.error('Xatolik');
     }
@@ -167,11 +189,19 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-content p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            Xona #{booking.room?.roomNumber} Boshqaruvi
-          </h2>
-          <button onClick={onClose} className="text-slate-600 hover:text-slate-900 text-2xl leading-none">&times;</button>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-1">
+              Xona #{booking.room?.roomNumber} Boshqaruvi
+            </h2>
+            <div className="flex flex-col text-sm text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg inline-block">
+              <span className="font-semibold text-slate-800">{booking.primaryGuest?.firstName} {booking.primaryGuest?.lastName}</span>
+              {booking.primaryGuest?.phone && (
+                <span className="flex items-center gap-1.5 mt-0.5"><Smartphone size={14} className="text-primary-500" /> {booking.primaryGuest.phone}</span>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-600 hover:text-slate-900 text-2xl leading-none bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition-colors">&times;</button>
         </div>
 
         <div className="flex gap-2 mb-6 border-b border-slate-300 pb-2 overflow-x-auto">
@@ -230,7 +260,7 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
             
             <div className="space-y-2">
               <label className="text-sm text-slate-600">Summa</label>
-              <input type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} className="input-field" placeholder="Masalan: 100000" required />
+              <input type="text" inputMode="decimal" value={formatNumberInput(paymentAmount)} onChange={(e) => setPaymentAmount(parseNumberInput(e.target.value))} className="input-field" placeholder="Masalan: 100000" required />
             </div>
             <div className="space-y-2">
               <label className="text-sm text-slate-600">To'lov usuli</label>
@@ -292,11 +322,11 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm text-slate-600">Qo'shiladigan hisob (so'm)</label>
-                <input type="number" value={extendPrice} onChange={(e) => setExtendPrice(e.target.value)} className="input-field" placeholder="Masalan: 500000" />
+                <input type="text" inputMode="decimal" value={formatNumberInput(extendPrice)} onChange={(e) => setExtendPrice(parseNumberInput(e.target.value))} className="input-field" placeholder="Masalan: 500000" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm text-slate-600">Hozir to'lanadigan summa</label>
-                <input type="number" value={extendPaymentAmount} onChange={(e) => setExtendPaymentAmount(e.target.value)} className="input-field" placeholder="Masalan: 500000" />
+                <input type="text" inputMode="decimal" value={formatNumberInput(extendPaymentAmount)} onChange={(e) => setExtendPaymentAmount(parseNumberInput(e.target.value))} className="input-field" placeholder="Masalan: 500000" />
               </div>
             </div>
 
@@ -314,7 +344,7 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
         {activeTab === 'transfer' && (
           <form onSubmit={handleTransfer} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm text-slate-600">Qaysi xonaga ko'chiriladi?</label>
+              <label className="text-sm text-slate-600 font-medium">Qaysi xonaga ko'chiriladi?</label>
               <select value={selectedRoomId} onChange={e => setSelectedRoomId(e.target.value)} className="input-field" required>
                 <option value="">Tanlang...</option>
                 {freeRooms.map(r => (
@@ -322,11 +352,26 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 ))}
               </select>
             </div>
+            
             <div className="space-y-2">
-              <label className="text-sm text-slate-600">Qo'shimcha ustama to'lov (agar bo'lsa)</label>
-              <input type="number" value={additionalPrice} onChange={e => setAdditionalPrice(e.target.value)} className="input-field" />
-              <p className="text-xs text-slate-600">Agar xona narxlari farq qilsa, hisobga shuncha summa qo'shiladi.</p>
+              <label className="text-sm text-slate-600 font-medium">Qo'shimcha ustama to'lov (agar bo'lsa)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-500 mb-1 block">Summa (so'm)</label>
+                  <input type="text" inputMode="decimal" placeholder="0" value={formatNumberInput(additionalPrice)} onChange={e => setAdditionalPrice(parseNumberInput(e.target.value))} className="input-field" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 mb-1 block">To'lov turi</label>
+                  <select value={transferPaymentMethod} onChange={e => setTransferPaymentMethod(e.target.value)} className="input-field">
+                    {paymentMethods.map(p => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500">Agar xona narxlari farq qilsa, hisobga va faol smenaga tanlangan to'lov turi bo'yicha summa qo'shiladi.</p>
             </div>
+
             <button type="submit" className="w-full btn-primary py-2 mt-4 flex items-center justify-center gap-2">
               <ArrowRightLeft size={18} /> Ko'chirish
             </button>
@@ -355,7 +400,17 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
               <div className="mt-4 border-t border-slate-300 pt-4">
                 <p className="text-sm text-slate-600 mb-2">Oldin qo'shilgan hamrohlar:</p>
                 {booking.additionalGuests.map(ag => (
-                  <div key={ag.id} className="text-sm text-slate-900 mb-1">• {ag.guest.firstName} {ag.guest.lastName}</div>
+                  <div key={ag.id} className="flex items-center justify-between bg-slate-50 p-2 rounded-lg mb-2">
+                    <span className="text-sm text-slate-900 font-medium">• {ag.guest.firstName} {ag.guest.lastName}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveCompanion(ag.guest.id)} 
+                      className="text-red-500 hover:text-red-700 bg-red-500/10 hover:bg-red-500/20 p-1.5 rounded transition-colors"
+                      title="O'chirish (Check-out)"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -366,7 +421,7 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
           <form onSubmit={handlePenalty} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-800 mb-1">Jarima / Xizmat summasi</label>
-              <input type="number" required value={penaltyAmount} onChange={e => setPenaltyAmount(e.target.value)} className="input-field" placeholder="Masalan: 50000" />
+              <input type="text" inputMode="decimal" required value={formatNumberInput(penaltyAmount)} onChange={e => setPenaltyAmount(parseNumberInput(e.target.value))} className="input-field" placeholder="Masalan: 50000" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-800 mb-1">Sabab / Izoh (Ixtiyoriy)</label>

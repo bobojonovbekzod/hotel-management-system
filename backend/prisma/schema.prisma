@@ -60,9 +60,10 @@ model Branch {
   companyId Int
   name      String
   address   String?
-  phone     String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  phone         String?
+  isActive      Boolean  @default(true)
+  adminKpiTiers Json?
+  createdAt     DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   company               Company                @relation(fields: [companyId], references: [id])
@@ -228,6 +229,7 @@ model BookingGuest {
   id        Int @id @default(autoincrement())
   bookingId Int
   guestId   Int
+  relation  String?
 
   booking Booking @relation(fields: [bookingId], references: [id])
   guest   Guest   @relation(fields: [guestId], references: [id])
@@ -350,18 +352,19 @@ model CleaningTask {
   id          Int      @id @default(autoincrement())
   companyId   Int
   branchId    Int
-  roomId      Int
+  roomId      Int?
+  taskType    String   @default("room") // room, corridor, street
   cleanerId   Int
+  status      String   @default("pending") // pending, completed
   beforeImage String?
   afterImage  String?
-  status      String   @default("pending") // pending, completed
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id])
-  branch  Branch  @relation(fields: [branchId], references: [id])
-  room    Room    @relation(fields: [roomId], references: [id])
-  cleaner User    @relation(fields: [cleanerId], references: [id])
+  company     Company  @relation(fields: [companyId], references: [id])
+  branch      Branch   @relation(fields: [branchId], references: [id])
+  room        Room?    @relation(fields: [roomId], references: [id])
+  cleaner     User     @relation(fields: [cleanerId], references: [id])
 
   @@map("cleaning_tasks")
 }
@@ -412,13 +415,15 @@ enum TransactionType {
 model Attendance {
   id        Int       @id @default(autoincrement())
   companyId Int
-  userId    Int
-  branchId  Int
-  checkIn   DateTime?
-  checkOut  DateTime?
-  workDate  DateTime
-  notes     String?
-  createdAt DateTime  @default(now())
+  userId        Int
+  branchId      Int
+  checkIn       DateTime?
+  checkOut      DateTime?
+  checkInPhoto  String?
+  checkOutPhoto String?
+  workDate      DateTime
+  notes         String?
+  createdAt     DateTime  @default(now())
 
   company Company @relation(fields: [companyId], references: [id])
   user    User    @relation(fields: [userId], references: [id])

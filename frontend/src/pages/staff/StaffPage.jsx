@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, User, Printer, ScanFace, Upload, Eye, EyeOff, Wallet, TrendingUp, TrendingDown, Clock, CreditCard, X, Trash2 } from 'lucide-react';
+import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, User, Printer, ScanFace, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, TrendingUp, TrendingDown, Clock, CreditCard, X, Trash2 } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
 import FullScreenLoader from '../../components/common/FullScreenLoader';
+import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
 const roleConfig = {
   director: { label: 'Direktor', icon: ShieldCheck, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
@@ -38,6 +39,7 @@ export default function StaffPage() {
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState('');
   const [faceImageBase64, setFaceImageBase64] = useState('');
+  const [photoFile, setPhotoFile] = useState(null);
   const [uploadingFace, setUploadingFace] = useState(false);
 
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, user: null });
@@ -80,16 +82,43 @@ export default function StaffPage() {
   const openFaceModal = (u) => {
     setFaceUser(u);
     setFaceImageBase64('');
-    fetchDevices();
+    setPhotoFile(null);
     setShowFaceModal(true);
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setPhotoFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFaceImageBase64(reader.result);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 600;
+          const MAX_HEIGHT = 600;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          setFaceImageBase64(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
     }
@@ -97,17 +126,21 @@ export default function StaffPage() {
 
   const handleFaceUpload = async (e) => {
     e.preventDefault();
-    if (!selectedDevice || !faceImageBase64) {
-      toast.error('Qurilmani tanlang va rasm yuklang');
+    if (!photoFile) {
+      toast.error('Rasm yuklang');
       return;
     }
     setUploadingFace(true);
     try {
-      await api.post(`/users/${faceUser.id}/face`, {
-        deviceId: selectedDevice,
-        base64Image: faceImageBase64
+      const formData = new FormData();
+      formData.append('photo', photoFile);
+
+      await api.post(`/users/${faceUser.id}/photo`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
-      toast.success('Yuz qurilmaga yuklandi!');
+      toast.success('Rasm saqlandi!');
       setShowFaceModal(false);
       fetchStaff();
     } catch (error) {
@@ -118,11 +151,11 @@ export default function StaffPage() {
   };
 
   const handleFaceDelete = async () => {
-    if (!window.confirm('Rostdan ham ushbu xodimning yuz ma\'lumotini barcha qurilmalardan o\'chirib tashlamoqchimisiz?')) return;
+    if (!window.confirm('Rostdan ham ushbu xodimning rasmini o\'chirib tashlamoqchimisiz?')) return;
     try {
       setUploadingFace(true);
-      await api.delete(`/users/${faceUser.id}/face`);
-      toast.success('Yuz ma\'lumotlari o\'chirildi');
+      await api.delete(`/users/${faceUser.id}/photo`);
+      toast.success('Rasm o\'chirildi');
       setShowFaceModal(false);
       fetchStaff();
     } catch (error) {
@@ -176,7 +209,7 @@ export default function StaffPage() {
         name: form.name,
         username: form.username,
         role: form.role,
-        phone: form.phone,
+        phone: form.phone ? form.phone.replace(/\s+/g, '') : '',
         salary: form.salary,
         salaryType: form.salaryType,
         kpiPercentage: form.kpiPercentage,
@@ -316,7 +349,7 @@ export default function StaffPage() {
                 staff={members}
                 onEdit={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleEdit : null}
                 onToggle={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleToggleActive : null}
-                onFaceId={['owner', 'supervisor', 'director', 'hr'].includes(user?.role) ? openFaceModal : null}
+                onFaceId={['owner', 'supervisor', 'hr'].includes(user?.role) ? openFaceModal : null}
                 onDelete={['owner', 'hr'].includes(user?.role) ? handleDeleteClick : null}
               />
             </div>
@@ -326,9 +359,9 @@ export default function StaffPage() {
         <div className="card">
           <StaffTable
             staff={staff}
-            onEdit={['owner', 'supervisor', 'director', 'hr'].includes(user?.role) ? handleEdit : null}
-            onToggle={['owner', 'supervisor', 'director', 'hr'].includes(user?.role) ? handleToggleActive : null}
-            onFaceId={['owner', 'supervisor', 'director', 'hr'].includes(user?.role) ? openFaceModal : null}
+            onEdit={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleEdit : null}
+            onToggle={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleToggleActive : null}
+            onFaceId={['owner', 'supervisor', 'hr'].includes(user?.role) ? openFaceModal : null}
             onDelete={['owner', 'hr'].includes(user?.role) ? handleDeleteClick : null}
           />
         </div>
@@ -515,38 +548,55 @@ export default function StaffPage() {
                       onChange={(e) => setForm({ ...form, salaryType: e.target.value })}
                     >
                       <option value="static">Oylik maosh</option>
-                      <option value="per_shift">Smenabay</option>
+                      <option value="per_shift">Kunbay / Smenabay</option>
+                      <option value="per_room">Xonabay (faqat tozalash)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="label">{form.salaryType === 'static' ? 'Oylik (so\'m)' : 'Bitta smena narxi (stavka)'}</label>
+                    <label className="label">
+                      {form.salaryType === 'static' 
+                        ? 'Oylik (so\'m)' 
+                        : form.salaryType === 'per_shift' 
+                          ? 'Kunlik / Smena narxi' 
+                          : 'Bitta xona tozalash narxi'}
+                    </label>
                     <input
                       id="staff-salary"
                       type="text"
+                      inputMode="decimal"
                       className="input-field"
-                      placeholder={form.salaryType === 'static' ? "Masalan: 3 000 000" : "Masalan: 100 000"}
-                      value={form.salary ? Number(form.salary).toLocaleString('ru-RU').replace(/,/g, ' ') : ''}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\s/g, '');
-                        if (/^\d*$/.test(val)) {
-                          setForm({ ...form, salary: val });
-                        }
-                      }}
+                      placeholder={form.salaryType === 'static' ? "Masalan: 3 000 000" : form.salaryType === 'per_shift' ? "Masalan: 100 000" : "Masalan: 10 000"}
+                      value={formatNumberInput(form.salary)}
+                      onChange={(e) => setForm({ ...form, salary: parseNumberInput(e.target.value) })}
                     />
                   </div>
                 </div>
-                  {form.salaryType === 'per_shift' && (
-                    <div>
-                      <label className="label">Kassadan tushadigan ulush (%)</label>
-                      <input
-                        type="number"
-                        className="input-field"
-                        placeholder="Masalan: 5"
-                        value={form.kpiPercentage}
-                        onChange={(e) => setForm({ ...form, kpiPercentage: e.target.value })}
-                      />
-                    </div>
-                  )}
+                {/* KPI foizi har doim ko'rinishi kerak (Stavka uchun ham kerak bo'lishi mumkin) */}
+                {form.role === 'admin' ? (
+                  <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-xl flex items-start gap-2">
+                    <span className="text-emerald-500 mt-0.5">ℹ️</span>
+                    <p className="text-xs text-emerald-700 leading-relaxed font-medium">
+                      Adminlar uchun Kassa ulushi (KPI) endi "Filiallar" sahifasida maxsus reja orqali belgilanadi.
+                    </p>
+                  </div>
+                ) : (
+                  <div className={`${form.salaryType === 'static' ? 'opacity-50' : ''}`}>
+                    <label className="label">Kassadan tushadigan ulush (%)</label>
+                    <input
+                      type="number"
+                      className="input-field disabled:bg-slate-50 disabled:text-slate-400"
+                      placeholder="Masalan: 5"
+                      value={form.kpiPercentage}
+                      disabled={form.salaryType === 'static'}
+                      onChange={(e) => setForm({ ...form, kpiPercentage: e.target.value })}
+                    />
+                    {form.salaryType === 'static' && (
+                      <p className="text-xs text-amber-500 font-medium mt-1">
+                        Statik oylik maosh rejimida kassa ulushi yozilmaydi
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Info box for quick password copy */}
                 {!editUser && form.username && form.password && (
@@ -557,7 +607,7 @@ export default function StaffPage() {
                     <div className="space-y-1 bg-white shadow-sm p-3 rounded-lg border border-emerald-500/10">
                       <p className="text-sm text-slate-800 flex justify-between">
                         <span className="text-slate-600">Sayt:</span>
-                        <span className="font-mono text-emerald-300">http://tizim-manzili/login</span>
+                        <span className="font-mono text-emerald-300">https://hotelbase.uz/login</span>
                       </p>
                       <p className="text-sm text-slate-800 flex justify-between">
                         <span className="text-slate-600">Username:</span>
@@ -592,26 +642,17 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* Face ID Upload Modal */}
+      {/* Photo Upload Modal */}
       {showFaceModal && faceUser && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowFaceModal(false)}>
           <div className="modal-content p-6">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <ScanFace className="text-primary-400" /> Face ID yuklash
+              <ImageIcon className="text-primary-400" /> Rasm yuklash
             </h2>
             <p className="text-slate-600 text-sm mb-6">
               Xodim: <strong>{faceUser.name}</strong> (@{faceUser.username})
             </p>
             <form onSubmit={handleFaceUpload} className="space-y-4">
-              <div>
-                <label className="label">Qurilmani tanlang</label>
-                <select className="input-field" value={selectedDevice} onChange={e => setSelectedDevice(e.target.value)} required>
-                  <option value="">Qurilma tanlang...</option>
-                  {devices.map(d => (
-                    <option key={d.id} value={d.id}>{d.name} ({d.ipAddress})</option>
-                  ))}
-                </select>
-              </div>
               <div>
                 <label className="label">Rasm (JPG/PNG)</label>
                 <div className="border-2 border-dashed border-slate-300 p-4 rounded-xl text-center hover:border-primary-500 transition-colors">
@@ -630,7 +671,7 @@ export default function StaffPage() {
                     {uploadingFace ? 'Yuklanmoqda...' : <><Upload size={18} /> Yuklash</>}
                   </button>
                 </div>
-                {faceUser?.isFaceRegistered && (
+                {faceUser?.photoUrl && (
                   <button type="button" onClick={handleFaceDelete} disabled={uploadingFace} className="px-4 py-2 border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 font-medium rounded-xl flex items-center justify-center gap-2 transition-colors">
                     <Trash2 size={18} /> O'chirish
                   </button>
@@ -665,7 +706,9 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
             <th className="table-th">Telefon</th>
             <th className="table-th text-right">Maosh</th>
             <th className="table-th text-center">Holat</th>
-            <th className="table-th text-right">Amallar</th>
+            {(onEdit || onToggle || onFaceId || onFinance || onDelete) && (
+              <th className="table-th text-right">Amallar</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -673,7 +716,7 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
             const cfg = roleConfig[u.role] || roleConfig.admin;
             const Icon = cfg.icon;
 
-            const hasPhoto = u.isFaceRegistered && u.photoUrl && u.photoUrl !== 'uploaded_via_base64';
+            const hasPhoto = !!u.photoUrl && u.photoUrl !== 'uploaded_via_base64';
             const backendBaseURL = api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : `http://${window.location.hostname}:5000`;
             const photoUrl = hasPhoto ? `${backendBaseURL}${u.photoUrl}` : null;
 
@@ -720,7 +763,9 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                 <td className="table-td text-slate-600 font-medium text-sm">{u.phone || '—'}</td>
                 <td className="table-td text-right">
                   {u.salaryType === 'per_shift' ? (
-                    <span className="text-[12px] text-emerald-400 font-bold uppercase tracking-wider bg-emerald-400/10 px-2 py-1 rounded-md">Smenabay</span>
+                    <span className="inline-flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs font-medium border border-blue-100">Kunbay/Smenabay</span>
+                  ) : u.salaryType === 'per_room' ? (
+                    <span className="inline-flex items-center gap-1 text-purple-600 bg-purple-50 px-2 py-0.5 rounded text-xs font-medium border border-purple-100">Xonabay</span>
                   ) : u.salary ? (
                     <span className="text-slate-900 font-semibold">{Number(u.salary).toLocaleString('ru-RU').replace(/,/g, ' ')} <span className="text-xs font-medium text-slate-600">so'm</span></span>
                   ) : '—'}
@@ -746,14 +791,15 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                     </span>
                   )}
                 </td>
-                <td className="table-td text-right">
-                  {onFaceId && (
+                {(onEdit || onToggle || onFaceId || onFinance || onDelete) && (
+                  <td className="table-td text-right">
+                    {onFaceId && (
                     <button
                       onClick={() => onFaceId(u)}
-                      className={`mr-2 p-1.5 rounded-lg transition-colors ${u.isFaceRegistered ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-600 hover:text-primary-400 hover:bg-primary-500/10'}`}
-                      title="Face ID yuz qo'shish"
+                      className={`mr-2 p-1.5 rounded-lg transition-colors ${u.photoUrl ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-600 hover:text-primary-400 hover:bg-primary-500/10'}`}
+                      title="Rasm yuklash"
                     >
-                      <ScanFace size={16} />
+                      <ImageIcon size={16} />
                     </button>
                   )}
                   {onFinance && (
@@ -783,7 +829,8 @@ function StaffTable({ staff, onEdit, onToggle, onFaceId, onFinance, onDelete }) 
                       <Trash2 size={16} />
                     </button>
                   )}
-                </td>
+                  </td>
+                )}
               </tr>
             );
           })}

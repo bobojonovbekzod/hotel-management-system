@@ -50,6 +50,10 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
   try {
     const { categoryId, amount, description, expenseDate, shiftId } = req.body;
 
+    if (req.user.role === 'admin' && !shiftId) {
+      return res.status(403).json({ success: false, message: 'Avval smena boshlang!' });
+    }
+
     const expense = await prisma.expense.create({
       data: {
         companyId: req.user.companyId,

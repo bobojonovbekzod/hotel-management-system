@@ -17,9 +17,10 @@ const statusLabel = {
 };
 
 const paymentIcon = { 
-  cash: <Wallet size={16} />, 
-  terminal: <CreditCard size={16} />, 
-  qrcode: <Smartphone size={16} /> 
+  cash: <Wallet size={16} className="text-emerald-500" title="Naqd" />, 
+  terminal: <CreditCard size={16} className="text-blue-500" title="Terminal" />, 
+  qrcode: <Smartphone size={16} className="text-orange-500" title="QR Code" />,
+  mixed: <List size={16} className="text-purple-500" title="Aralash" />
 };
 
 export default function AdminBookingsPage() {
@@ -35,7 +36,12 @@ export default function AdminBookingsPage() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const params = filter !== 'all' ? { status: filter } : {};
+      let params = {};
+      if (filter === 'overdue') {
+        params = { status: 'active', overdue: true };
+      } else if (filter !== 'all') {
+        params = { status: filter };
+      }
       const res = await api.get('/bookings', { params });
       setBookings(res.data.data);
     } catch {
@@ -50,9 +56,9 @@ export default function AdminBookingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <ClipboardList className="text-primary-400" /> Bronlar tarixi
+            <ClipboardList className="text-primary-400" /> Mijozlar (Tarix)
           </h1>
-          <p className="text-slate-600 text-sm">Barcha check-in va check-outlar</p>
+          <p className="text-slate-600 text-sm mt-1">Barcha kelib-ketgan va joriy mijozlar ro'yxati</p>
         </div>
       </div>
 
@@ -61,6 +67,7 @@ export default function AdminBookingsPage() {
         {[
           { key: 'active', label: 'Faol', icon: <CheckCircle size={16} /> },
           { key: 'checked_out', label: 'Chiqdi', icon: <DoorOpen size={16} /> },
+          { key: 'overdue', label: "Vaqti o'tganlar", icon: <XCircle size={16} /> },
           { key: 'all', label: 'Hammasi', icon: <List size={16} /> },
         ].map((f) => (
           <button
@@ -101,8 +108,10 @@ export default function AdminBookingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((b) => (
-                  <tr key={b.id} className="table-row cursor-pointer" onClick={() => setSelected(b)}>
+                {bookings.map((b) => {
+                  const isOverdue = b.status === 'active' && new Date(b.checkOutExpected) < new Date();
+                  return (
+                  <tr key={b.id} className={`table-row cursor-pointer ${isOverdue ? 'bg-red-500/5 hover:bg-red-500/10' : ''}`} onClick={() => setSelected(b)}>
                     <td className="table-td">
                       <div>
                         <p className="font-medium text-slate-900">{b.primaryGuest?.firstName} {b.primaryGuest?.lastName}</p>
@@ -120,10 +129,12 @@ export default function AdminBookingsPage() {
                     <td className="table-td text-xs">
                       {b.checkOutActual
                         ? format(new Date(b.checkOutActual), 'dd.MM HH:mm')
-                        : <span className="text-yellow-400">{format(new Date(b.checkOutExpected), 'dd.MM HH:mm')} ⏳</span>}
+                        : <span className={isOverdue ? "text-red-500 font-bold" : "text-yellow-500"}>
+                            {format(new Date(b.checkOutExpected), 'dd.MM HH:mm')} {isOverdue ? '⚠️' : '⏳'}
+                          </span>}
                     </td>
                     <td className="table-td">
-                      <span className="text-xl">{paymentIcon[b.paymentMethod] || '?'}</span>
+                      <span className="flex justify-center items-center">{paymentIcon[b.paymentMethod] || <span className="text-slate-400 text-xs">-</span>}</span>
                     </td>
                     <td className="table-td text-right">
                       <p className="font-bold text-slate-900">{b.paidAmount?.toLocaleString()}</p>
@@ -137,7 +148,8 @@ export default function AdminBookingsPage() {
                       </span>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

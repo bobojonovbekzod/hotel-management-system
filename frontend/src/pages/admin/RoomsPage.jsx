@@ -7,6 +7,7 @@ import CheckInModal from '../../components/admin/CheckInModal';
 import CheckOutModal from '../../components/admin/CheckOutModal';
 import { BedDouble, CheckCircle2, Clock, PlayCircle, Sparkles, User, Wrench } from 'lucide-react';
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -41,6 +42,7 @@ const statusConfig = {
 
 export default function AdminRoomsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -100,14 +102,15 @@ export default function AdminRoomsPage() {
   }, [user, fetchRooms, fetchActiveShift]);
 
   const handleRoomClick = (room) => {
-    if (user?.role === 'owner') return; // Owner just views, doesn't interact
+    if (user?.role === 'owner' || user?.role === 'director') return; // Owner/Director shouldn't interact directly
+
+    if (user?.role === 'admin' && !activeShift) {
+      toast.error('Avval smena boshlang!');
+      return;
+    }
 
     if (room.status === 'maintenance') return;
     if (room.status === 'available') {
-      if (!activeShift) {
-        toast.error('Avval smena boshlang!');
-        return;
-      }
       setCheckInRoom(room);
     } else if (room.status === 'occupied') {
       const booking = room.bookings?.[0];
@@ -126,14 +129,8 @@ export default function AdminRoomsPage() {
     }
   };
 
-  const handleStartShift = async () => {
-    try {
-      const res = await api.post('/shifts/start');
-      setActiveShift(res.data.data);
-      toast.success('Smena boshlandi! 🎉');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Xato');
-    }
+  const handleStartShift = () => {
+    navigate('/shifts');
   };
 
   const filteredRooms = rooms.filter((r) => filter === 'all' || r.status === filter);
@@ -167,7 +164,7 @@ export default function AdminRoomsPage() {
           <p className="text-slate-600 text-sm mt-1 font-medium">Real vaqtda yangilanib turadi</p>
         </div>
         
-        {user?.role !== 'owner' && (
+        {user?.role === 'admin' && (
           !activeShift ? (
             <button id="start-shift-btn" onClick={handleStartShift} className="btn-primary">
               <PlayCircle size={18} /> Smenani boshlash
