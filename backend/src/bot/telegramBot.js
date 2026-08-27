@@ -274,72 +274,94 @@ const setupBot = () => {
 
   bot.onText(/🏢 Koridorni tozalash/, async (msg) => {
     const chatId = msg.chat.id;
-    const session = await restoreSession(chatId);
-    if (!session || !session.branchId) return bot.sendMessage(chatId, "Iltimos, avval /start ni bosing va filialni tanlang.");
+    try {
+      const session = await restoreSession(chatId);
+      if (!session || !session.branchId) return bot.sendMessage(chatId, "Iltimos, avval /start ni bosing va filialni tanlang.");
 
-    const attendanceCheck = await checkCanClean(session.userId);
-    if (!attendanceCheck.canClean) return bot.sendMessage(chatId, attendanceCheck.message);
+      const attendanceCheck = await checkCanClean(session.userId);
+      if (!attendanceCheck.canClean) return bot.sendMessage(chatId, attendanceCheck.message);
 
-    if (session.activeTask) {
-      return bot.sendMessage(chatId, "Sizda tugallanmagan tozalash ishi bor. Iltimos, avval rasm yuborib uni yakunlang yoki bekor qiling.", {
-        reply_markup: {
-          inline_keyboard: [[{ text: "❌ Bekor qilish", callback_data: `cancel_${session.activeTask}` }]]
+      if (session.activeTask) {
+        return bot.sendMessage(chatId, "Sizda tugallanmagan tozalash ishi bor. Iltimos, avval rasm yuborib uni yakunlang yoki bekor qiling.", {
+          reply_markup: {
+            inline_keyboard: [[{ text: "❌ Bekor qilish", callback_data: `cancel_${session.activeTask}` }]]
+          }
+        });
+      }
+
+      const task = await prisma.cleaningTask.create({
+        data: {
+          companyId: session.companyId,
+          branchId: session.branchId,
+          cleanerId: session.userId,
+          taskType: 'corridor',
+          status: 'pending'
         }
       });
+      sessions[chatId].activeTask = task.id;
+
+      const frontendUrl = process.env.FRONTEND_URL || 'https://hotelbase.uz';
+      const liveCameraUrl = `${frontendUrl}/bot-camera?userId=${session.userId}&action=cleaning_before&taskId=${task.id}`;
+
+      bot.sendMessage(chatId, "Siz koridorni tozalashni boshladingiz! 🏢\n\nIltimos, galereyadan rasm yubormang! Pastdagi *📸 Jonli Kamerani Ochish* tugmasini bosib, real vaqtda rasmga oling.", {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "📸 Jonli Kamerani Ochish", web_app: { url: liveCameraUrl } }],
+            [{ text: "❌ Bekor qilish", callback_data: `cancel_${task.id}` }]
+          ]
+        }
+      });
+    } catch (error) {
+      console.error("Koridorni tozalash error:", error);
+      bot.sendMessage(chatId, "Xatolik yuz berdi. Qaytadan urinib ko'ring.");
     }
-
-    const task = await prisma.cleaningTask.create({
-      data: {
-        companyId: session.companyId,
-        branchId: session.branchId,
-        cleanerId: session.userId,
-        taskType: 'corridor',
-        status: 'pending'
-      }
-    });
-    sessions[chatId].activeTask = task.id;
-
-    bot.sendMessage(chatId, "Siz koridorni tozalashni boshladingiz! 🏢\nIltimos, koridorning *tozalashdan oldingi* (iflos holati) rasmini yuboring.", {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [[{ text: "❌ Bekor qilish", callback_data: `cancel_${task.id}` }]]
-      }
-    });
   });
 
   bot.onText(/🛣 Ko'chani tozalash/, async (msg) => {
     const chatId = msg.chat.id;
-    const session = await restoreSession(chatId);
-    if (!session || !session.branchId) return bot.sendMessage(chatId, "Iltimos, avval /start ni bosing va filialni tanlang.");
+    try {
+      const session = await restoreSession(chatId);
+      if (!session || !session.branchId) return bot.sendMessage(chatId, "Iltimos, avval /start ni bosing va filialni tanlang.");
 
-    const attendanceCheck = await checkCanClean(session.userId);
-    if (!attendanceCheck.canClean) return bot.sendMessage(chatId, attendanceCheck.message);
+      const attendanceCheck = await checkCanClean(session.userId);
+      if (!attendanceCheck.canClean) return bot.sendMessage(chatId, attendanceCheck.message);
 
-    if (session.activeTask) {
-      return bot.sendMessage(chatId, "Sizda tugallanmagan tozalash ishi bor. Iltimos, avval rasm yuborib uni yakunlang yoki bekor qiling.", {
-        reply_markup: {
-          inline_keyboard: [[{ text: "❌ Bekor qilish", callback_data: `cancel_${session.activeTask}` }]]
+      if (session.activeTask) {
+        return bot.sendMessage(chatId, "Sizda tugallanmagan tozalash ishi bor. Iltimos, avval rasm yuborib uni yakunlang yoki bekor qiling.", {
+          reply_markup: {
+            inline_keyboard: [[{ text: "❌ Bekor qilish", callback_data: `cancel_${session.activeTask}` }]]
+          }
+        });
+      }
+
+      const task = await prisma.cleaningTask.create({
+        data: {
+          companyId: session.companyId,
+          branchId: session.branchId,
+          cleanerId: session.userId,
+          taskType: 'street',
+          status: 'pending'
         }
       });
+      sessions[chatId].activeTask = task.id;
+
+      const frontendUrl = process.env.FRONTEND_URL || 'https://hotelbase.uz';
+      const streetCameraUrl = `${frontendUrl}/bot-camera?userId=${session.userId}&action=cleaning_before&taskId=${task.id}`;
+
+      bot.sendMessage(chatId, "Siz ko'chani tozalashni boshladingiz! 🛣\n\nIltimos, galereyadan rasm yubormang! Pastdagi *📸 Jonli Kamerani Ochish* tugmasini bosib, real vaqtda rasmga oling.", {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "📸 Jonli Kamerani Ochish", web_app: { url: streetCameraUrl } }],
+            [{ text: "❌ Bekor qilish", callback_data: `cancel_${task.id}` }]
+          ]
+        }
+      });
+    } catch (error) {
+      console.error("Ko'chani tozalash error:", error);
+      bot.sendMessage(chatId, "Xatolik yuz berdi. Qaytadan urinib ko'ring.");
     }
-
-    const task = await prisma.cleaningTask.create({
-      data: {
-        companyId: session.companyId,
-        branchId: session.branchId,
-        cleanerId: session.userId,
-        taskType: 'street',
-        status: 'pending'
-      }
-    });
-    sessions[chatId].activeTask = task.id;
-
-    bot.sendMessage(chatId, "Siz ko'chani tozalashni boshladingiz! 🛣\nIltimos, ko'chaning *tozalashdan oldingi* (iflos holati) rasmini yuboring.", {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [[{ text: "❌ Bekor qilish", callback_data: `cancel_${task.id}` }]]
-      }
-    });
   });
 
   bot.on('callback_query', async (query) => {
@@ -384,34 +406,47 @@ const setupBot = () => {
     if (data.startsWith('clean_')) {
       const roomId = parseInt(data.split('_')[1]);
       
-      // Check if another cleaner grabbed it already
-      const existingTask = await prisma.cleaningTask.findFirst({
-        where: { roomId, status: 'pending' }
+      // Check if there is an existing pending/in_progress task for this room
+      let task = await prisma.cleaningTask.findFirst({
+        where: { roomId, status: { in: ['pending', 'in_progress'] } }
       });
 
-      if (existingTask) {
-        return bot.answerCallbackQuery(query.id, { text: "Kechirasiz, bu xonani allaqachon boshqa farrosh oldi!", show_alert: true });
-      }
-      
-      // Create a pending cleaning task (LOCK THE ROOM)
-      const task = await prisma.cleaningTask.create({
-        data: {
-          companyId: session.companyId,
-          branchId: session.branchId,
-          roomId,
-          cleanerId: session.userId,
-          status: 'pending'
+      if (task) {
+        if (task.cleanerId && task.cleanerId !== session.userId) {
+          return bot.answerCallbackQuery(query.id, { text: "Kechirasiz, bu xonani allaqachon boshqa farrosh oldi!", show_alert: true });
         }
-      });
+        // Assign/Claim this existing task for the current cleaner
+        task = await prisma.cleaningTask.update({
+          where: { id: task.id },
+          data: { cleanerId: session.userId }
+        });
+      } else {
+        // Create a pending cleaning task (LOCK THE ROOM)
+        task = await prisma.cleaningTask.create({
+          data: {
+            companyId: session.companyId,
+            branchId: session.branchId,
+            roomId,
+            cleanerId: session.userId,
+            status: 'pending'
+          }
+        });
+      }
 
       sessions[chatId].activeTask = task.id;
 
-      bot.editMessageText(`Siz xonani qulfladingiz 🔒\nBoshqalar uni ko'ra olmaydi.\n\nIltimos, xonaning *tozalashdan oldingi* (iflos holati) rasmini yuboring.\n\nAgar adashib bosgan bo'lsangiz "Bekor qilish" ni bosing.`, {
+      const frontendUrl = process.env.FRONTEND_URL || 'https://hotelbase.uz';
+      const liveCameraUrl = `${frontendUrl}/bot-camera?userId=${session.userId}&action=cleaning_before&taskId=${task.id}`;
+
+      bot.editMessageText(`Siz xonani qulfladingiz 🔒\nBoshqalar uni ko'ra olmaydi.\n\nIltimos, galereyadan rasm yubormang! Pastdagi *📸 Jonli Kamerani Ochish* tugmasini bosib, real vaqtda rasmga oling.`, {
         chat_id: chatId,
         message_id: query.message.message_id,
         parse_mode: 'Markdown',
         reply_markup: {
-          inline_keyboard: [[{ text: "❌ Bekor qilish", callback_data: `cancel_${task.id}` }]]
+          inline_keyboard: [
+            [{ text: "📸 Jonli Kamerani Ochish", web_app: { url: liveCameraUrl } }],
+            [{ text: "❌ Bekor qilish", callback_data: `cancel_${task.id}` }]
+          ]
         }
       });
       bot.answerCallbackQuery(query.id);
@@ -420,55 +455,7 @@ const setupBot = () => {
 
   bot.on('photo', async (msg) => {
     const chatId = msg.chat.id;
-    const session = await restoreSession(chatId);
-    
-    if (!session) return;
-    
-    if (!session.activeTask) {
-      return bot.sendMessage(chatId, "Iltimos, rasmni to'g'ridan to'g'ri yubormang!\nDavomatdan o'tish uchun avval \"📸 Ishga keldim\" ni bosib, so'ngra \"📷 Jonli Kamerani Ochish\" tugmasi orqali rasmga tushishingiz kerak.");
-    }
-
-    try {
-      const taskId = session.activeTask;
-      const task = await prisma.cleaningTask.findUnique({ where: { id: taskId }, include: { room: true } });
-      if (!task) return;
-
-      const fileId = msg.photo[msg.photo.length - 1].file_id;
-      const fileUrl = await bot.getFileLink(fileId);
-      
-      const localFilePath = await downloadImage(fileUrl);
-
-      if (!task.beforeImage) {
-        await prisma.cleaningTask.update({
-          where: { id: taskId },
-          data: { beforeImage: localFilePath }
-        });
-        bot.sendMessage(chatId, "Rasm qabul qilindi! Rahmat. Endi xonani tozalang va *tozalashdan keyingi* (top-toza) rasmini yuboring.", { parse_mode: 'Markdown' });
-      } else if (!task.afterImage) {
-        await prisma.cleaningTask.update({
-          where: { id: taskId },
-          data: { afterImage: localFilePath, status: 'completed' }
-        });
-
-        // Update room status ONLY if it's a room task
-        if (task.taskType === 'room' && task.roomId) {
-          await prisma.room.update({
-            where: { id: task.roomId },
-            data: { status: 'available' }
-          });
-          bot.sendMessage(chatId, `Barakalla! ${task.room.roomNumber}-xona toza deb belgilandi va tizimga qo'shildi. 🎉`);
-        } else if (task.taskType === 'corridor') {
-          bot.sendMessage(chatId, `Barakalla! Koridor tozaligi tizimga qo'shildi. 🎉`);
-        } else if (task.taskType === 'street') {
-          bot.sendMessage(chatId, `Barakalla! Ko'cha tozaligi tizimga qo'shildi. 🎉`);
-        }
-
-        session.activeTask = null;
-      }
-    } catch (error) {
-      console.error(error);
-      bot.sendMessage(chatId, "Rasm yuklashda xatolik yuz berdi.");
-    }
+    bot.sendMessage(chatId, "⚠️ Galereyadan yoki chatdan rasm yuborish taqiqlangan!\n\nIltimos, xonaning tozaligini va real vaqtni tasdiqlash uchun pastdagi \"📸 Jonli Kamerani Ochish\" Web-App tugmasi orqali rasmga oling.");
   });
 
 };

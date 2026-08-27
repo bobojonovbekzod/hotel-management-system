@@ -55,6 +55,25 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
+// Helper to sanitize checkOutExpected against invalid years (e.g. 0005) or past dates
+function sanitizeCheckOutDate(checkIn, checkOutExpected) {
+  const inDate = checkIn ? new Date(checkIn) : new Date();
+  let outDate = checkOutExpected ? new Date(checkOutExpected) : null;
+  
+  if (!outDate || isNaN(outDate.getTime()) || outDate.getFullYear() < 2020) {
+    if (outDate && !isNaN(outDate.getTime())) {
+      outDate.setFullYear(inDate.getFullYear());
+    } else {
+      outDate = new Date(inDate.getTime() + 24 * 3600 * 1000);
+    }
+  }
+  
+  if (outDate <= inDate) {
+    outDate = new Date(inDate.getTime() + 24 * 3600 * 1000);
+  }
+  return outDate;
+}
+
 // POST /api/bookings - Yangi bron (Check-in)
 router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (req, res) => {
   try {
@@ -190,7 +209,7 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
         adminId: req.user.id,
         shiftId: shiftId ? parseInt(shiftId) : null,
         checkIn: new Date(checkIn),
-        checkOutExpected: new Date(checkOutExpected),
+        checkOutExpected: sanitizeCheckOutDate(checkIn, checkOutExpected),
         totalPrice: parseFloat(totalPrice),
         monthlyFee: monthlyFee ? parseFloat(monthlyFee) : null,
         paidAmount: totalPaid,
@@ -357,7 +376,7 @@ router.post('/reserve', authenticate, authorize('admin', 'director', 'owner'), a
         adminId: req.user.id,
         shiftId: shiftId ? parseInt(shiftId) : null,
         checkIn: new Date(checkIn),
-        checkOutExpected: new Date(checkOutExpected),
+        checkOutExpected: sanitizeCheckOutDate(checkIn, checkOutExpected),
         totalPrice: parseFloat(totalPrice),
         paidAmount: parseFloat(advanceAmount),
         status: 'reserved',

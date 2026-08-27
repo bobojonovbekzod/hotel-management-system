@@ -129,6 +129,12 @@ export default function OwnerDashboard() {
       shadow: 'rgba(17, 153, 142, 0.4)',
     },
     {
+      label: 'Kartadan kartaga', value: (data?.paymentStats?.find(p => p.name === 'Karta/Karta')?.value || 0).toLocaleString(), unit: "so'm",
+      icon: CreditCard,
+      gradient: 'linear-gradient(135deg, #4A00E0 0%, #8E2DE2 100%)',
+      shadow: 'rgba(74, 0, 224, 0.4)',
+    },
+    {
       label: 'Xarajat oylik', value: (ov?.totalExpenses || 0).toLocaleString(), unit: "so'm",
       icon: LogOut,
       gradient: 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)',
@@ -210,27 +216,27 @@ export default function OwnerDashboard() {
       </div>
 
       {/* KPI Cards — E-mehmon uslubi */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         {kpis.map((card, idx) => {
           const Icon = card.icon;
           return (
             <div
               key={idx}
-              className="rounded-2xl overflow-hidden relative transition-all duration-300 hover:-translate-y-1 cursor-pointer p-4"
+              className="rounded-2xl overflow-hidden relative transition-all duration-300 hover:-translate-y-1 cursor-pointer p-3.5 flex flex-col items-center justify-center text-center"
               style={{
                 background: card.gradient,
                 boxShadow: `0 8px 24px ${card.shadow}`,
               }}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white/90 font-semibold text-sm mb-1">{card.label}</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <p className="text-2xl font-bold text-white tracking-tight leading-none">
-                      {card.value}
-                    </p>
-                    <p className="text-white/80 text-xs font-medium">{card.unit}</p>
-                  </div>
+              <div className="flex flex-col items-center justify-center text-center w-full">
+                <p className="text-white/90 font-semibold text-xs sm:text-[13px] mb-1.5 truncate max-w-full">
+                  {card.label}
+                </p>
+                <div className="flex items-baseline justify-center gap-1 w-full">
+                  <p className="text-base sm:text-lg font-bold text-white tracking-tight leading-tight truncate">
+                    {card.value}
+                  </p>
+                  <p className="text-white/80 text-[11px] font-medium flex-shrink-0">{card.unit}</p>
                 </div>
               </div>
             </div>
@@ -498,6 +504,9 @@ export default function OwnerDashboard() {
                   <th className="table-th text-right cursor-pointer group select-none" onClick={() => handleSort('qrcode')}>
                     <div className="flex items-center justify-end gap-1">QrCode {renderSortIcon('qrcode')}</div>
                   </th>
+                  <th className="table-th text-right cursor-pointer group select-none" onClick={() => handleSort('transfer')}>
+                    <div className="flex items-center justify-end gap-1">Kartadan kartaga {renderSortIcon('transfer')}</div>
+                  </th>
                   <th className="table-th text-right text-red-500 cursor-pointer group select-none" onClick={() => handleSort('totalExpenses')}>
                     <div className="flex items-center justify-end gap-1">Xarajatlar {renderSortIcon('totalExpenses')}</div>
                   </th>
@@ -528,6 +537,9 @@ export default function OwnerDashboard() {
                     </td>
                     <td className="table-td text-right text-slate-600">
                       {(bs.qrcode || 0).toLocaleString()}
+                    </td>
+                    <td className="table-td text-right text-slate-600">
+                      {(bs.transfer || 0).toLocaleString()}
                     </td>
                     <td className="table-td text-right font-medium text-red-500">
                       {(bs.totalExpenses || 0).toLocaleString()}

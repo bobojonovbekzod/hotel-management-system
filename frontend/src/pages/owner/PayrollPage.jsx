@@ -424,7 +424,7 @@ export default function PayrollPage() {
   );
 }
 
-function FinanceActionModal({ user, month, onClose, currentUser }) {
+export function FinanceActionModal({ user, month, onClose, currentUser }) {
   const [txType, setTxType] = useState('penalty');
   const [txAmount, setTxAmount] = useState('');
   const [txDesc, setTxDesc] = useState('');
@@ -463,7 +463,7 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
       toast.success('Saqlandi');
       onClose(true); // close and refresh
     } catch (err) {
-      toast.error('Xatolik yuz berdi');
+      toast.error(err.response?.data?.message || 'Xatolik yuz berdi');
       setSubmitting(false);
     }
   };
@@ -478,7 +478,7 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
       fetchHistory();
       onClose(true); 
     } catch (err) {
-      toast.error('O\'chirishda xatolik yuz berdi');
+      toast.error(err.response?.data?.message || 'O\'chirishda xatolik yuz berdi');
       setSubmitting(false);
     }
   };
@@ -500,19 +500,57 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
             <div>
               <label className="label">Amaliyot turini tanlang</label>
               <div className="grid grid-cols-2 gap-3">
-                <button type="button" onClick={() => setTxType('penalty')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'penalty' ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-700'}`}>
-                  <TrendingDown size={18} className="mx-auto mb-1" /> Jarima (- )
+                <button
+                  type="button"
+                  onClick={() => setTxType('penalty')}
+                  className={`py-3 rounded-xl text-sm font-bold transition-all border flex flex-col items-center justify-center gap-1 ${
+                    txType === 'penalty'
+                      ? 'bg-red-500/20 border-red-500 text-red-500 shadow-md'
+                      : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <TrendingDown size={20} />
+                  <span>Jarima (- )</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTxType('advance')}
+                  className={`py-3 rounded-xl text-sm font-bold transition-all border flex flex-col items-center justify-center gap-1 ${
+                    txType === 'advance'
+                      ? 'bg-orange-500/20 border-orange-500 text-orange-500 shadow-md'
+                      : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <Wallet size={20} />
+                  <span>Avans (- )</span>
+                </button>
+
                 {currentUser?.role === 'owner' && (
                   <>
-                    <button type="button" onClick={() => setTxType('advance')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'advance' ? 'bg-orange-500/20 border-orange-500/50 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]' : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-700'}`}>
-                      <Wallet size={18} className="mx-auto mb-1" /> Avans (- )
+                    <button
+                      type="button"
+                      onClick={() => setTxType('bonus')}
+                      className={`py-3 rounded-xl text-sm font-bold transition-all border flex flex-col items-center justify-center gap-1 ${
+                        txType === 'bonus'
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-md'
+                          : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <TrendingUp size={20} />
+                      <span>Bonus (+ )</span>
                     </button>
-                    <button type="button" onClick={() => setTxType('bonus')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'bonus' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-700'}`}>
-                      <TrendingUp size={18} className="mx-auto mb-1" /> Bonus (+ )
-                    </button>
-                    <button type="button" onClick={() => setTxType('salary_payment')} className={`py-3 rounded-xl text-sm font-semibold transition-all border ${txType === 'salary_payment' ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-700'}`}>
-                      <CheckCircle size={18} className="mx-auto mb-1" /> Oylik to'lash
+                    <button
+                      type="button"
+                      onClick={() => setTxType('salary_payment')}
+                      className={`py-3 rounded-xl text-sm font-bold transition-all border flex flex-col items-center justify-center gap-1 ${
+                        txType === 'salary_payment'
+                          ? 'bg-indigo-500/20 border-indigo-500 text-indigo-500 shadow-md'
+                          : 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <CheckCircle size={20} />
+                      <span>Oylik to'lash</span>
                     </button>
                   </>
                 )}
@@ -555,7 +593,7 @@ function FinanceActionModal({ user, month, onClose, currentUser }) {
                       <span className="text-slate-600 text-xs">{new Date(tx.date).toLocaleDateString()}</span>
                     </div>
                     <span className="font-mono text-sm font-bold text-slate-900 mr-3">{tx.amount.toLocaleString()}</span>
-                    {currentUser?.role === 'owner' && (
+                    {(currentUser?.role === 'owner' || currentUser?.role === 'director') && (
                       <button 
                         type="button" 
                         onClick={() => handleDelete(tx.id)} 

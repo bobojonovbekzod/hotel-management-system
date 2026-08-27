@@ -8,12 +8,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('hotel_user');
-    const token = localStorage.getItem('hotel_token');
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+    try {
+      const storedUser = localStorage.getItem('hotel_user');
+      const token = localStorage.getItem('hotel_token');
+      if (storedUser && token) {
+        const parsed = JSON.parse(storedUser);
+        if (parsed && typeof parsed === 'object') {
+          setUser(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse stored user:', e);
+      localStorage.removeItem('hotel_user');
+      localStorage.removeItem('hotel_token');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (username, password) => {

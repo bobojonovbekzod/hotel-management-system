@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -298,3 +296,196 @@
     background-color: white !important;
   }
 }
+
+/* ========================================================= */
+/* --- TRUE PURE DARK MODE (OLED / MIDNIGHT DARK) --- */
+/* ========================================================= */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body,
+html.dark #root,
+html.dark .min-h-screen,
+html.dark .h-screen {
+  background-color: #080c14 !important;
+  color: #f8fafc !important;
+}
+
+/* Backgrounds & Panels */
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/50,
+html.dark .bg-slate-100\/80,
+html.dark .bg-slate-200,
+html.dark .bg-slate-50\/80,
+html.dark .bg-slate-50\/90,
+html.dark .bg-slate-50\/50 {
+  background-color: #0d131f !important;
+}
+
+html.dark .bg-white,
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80,
+html.dark .card,
+html.dark .modal-content,
+html.dark div[class*="w-80"][class*="flex-col"] {
+  background-color: #121a2a !important;
+  color: #f8fafc !important;
+}
+
+/* Pipeline Lead Cards */
+html.dark div[draggable="true"],
+html.dark .bg-white.hover\:bg-slate-50\/90 {
+  background-color: #162238 !important;
+  border-color: #24344d !important;
+}
+
+html.dark div[draggable="true"]:hover {
+  background-color: #1c2b46 !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Colored accent pills in dark mode */
+html.dark .bg-blue-50,
+html.dark [class*="bg-blue-50"] {
+  background-color: #1e3a8a30 !important;
+  color: #60a5fa !important;
+  border-color: #3b82f640 !important;
+}
+
+html.dark .bg-emerald-50,
+html.dark [class*="bg-emerald-50"] {
+  background-color: #064e3b35 !important;
+  color: #34d399 !important;
+  border-color: #10b98140 !important;
+}
+
+html.dark .bg-purple-50,
+html.dark [class*="bg-purple-50"] {
+  background-color: #581c8735 !important;
+  color: #c084fc !important;
+  border-color: #a855f740 !important;
+}
+
+html.dark .bg-rose-50,
+html.dark [class*="bg-rose-50"],
+html.dark [class*="from-pink-50"] {
+  background-color: #88133735 !important;
+  color: #fb7185 !important;
+  border-color: #f43f5e40 !important;
+}
+
+html.dark .bg-amber-50,
+html.dark [class*="bg-amber-50"] {
+  background-color: #78350f35 !important;
+  color: #fbbf24 !important;
+  border-color: #f59e0b40 !important;
+}
+
+/* Borders */
+html.dark .border,
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-200\/90,
+html.dark .border-slate-300,
+html.dark .border-slate-400 {
+  border-color: #1e2d42 !important;
+}
+
+html.dark .divide-slate-100 > * + *,
+html.dark .divide-slate-200 > * + * {
+  border-color: #1e2d42 !important;
+}
+
+/* Text */
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #ffffff !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #8b9bb4 !important;
+}
+
+/* Sidebar & Header */
+html.dark aside {
+  background-color: #0b101b !important;
+  border-color: #182234 !important;
+}
+
+html.dark aside .bg-slate-50 {
+  background-color: #0f1726 !important;
+}
+
+html.dark header {
+  background-color: #090d16 !important;
+  border-color: #182234 !important;
+}
+
+/* Inputs, Selects, Textareas */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #162032 !important;
+  border-color: #24334d !important;
+  color: #ffffff !important;
+}
+
+html.dark select option {
+  background-color: #121a2a !important;
+  color: #ffffff !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Tables */
+html.dark table thead {
+  background-color: #0b101b !important;
+}
+
+html.dark table thead th {
+  color: #94a3b8 !important;
+  border-color: #1e293b !important;
+  background-color: #0b101b !important;
+}
+
+html.dark table tbody tr {
+  border-color: #1e293b !important;
+}
+
+html.dark table tbody tr:hover {
+  background-color: #162238 !important;
+}
+
+/* Modals & Popups */
+html.dark .modal-content,
+html.dark div[class*="max-w-5xl"][class*="rounded-3xl"],
+html.dark div[class*="max-w-md"][class*="rounded-3xl"],
+html.dark [role="dialog"] {
+  background-color: #101827 !important;
+  border-color: #1e2d42 !important;
+}
+
+html.dark div[class*="max-w-5xl"] div[class*="bg-white"],
+html.dark div[class*="max-w-5xl"] div[class*="bg-slate-50"] {
+  background-color: #101827 !important;
+}
+
+/* Audio Player */
+html.dark audio {
+  filter: invert(0.9) hue-rotate(180deg) brightness(1.15);
+  border-radius: 8px;
+}
+

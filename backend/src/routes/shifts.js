@@ -226,6 +226,9 @@ router.put('/:id/close', authenticate, authorize('admin', 'director'), async (re
 // GET /api/shifts/active - Faol smena
 router.get('/my/active', authenticate, authorize('admin', 'director', 'supervisor', 'owner'), async (req, res) => {
   try {
+    if (req.user.role === 'owner' || req.user.role === 'director' || !req.user.branchId) {
+      return res.json({ success: true, data: null });
+    }
     const shift = await prisma.shift.findFirst({
       where: { branchId: req.user.branchId, adminId: req.user.id, status: 'active', companyId: req.user.companyId },
       include: {
@@ -233,7 +236,10 @@ router.get('/my/active', authenticate, authorize('admin', 'director', 'superviso
         bookings: {
           include: { room: true, primaryGuest: true },
         },
-        expenses: true,
+        expenses: {
+          include: { category: true },
+          orderBy: { createdAt: 'desc' }
+        },
         payments: {
           include: {
             booking: {

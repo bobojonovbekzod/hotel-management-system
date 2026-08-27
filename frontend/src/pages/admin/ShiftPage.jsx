@@ -168,86 +168,130 @@ export default function AdminShiftPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
-              <p className="text-xs text-slate-600 mb-1">Boshlanish vaqti</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-xs text-slate-600 mb-1">Boshlanish</p>
               <p className="font-bold text-slate-900">{format(new Date(activeShift.startTime), 'HH:mm')}</p>
-              <p className="text-xs text-slate-600">{format(new Date(activeShift.startTime), 'dd.MM.yyyy')}</p>
+              <p className="text-[11px] text-slate-500">{format(new Date(activeShift.startTime), 'dd.MM.yyyy')}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
               <p className="text-xs text-slate-600 mb-1">Bronlar</p>
-              <p className="text-3xl font-bold text-primary-400">{activeShift._count?.bookings || 0}</p>
+              <p className="text-2xl font-bold text-primary-400">{activeShift._count?.bookings || 0}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
               <p className="text-xs text-slate-600 mb-1">Jami tushum</p>
-              <p className="text-xl font-bold text-emerald-400">{activeShift.totalIncome?.toLocaleString()}</p>
+              <p className="text-lg font-bold text-emerald-500">{activeShift.totalIncome?.toLocaleString()}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
               <p className="text-xs text-slate-600 mb-1">Terminal</p>
-              <p className="text-xl font-bold text-blue-500">{terminal.toLocaleString()}</p>
+              <p className="text-lg font-bold text-blue-500">{terminal.toLocaleString()}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
               <p className="text-xs text-slate-600 mb-1">QrCode</p>
-              <p className="text-xl font-bold text-orange-500">{qrcode.toLocaleString()}</p>
+              <p className="text-lg font-bold text-orange-500">{qrcode.toLocaleString()}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
-              <p className="text-xs text-slate-600 mb-1">Karta / O'tkazma</p>
-              <p className="text-xl font-bold text-purple-500">{transfer.toLocaleString()}</p>
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-xs text-slate-600 mb-1">Karta/O'tkazma</p>
+              <p className="text-lg font-bold text-purple-500">{transfer.toLocaleString()}</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
+            <div className="bg-rose-50/50 rounded-xl p-3 text-center border border-rose-200/50">
+              <p className="text-xs text-slate-600 mb-1">Xarajatlar</p>
+              <p className="text-lg font-bold text-rose-600">-{expenses.toLocaleString()}</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
               <p className="text-xs text-slate-600 mb-1">Naqd (Kassada)</p>
-              <p className="text-xl font-bold text-green-600">{cashBalance.toLocaleString()}</p>
+              <p className="text-lg font-bold text-green-600">{cashBalance.toLocaleString()}</p>
             </div>
           </div>
 
-          {/* Active payments */}
-          {activeShift.payments?.length > 0 && (
-            <div className="mb-6">
-              <p className="text-sm text-slate-600 mb-2">Ushbu smenada qabul qilingan to'lovlar (Tranzaksiyalar):</p>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {activeShift.payments.map((p) => (
-                  <div key={p.id} className="flex flex-col gap-1.5 bg-slate-50 rounded-lg px-3 py-2 border border-slate-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {p.booking?.room?.roomNumber ? (
-                          <span className="text-sm font-bold text-slate-900">Xona {p.booking.room.roomNumber}</span>
-                        ) : (
-                          <span className="text-sm font-bold text-slate-900">Noma'lum xona</span>
-                        )}
-                        {p.type === 'penalty' ? (
-                           <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">Jarima</span>
-                        ) : (
-                           <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">To'lov</span>
-                        )}
-                        {p.booking?.primaryGuest && (
-                          <span className="text-xs text-slate-600">→ {p.booking.primaryGuest.firstName}</span>
-                        )}
-                      </div>
-                      <span className="text-xs text-slate-500 font-medium">
-                        {format(new Date(p.createdAt), 'HH:mm')}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                        p.method === 'cash' ? 'bg-green-100 text-green-700' :
-                        p.method === 'terminal' ? 'bg-blue-100 text-blue-700' :
-                        p.method === 'qrcode' ? 'bg-orange-100 text-orange-700' :
-                        (p.method === 'transfer' || p.method === 'karta' || p.method === 'card') ? 'bg-purple-100 text-purple-700' :
-                        'bg-slate-200 text-slate-700'
-                      }`}>
-                        {p.method === 'cash' ? 'Naqd' :
-                         p.method === 'terminal' ? 'Terminal' :
-                         p.method === 'qrcode' ? 'QrCode' :
-                         (p.method === 'transfer' || p.method === 'karta' || p.method === 'card') ? 'Karta / O\'tkazma' :
-                         p.method || 'Kiritilmagan'}
-                      </span>
-                      <span className="text-sm font-bold text-emerald-600">+{p.amount?.toLocaleString()} so'm</span>
-                    </div>
-                  </div>
-                ))}
+          {/* Active payments & expenses lists */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            {/* To'lovlar ro'yxati */}
+            <div className="bg-slate-50/60 rounded-xl p-4 border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-slate-800">Qabul qilingan to'lovlar ({activeShift.payments?.length || 0}):</p>
+                <span className="text-xs font-bold text-emerald-600">+{totalIncome.toLocaleString()} so'm</span>
               </div>
+              {(!activeShift.payments || activeShift.payments.length === 0) ? (
+                <p className="text-xs text-slate-400 py-4 text-center">Bu smenada hali to'lov qabul qilinmagan</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {activeShift.payments.map((p) => (
+                    <div key={p.id} className="flex flex-col gap-1 bg-white rounded-lg px-3 py-2 border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {p.booking?.room?.roomNumber ? (
+                            <span className="text-xs font-bold text-slate-900">Xona {p.booking.room.roomNumber}</span>
+                          ) : (
+                            <span className="text-xs font-bold text-slate-900">Noma'lum xona</span>
+                          )}
+                          {p.type === 'penalty' ? (
+                             <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-bold">Jarima</span>
+                          ) : (
+                             <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded font-bold">To'lov</span>
+                          )}
+                          {p.booking?.primaryGuest && (
+                            <span className="text-xs text-slate-600">→ {p.booking.primaryGuest.firstName}</span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {format(new Date(p.createdAt), 'HH:mm')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          p.method === 'cash' ? 'bg-green-100 text-green-700' :
+                          p.method === 'terminal' ? 'bg-blue-100 text-blue-700' :
+                          p.method === 'qrcode' ? 'bg-orange-100 text-orange-700' :
+                          (p.method === 'transfer' || p.method === 'karta' || p.method === 'card') ? 'bg-purple-100 text-purple-700' :
+                          'bg-slate-200 text-slate-700'
+                        }`}>
+                          {p.method === 'cash' ? 'Naqd' :
+                           p.method === 'terminal' ? 'Terminal' :
+                           p.method === 'qrcode' ? 'QrCode' :
+                           (p.method === 'transfer' || p.method === 'karta' || p.method === 'card') ? 'Karta / O\'tkazma' :
+                           p.method || 'Kiritilmagan'}
+                        </span>
+                        <span className="text-xs font-bold text-emerald-600">+{p.amount?.toLocaleString()} so'm</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Xarajatlar ro'yxati */}
+            <div className="bg-slate-50/60 rounded-xl p-4 border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-slate-800">Qilingan xarajatlar ({activeShift.expenses?.length || 0}):</p>
+                <span className="text-xs font-bold text-rose-600">-{expenses.toLocaleString()} so'm</span>
+              </div>
+              {(!activeShift.expenses || activeShift.expenses.length === 0) ? (
+                <p className="text-xs text-slate-400 py-4 text-center">Bu smenada hali xarajat qilinmagan</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {activeShift.expenses.map((e) => (
+                    <div key={e.id} className="flex flex-col gap-1 bg-white rounded-lg px-3 py-2 border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                            {e.category?.name || 'Boshqa'}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-800">{e.description || 'Izohsiz'}</span>
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {format(new Date(e.createdAt || e.expenseDate), 'HH:mm')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-end">
+                        <span className="text-xs font-bold text-rose-600">-{e.amount?.toLocaleString()} so'm</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="space-y-3">
             <button

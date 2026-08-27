@@ -10,6 +10,15 @@ export default defineConfig({
       targets: ['defaults', 'not IE 11', 'iOS >= 10'],
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        assetFileNames: `assets/[name]-[hash]-${Date.now()}.[ext]`
+      }
+    }
+  },
   server: {
     host: true,
     proxy: {

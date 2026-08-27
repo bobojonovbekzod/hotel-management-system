@@ -21,6 +21,7 @@ const companiesRoutes = require('./routes/companies');
 const payrollRoutes = require('./routes/payroll');
 const profileRoutes = require('./routes/profile');
 const { setupBot } = require('./bot/telegramBot');
+const { setupJobBot } = require('./bot/jobBot');
 const initAutoCheckout = require('./cron/autoCheckout');
 const cleanOldImages = require('./cron/cleanImages');
 
@@ -60,8 +61,9 @@ agentNamespace.on('connection', (socket) => {
   });
 });
 
-// Start Telegram Bot
+// Start Telegram Bots
 setupBot();
+setupJobBot();
 
 // Middleware
 app.use(cors({
@@ -105,6 +107,100 @@ app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/inventory/requests', require('./routes/inventory-requests'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/tasks', require('./routes/tasks'));
+app.use('/api/leads', require('./routes/leads'));
+app.use('/api/candidates', require('./routes/candidates'));
+
+// Dynamic Audio Streamer from Asterisk PBX Server
+app.get('/api/recordings/fetch', async (req, res) => {
+  try {
+    const { filename, phone } = req.query;
+    const safeFilename = filename ? path.basename(filename) : '';
+    const cleanPhone = (phone || '').replace(/\D/g, '');
+
+    const { NodeSSH } = require('node-ssh');
+    const ssh = new NodeSSH();
+    await ssh.connect({
+      host: '89.126.208.59',
+      username: 'root',
+      password: 'Je%K8$Q42R7H%IH',
+      readyTimeout: 15000
+    });
+
+    let remoteFile = '';
+    if (safeFilename) {
+      const baseName = safeFilename.split('.')[0];
+      const checkExists = await ssh.execCommand(`find /var/spool/asterisk/monitor/ -type f -name "*${baseName}*" | head -n 1`);
+      remoteFile = checkExists.stdout.trim();
+    }
+
+    if (!remoteFile && cleanPhone && cleanPhone.length >= 7) {
+      const lsRes = await ssh.execCommand(`find /var/spool/asterisk/monitor/ -type f -size +5k -name "*${cleanPhone.slice(-7)}*" | head -n 1`);
+      remoteFile = lsRes.stdout.trim();
+    }
+
+    // If file exists on PBX disk, stream it!
+    if (remoteFile) {
+      const isWav = remoteFile.endsWith('.wav') && !remoteFile.endsWith('.mp3');
+      const base64Res = await ssh.execCommand(`cat "${remoteFile}" | base64 -w 0`);
+      const buffer = Buffer.from(base64Res.stdout.trim(), 'base64');
+      res.set('Content-Type', isWav ? 'audio/wav' : 'audio/mpeg');
+      ssh.dispose();
+      return res.send(buffer);
+    }
+
+    ssh.dispose();
+    return res.status(404).json({ success: false, message: 'Audio recording not found' });
+  } catch (e) {
+    console.error('Audio fetch error:', e.message);
+    res.status(404).json({ success: false, error: e.message });
+  }
+});
+
+// GET /api/recordings/list?phone=... - Returns list of all audio recordings for a phone
+app.get('/api/recordings/list', async (req, res) => {
+  try {
+    const { phone } = req.query;
+    const cleanPhone = (phone || '').replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 7) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const { NodeSSH } = require('node-ssh');
+    const ssh = new NodeSSH();
+    await ssh.connect({
+      host: '89.126.208.59',
+      username: 'root',
+      password: 'Je%K8$Q42R7H%IH',
+      readyTimeout: 15000
+    });
+
+    const searchPattern = cleanPhone.slice(-7);
+    const lsRes = await ssh.execCommand(`ls -lt /var/spool/asterisk/monitor/*${searchPattern}* 2>/dev/null`);
+    ssh.dispose();
+
+    const lines = lsRes.stdout.split('\n').filter(Boolean);
+    const recordings = lines.map(line => {
+      const parts = line.trim().split(/\s+/);
+      const filePath = parts[parts.length - 1];
+      const filename = path.basename(filePath);
+      return {
+        filename,
+        path: filePath,
+        url: `/api/recordings/fetch?filename=${encodeURIComponent(filename)}`
+      };
+    });
+
+    res.json({ success: true, data: recordings });
+  } catch (e) {
+    console.error('List recordings error:', e.message);
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.get('/api/recordings/fetch-latest', (req, res) => {
+  res.redirect('/api/recordings/fetch');
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Hotel Management API ishlayapti!', timestamp: new Date() });

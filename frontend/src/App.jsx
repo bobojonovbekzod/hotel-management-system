@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import PWAInstallPrompt from './components/common/PWAInstallPrompt';
@@ -30,6 +31,7 @@ import DevicesPage from './pages/admin/DevicesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import PayrollPage from './pages/owner/PayrollPage';
 import HRDashboardPage from './pages/owner/HRDashboardPage';
+import CandidatesPage from './pages/admin/CandidatesPage';
 
 // Inventory pages
 import InventoryPage from './pages/owner/InventoryPage';
@@ -38,13 +40,18 @@ import InventoryRequestsPage from './pages/director/InventoryRequestsPage';
 
 // Tasks (Jira-like)
 import TasksPage from './pages/tasks/TasksPage';
+import IntegrationsPage from './pages/admin/IntegrationsPage';
 
-// Shared Pages
 import CleaningTasksPage from './pages/shared/CleaningTasksPage';
 import CleanerDashboardPage from './pages/cleaner/CleanerDashboardPage';
+import OperatorStatsPage from './pages/operator/OperatorStatsPage';
+import OperatorPipelinePage from './pages/operator/OperatorPipelinePage';
+import OperatorRoomsPage from './pages/operator/OperatorRoomsPage';
+import OperatorCallsPage from './pages/operator/OperatorCallsPage';
 
 // Bot Pages
 import TelegramCameraPage from './pages/bot/TelegramCameraPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
@@ -70,6 +77,7 @@ function getDefaultRoute(role) {
   if (role === 'admin') return '/admin/front-desk';
   if (role === 'hr') return '/owner/hr';
   if (role === 'cleaner') return '/cleaner/dashboard';
+  if (role === 'operator') return '/operator/statistics';
   return '/login';
 }
 
@@ -78,6 +86,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={getDefaultRoute(user.role)} replace />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/bot-camera" element={<TelegramCameraPage />} />
 
       <Route path="/tasks" element={
@@ -91,6 +101,32 @@ function AppRoutes() {
           <CleanerDashboardPage />
         </ProtectedRoute>
       } />
+
+      <Route path="/operator/statistics" element={
+        <ProtectedRoute allowedRoles={['operator', 'owner', 'director']}>
+          <OperatorStatsPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/operator/pipeline" element={
+        <ProtectedRoute allowedRoles={['operator', 'owner', 'director']}>
+          <OperatorPipelinePage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/operator/rooms" element={
+        <ProtectedRoute allowedRoles={['operator', 'owner', 'director']}>
+          <OperatorRoomsPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/operator/calls" element={
+        <ProtectedRoute allowedRoles={['operator', 'owner', 'director']}>
+          <OperatorCallsPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/operator/dashboard" element={<Navigate to="/operator/statistics" replace />} />
 
       <Route path="/" element={<Navigate to={getDefaultRoute(user?.role)} replace />} />
 
@@ -140,6 +176,26 @@ function AppRoutes() {
       <Route path="/admin/cleaning-tasks" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <CleaningTasksPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/integrations" element={
+        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'operator']}>
+          <IntegrationsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/candidates" element={
+        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'hr']}>
+          <CandidatesPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/owner/candidates" element={
+        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'hr']}>
+          <CandidatesPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/director/candidates" element={
+        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'hr']}>
+          <CandidatesPage />
         </ProtectedRoute>
       } />
 
@@ -261,6 +317,11 @@ function AppRoutes() {
       <Route path="/owner/transactions" element={
         <ProtectedRoute allowedRoles={['owner']}>
           <TransactionsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/owner/expenses" element={
+        <ProtectedRoute allowedRoles={['owner']}>
+          <AdminExpensesPage />
         </ProtectedRoute>
       } />
       <Route path="/owner/devices" element={
@@ -387,23 +448,25 @@ function StaffPlaceholder() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <PWAInstallPrompt />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#0f1629',
-              color: '#fff',
-              border: '1px solid #334155',
-              borderRadius: '12px',
-            },
-            success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-            error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
-          }}
-        />
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <PWAInstallPrompt />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: '#0f1629',
+                color: '#fff',
+                border: '1px solid #334155',
+                borderRadius: '12px',
+              },
+              success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+              error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+            }}
+          />
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

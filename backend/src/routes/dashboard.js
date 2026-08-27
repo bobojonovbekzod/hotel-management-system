@@ -284,6 +284,7 @@ router.get('/summary', authenticate, async (req, res) => {
           const totalIncome = payments.reduce((sum, p) => sum + p.amount, 0);
           const terminal = payments.filter(p => p.method === 'terminal').reduce((sum, p) => sum + p.amount, 0);
           const qrcode = payments.filter(p => p.method === 'qrcode').reduce((sum, p) => sum + p.amount, 0);
+          const transfer = payments.filter(p => p.method === 'transfer').reduce((sum, p) => sum + p.amount, 0);
           const cash = payments.filter(p => p.method === 'cash').reduce((sum, p) => sum + p.amount, 0);
           const additionalServices = payments.filter(p => p.type !== 'room' && p.type !== 'advance').reduce((sum, p) => sum + p.amount, 0);
 
@@ -302,6 +303,7 @@ router.get('/summary', authenticate, async (req, res) => {
             totalIncome,
             terminal,
             qrcode,
+            transfer,
             cash,
             additionalServices,
             totalExpenses,

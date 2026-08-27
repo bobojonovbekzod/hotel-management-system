@@ -38,6 +38,9 @@ model Company {
   inventoryRequests     InventoryRequest[]
   inventoryTransactions InventoryTransaction[]
   tasks                 Task[]
+  leads                 Lead[]
+  leadCallLogs          LeadCallLog[]
+  candidates            Candidate[]
 
   @@map("companies")
 }
@@ -80,6 +83,8 @@ model Branch {
   inventoryRequests     InventoryRequest[]
   inventoryTransactions InventoryTransaction[]
   tasks                 Task[]
+  leads                 Lead[]
+  candidates            Candidate[]
 
   @@map("branches")
 }
@@ -122,6 +127,8 @@ model User {
   inventoryTransactions     InventoryTransaction[] @relation("TransactionAdmin")
   tasksCreated              Task[]                 @relation("TaskCreator")
   tasksAssigned             Task[]                 @relation("TaskAssignee")
+  assignedLeads             Lead[]                 @relation("AssignedLeads")
+  operatorCallLogs          LeadCallLog[]          @relation("OperatorCallLogs")
 
   @@map("users")
 }
@@ -139,6 +146,7 @@ enum Role {
   supervisor
   admin
   cleaner
+  operator
 }
 
 // Xonalar
@@ -585,3 +593,78 @@ model Task {
 
   @@map("tasks")
 }
+
+// --- CALL CENTER & LEADS (LIDLAR VA CRM) ---
+model Lead {
+  id           Int           @id @default(autoincrement())
+  companyId    Int
+  branchId     Int?
+  name         String
+  phone        String
+  region       String?
+  tag          String?
+  source       String?       @default("Instagram")
+  roomType     String?
+  checkIn      DateTime?
+  checkOut     DateTime?
+  notes        String?       @db.Text
+  revenue      Float         @default(0)
+  stage        String        @default("new") // new, no_answer, info_given, booked, sold, deferred, repeat_sale, rejected, not_our_cat, expired
+  taskStatus   String?       @default("none")
+  taskText     String?
+  assignedToId Int?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  company    Company       @relation(fields: [companyId], references: [id])
+  branch     Branch?       @relation(fields: [branchId], references: [id])
+  assignedTo User?         @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  callLogs   LeadCallLog[]
+
+  @@map("leads")
+}
+
+model LeadCallLog {
+  id         Int      @id @default(autoincrement())
+  companyId  Int
+  leadId     Int?
+  operatorId Int?
+  phone      String
+  direction  String   @default("incoming") // incoming, outgoing
+  duration   Int      @default(0) // seconds
+  status     String?
+  audioUrl   String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  company  Company @relation(fields: [companyId], references: [id])
+  lead     Lead?   @relation(fields: [leadId], references: [id])
+  operator User?   @relation("OperatorCallLogs", fields: [operatorId], references: [id])
+
+  @@map("lead_call_logs")
+}
+
+// --- HR & JOB CANDIDATES (VAKANSIYA NOMZODLARI) ---
+model Candidate {
+  id                Int      @id @default(autoincrement())
+  companyId         Int      @default(1)
+  branchId          Int?
+  position          String   @default("Admin") // 'Admin' or 'Tozalik xodimi'
+  name              String
+  phone             String
+  experience        String   @db.Text
+  yearsOfExperience String
+  score             Int      // Score out of 10
+  totalQuestions    Int      @default(10)
+  status            String   @default("new") // 'new', 'interviewed', 'hired', 'rejected'
+  answersJson       String?  @db.Text
+  telegramUserId    BigInt?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company           Company  @relation(fields: [companyId], references: [id])
+  branch            Branch?  @relation(fields: [branchId], references: [id])
+
+  @@map("candidates")
+}
+

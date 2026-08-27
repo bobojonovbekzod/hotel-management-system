@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, User, Printer, ScanFace, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, TrendingUp, TrendingDown, Clock, CreditCard, X, Trash2 } from 'lucide-react';
+import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, User, Printer, ScanFace, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, TrendingUp, TrendingDown, Clock, CreditCard, X, Trash2, Headset } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
 import FullScreenLoader from '../../components/common/FullScreenLoader';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
+import { FinanceActionModal } from '../owner/PayrollPage';
 
 const roleConfig = {
   director: { label: 'Direktor', icon: ShieldCheck, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
   supervisor: { label: 'Nazoratchi', icon: UserCog, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
   admin: { label: 'Admin', icon: UserCog, color: 'text-primary-400 bg-primary-500/10 border-primary-500/20' },
+  operator: { label: 'Call Operator', icon: Headset, color: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20' },
   hr: { label: 'HR Menejer', icon: Users, color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
   cleaner: { label: 'Tozalik xodimi', icon: User, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
 };
@@ -41,6 +43,9 @@ export default function StaffPage() {
   const [faceImageBase64, setFaceImageBase64] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
   const [uploadingFace, setUploadingFace] = useState(false);
+
+  const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [financeUser, setFinanceUser] = useState(null);
 
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, user: null });
 
@@ -77,6 +82,11 @@ export default function StaffPage() {
       setDevices(res.data.data);
       if (res.data.data.length > 0) setSelectedDevice(res.data.data[0].id);
     } catch { }
+  };
+
+  const openFinanceModal = (u) => {
+    setFinanceUser(u);
+    setShowFinanceModal(true);
   };
 
   const openFaceModal = (u) => {
@@ -350,6 +360,7 @@ export default function StaffPage() {
                 onEdit={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleEdit : null}
                 onToggle={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleToggleActive : null}
                 onFaceId={['owner', 'supervisor', 'hr'].includes(user?.role) ? openFaceModal : null}
+                onFinance={['owner', 'director'].includes(user?.role) ? openFinanceModal : null}
                 onDelete={['owner', 'hr'].includes(user?.role) ? handleDeleteClick : null}
               />
             </div>
@@ -362,6 +373,7 @@ export default function StaffPage() {
             onEdit={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleEdit : null}
             onToggle={['owner', 'supervisor', 'hr'].includes(user?.role) ? handleToggleActive : null}
             onFaceId={['owner', 'supervisor', 'hr'].includes(user?.role) ? openFaceModal : null}
+            onFinance={['owner', 'director'].includes(user?.role) ? openFinanceModal : null}
             onDelete={['owner', 'hr'].includes(user?.role) ? handleDeleteClick : null}
           />
         </div>
@@ -388,7 +400,7 @@ export default function StaffPage() {
                 {/* Role selection */}
                 <div>
                   <label className="label">Lavozim</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                     {Object.entries(roleConfig).map(([key, cfg]) => {
                       const Icon = cfg.icon;
                       return (
@@ -396,12 +408,12 @@ export default function StaffPage() {
                           key={key}
                           type="button"
                           onClick={() => setForm({ ...form, role: key })}
-                          className={`py-2 px-1 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 ${form.role === key
-                            ? 'bg-primary-500/10 border-primary-500/50 text-white shadow-sm'
-                            : 'bg-white shadow-sm border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-100'
+                          className={`py-2 px-2 rounded-xl border text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all ${form.role === key
+                            ? 'bg-primary-500/10 border-primary-500/50 text-white shadow-sm ring-1 ring-primary-500/30'
+                            : 'bg-white shadow-sm border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                             }`}
                         >
-                          <Icon size={16} className={form.role === key ? 'text-primary-400' : 'text-slate-600'} />
+                          <Icon size={16} className={form.role === key ? 'text-primary-400' : 'text-slate-500'} />
                           {cfg.label}
                         </button>
                       );
@@ -412,15 +424,15 @@ export default function StaffPage() {
                 {/* Branch (owner/supervisor only) */}
                 {['owner', 'supervisor', 'hr'].includes(user?.role) && (
                   <div>
-                    <label className="label">Filial *</label>
+                    <label className="label">Filial {['operator', 'hr'].includes(form.role) ? '(Ixtiyoriy / Barcha filiallar)' : '*'}</label>
                     <select
                       id="staff-branch"
                       className="input-field"
                       value={form.branchId}
                       onChange={(e) => setForm({ ...form, branchId: e.target.value })}
-                      required
+                      required={!['operator', 'hr'].includes(form.role)}
                     >
-                      <option value="">Filial tanlang</option>
+                      <option value="">{['operator', 'hr'].includes(form.role) ? 'Barcha filiallar (Kompaniya miqyosida)' : 'Filial tanlang'}</option>
                       {branches.map((b) => (
                         <option key={b.id} value={b.id}>{b.name}</option>
                       ))}
@@ -688,6 +700,20 @@ export default function StaffPage() {
           message={`Siz rostdan ham ${confirmDialog.user?.name} xodimini o'chirib tashlamoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.`}
           onConfirm={confirmDelete}
           onCancel={() => setConfirmDialog({ isOpen: false, user: null })}
+        />
+      )}
+
+      {/* Finance Action Modal (Avans / Jarima) */}
+      {showFinanceModal && financeUser && (
+        <FinanceActionModal
+          user={financeUser}
+          month={new Date().toISOString().slice(0, 7)}
+          onClose={(refresh) => {
+            setShowFinanceModal(false);
+            setFinanceUser(null);
+            if (refresh) fetchStaff();
+          }}
+          currentUser={user}
         />
       )}
     </div>

@@ -28,13 +28,17 @@ router.post('/login', async (req, res) => {
       include: { branch: true, company: true },
     });
 
-    if (!user || !user.isActive) {
-      return res.status(401).json({ success: false, message: 'Username yoki parol noto\'g\'ri.' });
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Kiritilgan Login (Username) tizimda topilmadi.' });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({ success: false, message: 'Hisobingiz faol emas yoki bloklangan. Administratsiyaga murojaat qiling.' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ success: false, message: 'Username yoki parol noto\'g\'ri.' });
+      return res.status(401).json({ success: false, message: 'Kiritilgan parol noto\'g\'ri. Iltimos, parolni qaytadan tekshirib kiriting.' });
     }
 
     const token = jwt.sign(

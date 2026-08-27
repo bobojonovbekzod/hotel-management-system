@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
 import { format } from 'date-fns';
@@ -32,11 +33,14 @@ import {
   CalendarDays,
   Activity,
   ChevronDown,
+  ChevronRight,
   Archive,
   CreditCard,
   Shield,
   UserCog,
-  Sparkles
+  Sparkles,
+  Kanban,
+  History
 } from 'lucide-react';
 import NotificationBell from './common/NotificationBell';
 
@@ -54,6 +58,7 @@ const adminNav = [
   { path: '/admin/expenses', icon: Wallet, label: 'Xarajatlar' },
   { path: '/admin/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
   { path: '/admin/salary', icon: UserCheck, label: 'Mening Oyligim' },
+  { path: '/admin/candidates', icon: UserCheck, label: 'Nomzodlar' },
   { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
 ];
 
@@ -72,7 +77,7 @@ const directorNavGroups = [
     icon: Key,
     key: 'qabul',
     items: [
-      { path: '/director/rooms', icon: Key, label: 'Qabulxona' },
+      { path: '/director/rooms', icon: BedDouble, label: 'Xonalar (Shahmatka)' },
       { path: '/director/renters', icon: CalendarDays, label: 'Ijarachilar' },
       { path: '/director/reservations', icon: CalendarClock, label: 'Oldindan Bronlar' },
       { path: '/director/bookings', icon: ClipboardList, label: 'Mijozlar' },
@@ -80,34 +85,47 @@ const directorNavGroups = [
   },
   {
     type: 'group',
-    label: 'Moliya va Kassa',
-    icon: Wallet,
+    label: 'Moliya',
+    icon: CreditCard,
     key: 'moliya',
     items: [
-      { path: '/director/transactions', icon: Banknote, label: 'Kassa (Tranzaksiyalar)' },
+      { path: '/director/transactions', icon: Wallet, label: 'Kassa (Tranzaksiyalar)' },
       { path: '/director/expenses', icon: Wallet, label: 'Xarajatlar' },
       { path: '/director/payroll', icon: Banknote, label: 'Oylik maosh' },
+    ],
+  },
+  {
+    type: 'group',
+    label: 'HR',
+    icon: UserCog,
+    key: 'hr',
+    items: [
+      { path: '/director/staff', icon: Users, label: 'Xodimlar' },
+      { path: '/director/candidates', icon: UserCheck, label: 'Nomzodlar (Vakansiya)' },
+      { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
+    ],
+  },
+  {
+    type: 'group',
+    label: 'Ichki nazorat',
+    icon: Shield,
+    key: 'nazorat',
+    items: [
+      { path: '/director/attendance', icon: CalendarClock, label: 'Davomat' },
+      { path: '/director/shifts', icon: Clock, label: 'Smenalar' },
+      { path: '/director/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
       { path: '/director/shift-issues', icon: ShieldAlert, label: 'Smena Muammolari' },
     ],
   },
   {
     type: 'group',
-    label: 'Xodimlar',
-    icon: Users,
-    key: 'xodimlar',
+    label: "Omborxona",
+    icon: Archive,
+    key: 'ombor',
     items: [
-      { path: '/director/staff', icon: Users, label: 'Xodimlar' },
-      { path: '/director/attendance', icon: CalendarClock, label: 'Davomat' },
-      { path: '/director/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
-      { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
+      { path: '/director/inventory-requests', icon: Archive, label: "Ombor So'rovlari" }
     ],
   },
-  {
-    type: 'single',
-    path: '/director/inventory-requests',
-    icon: Archive,
-    label: 'Omborxona',
-  }
 ];
 
 // Flat array for non-owner roles
@@ -127,6 +145,7 @@ const ownerNavGroups = [
     key: 'moliya',
     items: [
       { path: '/owner/transactions', icon: Wallet, label: 'Kassa (Kirim-chiqim)' },
+      { path: '/owner/expenses', icon: Wallet, label: 'Xarajatlar' },
       { path: '/owner/payroll', icon: Banknote, label: 'Oylik maosh' },
     ],
   },
@@ -138,6 +157,7 @@ const ownerNavGroups = [
     items: [
       { path: '/owner/hr', icon: LayoutDashboard, label: 'HR Dashboard' },
       { path: '/owner/staff', icon: Users, label: 'Xodimlar' },
+      { path: '/owner/candidates', icon: UserCheck, label: 'Nomzodlar (Vakansiya)' },
       { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
     ],
   },
@@ -185,6 +205,13 @@ const hrNav = [
   { path: '/owner/staff', icon: Users, label: 'Xodimlar' },
 ];
 
+const operatorNav = [
+  { path: '/operator/statistics', icon: LineChart, label: 'Statistika' },
+  { path: '/operator/pipeline', icon: Kanban, label: 'Voronka' },
+  { path: '/operator/rooms', icon: BedDouble, label: 'Xonalar' },
+  { path: '/operator/calls', icon: History, label: "Qo'ng'iroqlar tarixi" },
+];
+
 function ClockDisplay() {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
@@ -227,8 +254,10 @@ function CurrentShiftDisplay() {
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCompact, setIsCompact] = useState(() => user?.role === 'operator');
   const [pendingTasksCount, setPendingTasksCount] = useState(0);
 
 
@@ -262,10 +291,11 @@ export default function Layout({ children }) {
 
   const getNav = () => {
     return user?.role === 'admin' ? adminNav :
-    user?.role === 'director' ? directorNav :
+    user?.role === 'director' ? null :
     user?.role === 'supervisor' ? supervisorNav :
     user?.role === 'superadmin' ? superadminNav :
     user?.role === 'hr' ? hrNav :
+    user?.role === 'operator' ? operatorNav :
     user?.role === 'owner' ? null : [];
   };
 
@@ -285,6 +315,7 @@ export default function Layout({ children }) {
       admin: { label: 'Admin', color: 'text-primary-400 bg-primary-400/10 border-primary-400/20' },
       hr: { label: 'HR', color: 'text-pink-400 bg-pink-400/10 border-pink-400/20' },
       cleaner: { label: 'Tozalik', color: 'text-slate-400 bg-slate-400/10 border-slate-400/20' },
+      operator: { label: 'Call Operator', color: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20' },
     };
     return badges[user?.role] || badges.admin;
   };
@@ -308,154 +339,222 @@ export default function Layout({ children }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 flex flex-col bg-white border-r border-slate-200 transition-transform duration-300 ${
+        className={`fixed lg:static inset-y-0 left-0 z-40 flex flex-col bg-white text-slate-800 border-r border-slate-200 transition-all duration-300 ${
+          isCompact ? 'w-16 lg:w-16' : 'w-64'
+        } ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Logo */}
-        <div className="p-5 border-b border-slate-100">
-          <div className="flex items-center gap-3">
+        <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-3 overflow-hidden">
             {user?.company?.logoUrl ? (
               <img 
                 src={`${api.defaults.baseURL || '/api'}${user.company.logoUrl}`} 
                 alt="Logo" 
-                className="w-10 h-10 rounded-full object-cover shadow-lg border border-slate-700/50 flex-shrink-0 bg-white" 
+                className="w-9 h-9 rounded-full object-cover shadow-sm border border-slate-200 flex-shrink-0 bg-white" 
               />
             ) : (
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-500 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20 text-white flex-shrink-0">
-                <Hotel size={22} />
+              <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md text-white flex-shrink-0">
+                <Hotel size={20} />
               </div>
             )}
-            <div>
-              <h1 className="font-bold text-slate-900 text-[15px] leading-tight tracking-tight">Hotel Manager</h1>
-              <p className="text-xs text-slate-600 font-medium mt-0.5">{user?.branch?.name || 'Bosh ofis'}</p>
-            </div>
+            {!isCompact && (
+              <div className="truncate">
+                <h1 className="font-bold text-slate-900 text-[14px] leading-tight tracking-tight truncate">Hotel Manager</h1>
+                <p className="text-[11px] text-slate-500 font-medium truncate">{user?.branch?.name || 'Bosh ofis'}</p>
+              </div>
+            )}
           </div>
+
+          {/* Toggle Compact Button */}
+          <button
+            onClick={() => setIsCompact(!isCompact)}
+            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 hidden lg:flex items-center justify-center border border-slate-200 transition-all"
+            title={isCompact ? "Kengaytirish" : "Kichraytirish"}
+          >
+            <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isCompact ? '' : 'rotate-180'}`} />
+          </button>
         </div>
 
         {/* User info */}
-        <div className="p-5 bg-slate-50 border-b border-slate-100">
+        <div className="p-3 bg-slate-50 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 flex-shrink-0">
+            <div className="relative w-9 h-9 flex-shrink-0">
               {user?.photoUrl && user.photoUrl !== 'uploaded_via_base64' ? (
                 <img 
                   src={`${api.defaults.baseURL ? api.defaults.baseURL.replace('/api', '') : ''}${user.photoUrl}`} 
                   alt={user.name} 
-                  className="w-10 h-10 rounded-full object-cover border border-slate-700 shadow-inner"
+                  className="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-sm"
                   onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 border border-primary-400/50 flex items-center justify-center text-[15px] font-bold text-white shadow-md">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 border border-teal-400/50 flex items-center justify-center text-xs font-bold text-white shadow-sm">
                   {user?.name?.[0]?.toUpperCase()}
                 </div>
               )}
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900 break-words whitespace-normal leading-tight">{user?.name}</p>
-              <div className="mt-1 flex items-center gap-2">
-                <span className={`inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${badge.color}`}>
-                  {badge.label}
-                </span>
-                {user?.role === 'owner' && (
-                  <span className="text-[10px] text-slate-600 font-mono tracking-wider" title="Company ID">
-                    CID:{user.companyId}
+            {!isCompact && (
+              <div className="min-w-0 truncate">
+                <p className="text-xs font-semibold text-slate-800 truncate">{user?.name}</p>
+                <div className="mt-0.5 flex items-center gap-1.5">
+                  <span className={`inline-block text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${badge.color}`}>
+                    {badge.label}
                   </span>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-2 py-2 space-y-1 overflow-y-auto custom-scrollbar">
           {(user?.role === 'owner' || user?.role === 'director') ? (
             // Grouped nav for owner and director
-            <div className="space-y-0.5">
-              {(user?.role === 'owner' ? ownerNavGroups : directorNavGroups).map((group) => {
-                if (group.type === 'single') {
-                  const Icon = group.icon;
-                  const active = isActive(group.path);
+            isCompact ? (
+              // COMPACT MODE: Clean centered icons only with hover tooltips
+              <div className="space-y-1 flex flex-col items-center">
+                {(user?.role === 'owner' ? ownerNavGroups : directorNavGroups).map((group, gIdx) => {
+                  if (group.type === 'single') {
+                    const Icon = group.icon;
+                    const active = isActive(group.path);
+                    return (
+                      <Link
+                        key={group.path}
+                        to={group.path}
+                        title={group.label}
+                        style={active ? { background: '#f1f5f9' } : {}}
+                        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 relative ${
+                          active ? 'text-primary-600 bg-slate-100 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <Icon size={19} className={active ? "text-primary-600" : "text-slate-500"} />
+                        {group.label === 'Vazifalar' && pendingTasksCount > 0 && (
+                          <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+                        )}
+                      </Link>
+                    );
+                  }
+
+                  // Group items in compact mode
                   return (
-                    <Link
-                      key={group.path}
-                      to={group.path}
-                      style={active ? {background: '#f1f5f9'} : {}}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
-                        active ? 'text-primary-600 shadow-sm' : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <Icon size={18} className={active ? "text-primary-500" : "text-slate-400"} />
-                      <span className="flex-1">{group.label}</span>
-                      {group.label === 'Vazifalar' && pendingTasksCount > 0 && (
-                        <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-auto animate-pulse">
-                          {pendingTasksCount}
-                        </span>
-                      )}
-                    </Link>
+                    <div key={group.key} className="w-full flex flex-col items-center space-y-1">
+                      {gIdx > 0 && <div className="w-8 border-t-2 border-slate-300 my-2 rounded-full" />}
+                      {group.items?.map((item) => {
+                        const ItemIcon = item.icon;
+                        const active = isActive(item.path);
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            title={item.label}
+                            style={active ? { background: '#f1f5f9' } : {}}
+                            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 relative ${
+                              active ? 'text-primary-600 bg-slate-100 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            }`}
+                            onClick={() => setSidebarOpen(false)}
+                          >
+                            <ItemIcon size={19} className={active ? "text-primary-600" : "text-slate-500"} />
+                            {item.label === 'Vazifalar' && pendingTasksCount > 0 && (
+                              <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
                   );
-                }
+                })}
+              </div>
+            ) : (
+              // EXPANDED MODE: Full accordion groups with labels and chevrons
+              <div className="space-y-0.5">
+                {(user?.role === 'owner' ? ownerNavGroups : directorNavGroups).map((group) => {
+                  if (group.type === 'single') {
+                    const Icon = group.icon;
+                    const active = isActive(group.path);
+                    return (
+                      <Link
+                        key={group.path}
+                        to={group.path}
+                        style={active ? {background: '#f1f5f9'} : {}}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
+                          active ? 'text-primary-600 font-semibold shadow-sm' : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <Icon size={18} className={active ? "text-primary-500" : "text-slate-400"} />
+                        <span className="flex-1">{group.label}</span>
+                        {group.label === 'Vazifalar' && pendingTasksCount > 0 && (
+                          <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-auto animate-pulse">
+                            {pendingTasksCount}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  }
 
-                // Group
-                const GroupIcon = group.icon;
-                const isGroupOpen = !!openGroups[group.key];
-                const hasActiveChild = group.items?.some(i => isActive(i.path));
+                  // Group
+                  const GroupIcon = group.icon;
+                  const isGroupOpen = !!openGroups[group.key];
+                  const hasActiveChild = group.items?.some(i => isActive(i.path));
 
-                return (
-                  <div key={group.key}>
-                    <button
-                      onClick={() => toggleGroup(group.key)}
-                      style={hasActiveChild ? {background: '#f1f5f9'} : {}}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
-                        hasActiveChild ? 'text-primary-600' : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <GroupIcon size={18} className={hasActiveChild ? "text-primary-500" : "text-slate-400"} />
-                      <span className="flex-1 text-left">{group.label}</span>
-                      {group.comingSoon && (
-                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-700 text-slate-400">Tez kunda</span>
+                  return (
+                    <div key={group.key}>
+                      <button
+                        onClick={() => toggleGroup(group.key)}
+                        style={hasActiveChild ? {background: '#f1f5f9'} : {}}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
+                          hasActiveChild ? 'text-primary-600 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <GroupIcon size={18} className={hasActiveChild ? "text-primary-500" : "text-slate-400"} />
+                        <span className="flex-1 text-left">{group.label}</span>
+                        {group.comingSoon && (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">Tez kunda</span>
+                        )}
+                        {!group.comingSoon && (
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-200 text-slate-500 ${isGroupOpen ? 'rotate-180' : ''}`}
+                          />
+                        )}
+                      </button>
+
+                      {isGroupOpen && !group.comingSoon && group.items.length > 0 && (
+                        <div className="ml-3 mt-0.5 pl-3 space-y-0.5 border-l border-emerald-500/20">
+                          {group.items.map((item) => {
+                            const ItemIcon = item.icon;
+                            const active = isActive(item.path);
+                            return (
+                              <Link
+                                key={item.path}
+                                to={item.path}
+                                style={active ? {background: '#f8fafc'} : {}}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
+                                  active ? 'text-primary-600 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                                onClick={() => setSidebarOpen(false)}
+                              >
+                                <ItemIcon size={16} className={active ? "text-primary-500" : "text-slate-400"} />
+                                <span className="flex-1">{item.label}</span>
+                                {item.label === 'Vazifalar' && pendingTasksCount > 0 && (
+                                  <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-auto animate-pulse">
+                                    {pendingTasksCount}
+                                  </span>
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </div>
                       )}
-                      {!group.comingSoon && (
-                        <ChevronDown
-                          size={14}
-                          className={`transition-transform duration-200 text-slate-600 ${isGroupOpen ? 'rotate-180' : ''}`}
-                        />
-                      )}
-                    </button>
-
-                    {isGroupOpen && !group.comingSoon && group.items.length > 0 && (
-                      <div className="ml-3 mt-0.5 pl-3 space-y-0.5" style={{borderLeft: '1px solid rgba(0,201,167,0.15)'}}>
-                        {group.items.map((item) => {
-                          const ItemIcon = item.icon;
-                          const active = isActive(item.path);
-                          return (
-                            <Link
-                              key={item.path}
-                              to={item.path}
-                              style={active ? {background: '#f8fafc'} : {}}
-                              className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
-                                active ? 'text-primary-600 font-semibold' : 'text-slate-700 hover:bg-slate-50'
-                              }`}
-                              onClick={() => setSidebarOpen(false)}
-                            >
-                              <ItemIcon size={16} className={active ? "text-primary-500" : "text-slate-400"} />
-                              <span className="flex-1">{item.label}</span>
-                              {item.label === 'Vazifalar' && pendingTasksCount > 0 && (
-                                <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-auto animate-pulse">
-                                  {pendingTasksCount}
-                                </span>
-                              )}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : (
-            // Flat nav for other roles
+            // Flat nav for other roles (Admin, Supervisor, etc.)
             (getNav() || []).map((item) => {
               const Icon = item.icon;
               const active = isActive(item.path);
@@ -463,15 +562,16 @@ export default function Layout({ children }) {
                 <Link
                   key={item.path}
                   to={item.path}
+                  title={isCompact ? item.label : undefined}
                   style={active ? {background: '#f1f5f9'} : {}}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 font-medium text-sm ${
-                    active ? 'text-primary-600 shadow-sm' : 'text-slate-700 hover:bg-slate-50'
+                  className={`flex items-center gap-3 ${isCompact ? 'justify-center w-10 h-10 mx-auto' : 'px-3 py-2'} rounded-xl transition-all duration-200 font-medium text-sm ${
+                    active ? 'text-primary-600 bg-slate-100 font-semibold shadow-xs' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
                   <Icon size={18} className={active ? "text-primary-500" : "text-slate-400"} />
-                  <span className="flex-1">{item.label}</span>
-                  {item.label === 'Vazifalar' && pendingTasksCount > 0 && (
+                  {!isCompact && <span className="flex-1 truncate">{item.label}</span>}
+                  {!isCompact && item.label === 'Vazifalar' && pendingTasksCount > 0 && (
                     <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm ml-auto animate-pulse">
                       {pendingTasksCount}
                     </span>
@@ -483,34 +583,21 @@ export default function Layout({ children }) {
         </nav>
 
         {/* Shift info */}
-        {user?.role === 'admin' && (
-          <div className="px-4 py-4" style={{borderTop: '1px solid rgba(0,201,167,0.1)', background: 'rgba(0,201,167,0.03)'}}>
+        {!isCompact && user?.role === 'admin' && (
+          <div className="px-4 py-4 border-t border-slate-100 bg-slate-50">
             <CurrentShiftDisplay />
           </div>
         )}
 
         {/* Logout */}
-        <div className="p-4 space-y-2" style={{borderTop: '1px solid rgba(0,201,167,0.1)'}}>
-          <Link
-            to="/settings"
-            onClick={() => setSidebarOpen(false)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-transparent transition-all duration-200 font-medium text-sm"
-            style={{color: '#6a8fa8'}}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#334155'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = '#6a8fa8'; }}
-          >
-            <Settings size={18} />
-            <span>Sozlamalar</span>
-          </Link>
+        <div className="p-3 border-t border-slate-100 space-y-1">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-transparent transition-all duration-200 font-medium text-sm"
-            style={{color: '#6a8fa8'}}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = '#6a8fa8'; e.currentTarget.style.borderColor = 'transparent'; }}
+            title={isCompact ? "Chiqish" : undefined}
+            className={`w-full flex items-center gap-2 ${isCompact ? 'justify-center px-2 py-2' : 'px-3 py-2'} rounded-xl font-medium text-xs text-rose-600 hover:bg-rose-50 transition-all`}
           >
-            <LogOut size={18} />
-            <span>Tizimdan chiqish</span>
+            <LogOut size={16} />
+            {!isCompact && <span>Tizimdan chiqish</span>}
           </button>
         </div>
       </aside>
@@ -532,7 +619,30 @@ export default function Layout({ children }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3.5">
+            {/* Dark / Light Theme Toggle Switch */}
+            <button
+              onClick={toggleTheme}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer ${
+                isDark 
+                  ? 'bg-slate-800/90 border-slate-600 text-yellow-400 hover:bg-slate-700 hover:border-yellow-400/50' 
+                  : 'bg-white/10 border-white/20 text-slate-200 hover:bg-white/20'
+              }`}
+              title={isDark ? "Kunduzgi (Light) rejimga o'tish" : "Tungi (Dark) rejimga o'tish"}
+            >
+              {isDark ? (
+                <>
+                  <Sun className="w-4 h-4 text-yellow-400 animate-spin-slow" />
+                  <span className="hidden sm:inline text-slate-200">Kunduzgi</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-blue-300" />
+                  <span className="hidden sm:inline text-slate-200">Tungi</span>
+                </>
+              )}
+            </button>
+
             {(user?.role === 'owner' || user?.role === 'director') && <NotificationBell />}
             <div className="text-right hidden sm:block">
               <p className="text-lg font-bold text-white tabular-nums tracking-tight">
@@ -543,11 +653,17 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
-          <div className="max-w-7xl mx-auto">
+        {location.pathname.startsWith('/operator') ? (
+          <main className="flex-1 overflow-y-auto p-0 w-full h-full custom-scrollbar">
             {children}
-          </div>
-        </main>
+          </main>
+        ) : (
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
+        )}
       </div>
     </div>
   );

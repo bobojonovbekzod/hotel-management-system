@@ -12,8 +12,8 @@ router.get('/', authenticate, async (req, res) => {
     
     let targetBranchId = branchId ? parseInt(branchId) : null;
     
-    // Admin va direktor faqat o'z filialini ko'ra oladi
-    if (req.user.role === 'admin' || req.user.role === 'director') {
+    // Admin va direktor faqat o'z filialini ko'ra oladi (agar branchId biriktirilgan bo'lsa)
+    if ((req.user.role === 'admin' || req.user.role === 'director') && req.user.branchId && !branchId) {
       targetBranchId = req.user.branchId;
     }
 
@@ -24,21 +24,76 @@ router.get('/', authenticate, async (req, res) => {
     const rooms = await prisma.room.findMany({
       where,
       include: {
-        branch: { select: { name: true } },
+        branch: { select: { id: true, name: true, address: true } },
         bookings: {
           where: { status: 'active' },
           include: {
-            primaryGuest: true,
-            additionalGuests: { include: { guest: true } },
+            primaryGuest: { select: { id: true, firstName: true, lastName: true, phone: true } },
+            additionalGuests: { include: { guest: { select: { id: true, firstName: true, lastName: true, phone: true } } } },
           },
-          take: 1,
           orderBy: { createdAt: 'desc' },
         },
       },
       orderBy: [{ floor: 'asc' }, { roomNumber: 'asc' }],
     });
 
-    res.json({ success: true, data: rooms });
+    const enrichedRooms = rooms.map(room => {
+      let occupiedCount = 0;
+      const guests = [];
+
+      (room.bookings || []).forEach(b => {
+        if (b.primaryGuest) {
+          occupiedCount += 1;
+          guests.push({
+            id: b.primaryGuest.id,
+            name: `${b.primaryGuest.firstName} ${b.primaryGuest.lastName}`.trim(),
+            phone: b.primaryGuest.phone,
+            checkIn: b.checkIn,
+            checkOut: b.checkOutExpected
+          });
+        }
+        if (b.additionalGuests && b.additionalGuests.length > 0) {
+          b.additionalGuests.forEach(ag => {
+            if (ag.guest) {
+              occupiedCount += 1;
+              guests.push({
+                id: ag.guest.id,
+                name: `${ag.guest.firstName} ${ag.guest.lastName}`.trim(),
+                phone: ag.guest.phone,
+                checkIn: b.checkIn,
+                checkOut: b.checkOutExpected
+              });
+            }
+          });
+        }
+      });
+
+      if (room.status === 'occupied' && occupiedCount === 0) {
+        occupiedCount = room.capacity;
+      }
+
+      const totalBeds = room.capacity || 1;
+      const occupiedBeds = Math.min(totalBeds, occupiedCount);
+      const availableBeds = Math.max(0, totalBeds - occupiedBeds);
+
+      let computedStatus = room.status;
+      if (room.status !== 'cleaning' && room.status !== 'maintenance') {
+        if (occupiedBeds === 0) computedStatus = 'available';
+        else if (occupiedBeds < totalBeds) computedStatus = 'partial';
+        else computedStatus = 'occupied';
+      }
+
+      return {
+        ...room,
+        totalBeds,
+        occupiedBeds,
+        availableBeds,
+        computedStatus,
+        activeGuests: guests
+      };
+    });
+
+    res.json({ success: true, data: enrichedRooms });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server xatosi.' });

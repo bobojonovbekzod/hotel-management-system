@@ -109,7 +109,7 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
     const formattedExpenses = expenses.map(e => ({
       id: `e-${e.id}`,
       type: 'expense',
-      createdAt: e.expenseDate,
+      createdAt: e.createdAt || e.expenseDate,
       amount: e.amount,
       method: '-', 
       shiftId: e.shiftId,

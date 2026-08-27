@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Camera, CheckCircle2, X, RefreshCw, Briefcase, MapPin, Sparkles, Building, Map, LogOut } from 'lucide-react';
+import { Camera, CheckCircle2, X, RefreshCw, Briefcase, MapPin, Sparkles, Building, Map, LogOut, SwitchCamera } from 'lucide-react';
 
 export default function CleanerDashboardPage() {
   const { user, logout } = useAuth();
@@ -24,6 +24,8 @@ export default function CleanerDashboardPage() {
   const [stream, setStream] = useState(null);
   const [photo, setPhoto] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cameraError, setCameraError] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchStatus();
@@ -66,13 +68,20 @@ export default function CleanerDashboardPage() {
     }
   }, [cameraOpen, stream]);
 
+  useEffect(() => {
+    if (user?.branchId) {
+      setSelectedBranch(user.branchId);
+    }
+  }, [user]);
+
   const fetchBranches = async () => {
     try {
       const res = await api.get('/branches');
       if (res.data.success) {
         setBranches(res.data.data);
-        if (!selectedBranch && res.data.data.length > 0) {
-          setSelectedBranch(res.data.data[0].id);
+        if (!selectedBranch) {
+          const defaultBranch = user?.branchId || res.data.data[0]?.id;
+          if (defaultBranch) setSelectedBranch(defaultBranch);
         }
       }
     } catch (err) {
@@ -103,33 +112,92 @@ export default function CleanerDashboardPage() {
     startCamera(action);
   };
 
-  const startCamera = async (overrideAction = null) => {
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 1280;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setPhoto(dataUrl);
+        stopCamera();
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  useEffect(() => {
+    if (cameraOpen && stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(e => console.log("Play ignored:", e));
+      const isSelfie = cameraAction === 'checkin' || cameraAction === 'checkout';
+      videoRef.current.style.transform = isSelfie ? 'scaleX(-1)' : 'none';
+    }
+  }, [cameraOpen, stream, cameraAction]);
+
+  const [facingMode, setFacingMode] = useState('environment');
+
+  const toggleFacingMode = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(nextMode);
+    startCamera(cameraAction, nextMode);
+  };
+
+  const startCamera = async (overrideAction = null, overrideFacing = null) => {
+    setCameraError(false);
     try {
       const currentAction = overrideAction || cameraAction;
       const isSelfie = currentAction === 'checkin' || currentAction === 'checkout';
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: isSelfie ? 'user' : 'environment',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        }, 
-        audio: false 
-      });
+      const mode = overrideFacing || (isSelfie ? 'user' : facingMode);
+
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      
+      let mediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: { ideal: mode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }, 
+          audio: false 
+        });
+      } catch (err1) {
+        console.warn("Retrying camera with simple video constraints:", err1);
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.play().catch(e => console.log("Play ignored:", e));
-        
-        if (isSelfie) {
-          videoRef.current.style.transform = 'scaleX(-1)';
-        } else {
-          videoRef.current.style.transform = 'none';
-        }
+        videoRef.current.style.transform = mode === 'user' ? 'scaleX(-1)' : 'none';
       }
     } catch (err) {
       console.error("Camera error:", err);
-      toast.error("Kameraga ruxsat berilmadi yoki qurilmangizda kamera yo'q.");
-      setCameraOpen(false);
+      setCameraError(true);
+      toast.error("Brauzer kameraga ruxsat bermadi. 'Telefon kamerasida rasmga olish' tugmasini bosing!");
     }
   };
 
@@ -144,6 +212,7 @@ export default function CleanerDashboardPage() {
     setCameraOpen(false);
     stopCamera();
     setPhoto(null);
+    setCameraError(false);
   };
 
   const capturePhoto = () => {
@@ -227,6 +296,20 @@ export default function CleanerDashboardPage() {
     }
   };
 
+  const handleCancelTask = async () => {
+    if (!window.confirm("Haqiqatan ham bu tozalash ishini bekor qilmoqchimisiz?")) return;
+    try {
+      const res = await api.post('/cleaning-tasks/cancel', { taskId: activeTask?.id });
+      if (res.data.success) {
+        toast.success("Tozalash ishi bekor qilindi");
+        setActiveTask(null);
+        fetchPendingRooms();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Xatolik yuz berdi");
+    }
+  };
+
   const handleLogout = () => {
     logout();
   };
@@ -234,34 +317,95 @@ export default function CleanerDashboardPage() {
   if (cameraOpen) {
     return (
       <div className="fixed inset-0 bg-black z-50 flex flex-col">
-        <div className="p-4 flex justify-between items-center bg-black/50 absolute top-0 left-0 right-0 z-10 text-white">
-          <h2 className="text-lg font-bold">Rasmga olish</h2>
-          <button onClick={closeCamera} className="p-2 rounded-full bg-white/20"><X className="w-6 h-6" /></button>
+        <div className="p-4 flex justify-between items-center bg-black/60 absolute top-0 left-0 right-0 z-10 text-white">
+          <div>
+            <h2 className="text-base font-bold">
+              {cameraAction === 'checkin' ? "Ishga keldim (Check-in)" :
+               cameraAction === 'checkout' ? "Ishdan ketdim (Check-out)" :
+               cameraAction === 'finish' ? "Tozalashni yakunlash" : "Xonani tozalashni boshlash"}
+            </h2>
+            <p className="text-xs text-slate-300">
+              {cameraAction === 'finish' ? "Tozalangan xonani rasmga oling" : "Xonaning tozalashdan oldingi holatini oling"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={toggleFacingMode} 
+              className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all active:scale-95"
+              title="Kamerani almashtirish"
+            >
+              <SwitchCamera className="w-5 h-5" />
+            </button>
+            <button onClick={closeCamera} className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all active:scale-95">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         
         <div className="flex-1 relative flex items-center justify-center bg-black overflow-hidden">
-          {!photo ? (
+          {cameraError && !photo ? (
+            <div className="p-6 max-w-sm mx-auto text-center bg-slate-900/90 border border-slate-800 rounded-3xl text-white shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
+                <Camera className="w-8 h-8" />
+              </div>
+              <h3 className="font-bold text-lg">Kameraga to'g'ridan-to'g'ri o'tish</h3>
+              <p className="text-sm text-slate-300">
+                Brauzerda kamera bloklangan. Telefoningizning o&apos;z kamerasida jonli rasmga olish uchun pastdagi tugmani bosing:
+              </p>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full py-4 bg-primary-500 hover:bg-primary-600 active:scale-95 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-primary-500/30 transition-all text-base"
+              >
+                <Camera className="w-6 h-6" />
+                📸 Kamerada rasmga olish
+              </button>
+              <button
+                onClick={() => startCamera()}
+                className="text-xs text-slate-400 underline hover:text-white pt-2"
+              >
+                Brauzer kamerasini qayta urinish
+              </button>
+            </div>
+          ) : !photo ? (
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
           ) : (
             <img src={photo} alt="Captured" className="w-full h-full object-contain" />
           )}
           <canvas ref={canvasRef} className="hidden" />
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            accept="image/*" 
+            capture={['checkin', 'checkout'].includes(cameraAction) ? 'user' : 'environment'} 
+            onChange={handleFileUpload} 
+            className="hidden" 
+          />
         </div>
 
-        <div className="p-6 bg-black flex justify-center items-center gap-6 pb-12">
+        <div className="p-6 bg-black flex flex-col items-center gap-4 pb-12">
           {!photo ? (
-            <button 
-              onClick={capturePhoto}
-              className="w-20 h-20 bg-white rounded-full border-4 border-slate-300 flex items-center justify-center active:scale-95 transition-transform"
-            >
-              <div className="w-16 h-16 bg-white rounded-full border border-slate-200 shadow-inner"></div>
-            </button>
+            <div className="flex items-center justify-center gap-8 w-full">
+              <div className="w-12 h-12"></div>
+              <button 
+                onClick={capturePhoto}
+                className="w-20 h-20 bg-white rounded-full border-4 border-slate-300 flex items-center justify-center active:scale-95 transition-transform shadow-lg"
+              >
+                <div className="w-16 h-16 bg-white rounded-full border border-slate-200 shadow-inner"></div>
+              </button>
+              <button
+                onClick={toggleFacingMode}
+                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all active:scale-95"
+                title="Kamerani burish"
+              >
+                <SwitchCamera className="w-6 h-6" />
+              </button>
+            </div>
           ) : (
-            <>
+            <div className="flex gap-4">
               <button 
                 onClick={retakePhoto}
                 disabled={isSubmitting}
-                className="px-6 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center gap-2"
+                className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-medium flex items-center gap-2 transition-all"
               >
                 <RefreshCw className="w-5 h-5" />
                 Qayta olish
@@ -269,12 +413,12 @@ export default function CleanerDashboardPage() {
               <button 
                 onClick={submitPhoto}
                 disabled={isSubmitting}
-                className="px-8 py-3 bg-primary-500 text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary-500/30"
+                className="px-8 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary-500/30 transition-all"
               >
                 {isSubmitting ? 'Yuborilmoqda...' : 'Yuborish'}
                 {!isSubmitting && <CheckCircle2 className="w-5 h-5" />}
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -312,25 +456,34 @@ export default function CleanerDashboardPage() {
 
       <div className="p-4 space-y-4 mt-2">
         {activeTask && (
-          <div className="bg-amber-100 border border-amber-200 rounded-2xl p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center">
+          <div className="bg-amber-100 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center shrink-0">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-bold text-amber-900">Jarayondagi ish</h3>
                 <p className="text-amber-700 text-sm">
                   {activeTask.taskType === 'room' ? `Xona #${activeTask.room?.roomNumber}` : activeTask.taskType === 'corridor' ? 'Koridorni tozalash' : "Ko'chani tozalash"}
                 </p>
               </div>
             </div>
-            <button 
-              onClick={() => openCameraFor('finish')}
-              className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
-            >
-              <Camera className="w-6 h-6" />
-              Ishni yakunlash
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => openCameraFor('finish')}
+                className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-base shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
+              >
+                <Camera className="w-5 h-5" />
+                Ishni yakunlash
+              </button>
+              <button 
+                onClick={handleCancelTask}
+                className="px-3.5 py-3.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl font-bold text-xs flex items-center justify-center shadow-xs"
+                title="Bekor qilish"
+              >
+                Bekor qilish
+              </button>
+            </div>
           </div>
         )}
 

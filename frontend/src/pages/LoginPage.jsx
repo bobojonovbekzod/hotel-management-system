@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Hotel, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Lock, Hotel, ShieldCheck, AlertCircle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -10,11 +10,15 @@ export default function LoginPage() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     if (!form.username || !form.password) {
-      toast.error('Username va parolni kiriting!');
+      const msg = 'Username va parolni kiriting!';
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
     setLoading(true);
@@ -29,9 +33,12 @@ export default function LoginPage() {
       else if (user.role === 'admin') navigate('/admin/rooms');
       else if (user.role === 'hr') navigate('/owner/hr');
       else if (user.role === 'cleaner') navigate('/cleaner/dashboard');
+      else if (user.role === 'operator') navigate('/operator/dashboard');
       else navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login xatosi. Qaytadan urinib ko\'ring.');
+      const msg = err.response?.data?.message || 'Login xatosi. Qaytadan urinib ko\'ring.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -59,6 +66,27 @@ export default function LoginPage() {
         {/* Form */}
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Visual Error Alert Banner */}
+            {errorMsg && (
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-start gap-3 shadow-xs animate-shake">
+                <div className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-600 flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                  <AlertCircle size={17} />
+                </div>
+                <div className="flex-1 pt-0.5">
+                  <p className="font-bold text-rose-900 text-xs mb-0.5">Kirishda xatolik yuz berdi</p>
+                  <p className="text-rose-700 leading-relaxed font-medium">{errorMsg}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMsg('')}
+                  className="text-rose-400 hover:text-rose-600 transition-colors p-0.5"
+                  title="Yopish"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            )}
+
             <div>
               <label className="label">Login</label>
               <div className="relative">
