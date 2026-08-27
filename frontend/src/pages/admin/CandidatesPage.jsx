@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Search, Filter, Phone, Calendar, Award, Briefcase, 
   CheckCircle, XCircle, Clock, Trash2, UserCheck, ChevronLeft, ChevronRight,
-  Building2, MessageSquare, RefreshCw
+  Building2, MessageSquare, RefreshCw, Printer, FileText, X, Check, Shield
 } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -14,6 +14,7 @@ export default function CandidatesPage() {
   const [search, setSearch] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedCandidateForPrint, setSelectedCandidateForPrint] = useState(null);
   
   // Pagination
   const [page, setPage] = useState(1);
@@ -69,6 +70,9 @@ export default function CandidatesPage() {
       if (res.data?.success) {
         toast.success("Nomzod statusi yangilandi");
         setCandidates(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+        if (selectedCandidateForPrint && selectedCandidateForPrint.id === id) {
+          setSelectedCandidateForPrint(prev => ({ ...prev, status: newStatus }));
+        }
       }
     } catch (err) {
       console.error(err);
@@ -82,11 +86,27 @@ export default function CandidatesPage() {
       const res = await api.delete(`/candidates/${id}`);
       if (res.data?.success) {
         toast.success("Nomzod o'chirildi");
+        if (selectedCandidateForPrint && selectedCandidateForPrint.id === id) {
+          setSelectedCandidateForPrint(null);
+        }
         fetchCandidates();
       }
     } catch (err) {
       console.error(err);
       toast.error("O'chirishda xatolik");
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const parseAnswers = (answersJson) => {
+    try {
+      if (!answersJson) return [];
+      return typeof answersJson === 'string' ? JSON.parse(answersJson) : answersJson;
+    } catch (e) {
+      return [];
     }
   };
 
@@ -107,8 +127,67 @@ export default function CandidatesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Printable styles */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
+          html, body {
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          .no-print, .no-print * {
+            display: none !important;
+          }
+          .print-modal-overlay {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            inset: auto !important;
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+          .print-modal-card {
+            position: static !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #ffffff !important;
+            border-radius: 0 !important;
+          }
+          #anketa-printable-area, #anketa-printable-area * {
+            visibility: visible !important;
+          }
+          #anketa-printable-area {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 5px 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+        }
+      `}</style>
+
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <Users className="text-primary-600" /> Vakansiya Nomzodlari
@@ -133,7 +212,7 @@ export default function CandidatesPage() {
       </div>
 
       {/* Filters Card */}
-      <div className="card p-4 space-y-4">
+      <div className="card p-4 space-y-4 no-print">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* Search */}
           <div className="relative">
@@ -180,11 +259,11 @@ export default function CandidatesPage() {
 
       {/* Candidates List */}
       {loading ? (
-        <div className="card p-12 text-center text-slate-400 text-sm flex items-center justify-center gap-2">
+        <div className="card p-12 text-center text-slate-400 text-sm flex items-center justify-center gap-2 no-print">
           <RefreshCw className="animate-spin" size={18} /> Nomzodlar yuklanmoqda...
         </div>
       ) : candidates.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
+        <div className="card p-12 text-center space-y-3 no-print">
           <Users className="mx-auto text-slate-300" size={48} />
           <h3 className="text-base font-semibold text-slate-700">Hali testdan o'tgan nomzodlar yo'q</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
@@ -192,7 +271,7 @@ export default function CandidatesPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-4 no-print">
           {candidates.map((c) => (
             <div 
               key={c.id} 
@@ -229,7 +308,7 @@ export default function CandidatesPage() {
                   </div>
                 </div>
 
-                {/* Score Badge */}
+                {/* Score & Anketa Buttons */}
                 <div className="flex items-center gap-2 self-start sm:self-center">
                   <div className={`px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 border shadow-xs ${
                     c.score === 10 
@@ -240,6 +319,13 @@ export default function CandidatesPage() {
                     <span>{c.score} / {c.totalQuestions || 10} Ball</span>
                     <span className="text-[10px] font-normal text-slate-500">({c.score === 10 ? 'Ideal' : 'A\'lo'})</span>
                   </div>
+
+                  <button
+                    onClick={() => setSelectedCandidateForPrint(c)}
+                    className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5 shadow-sm"
+                  >
+                    <FileText size={14} /> Anketa (Chop etish)
+                  </button>
                 </div>
               </div>
 
@@ -304,7 +390,7 @@ export default function CandidatesPage() {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between card p-4 text-xs">
+        <div className="flex items-center justify-between card p-4 text-xs no-print">
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
@@ -324,6 +410,202 @@ export default function CandidatesPage() {
           >
             Keyingi <ChevronRight size={14} />
           </button>
+        </div>
+      )}
+
+      {/* OFFICIALLY STYLED CANDIDATE APPLICATION FORM MODAL (PRINTABLE ANKETA) */}
+      {selectedCandidateForPrint && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedCandidateForPrint(null); }}
+          className="print-modal-overlay fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex justify-center items-start p-3 sm:p-6 overflow-y-auto"
+        >
+          <div className="print-modal-card bg-white rounded-2xl max-w-4xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative my-4 sm:my-8">
+            
+            {/* Top Modal Controls (Hidden during print) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4 no-print bg-slate-50 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8 p-4 sm:p-6 rounded-t-2xl">
+              <div className="flex items-center gap-2 text-slate-900 font-bold text-lg">
+                <FileText className="text-primary-600" size={22} /> 
+                <span>Nomzod Shaxsiy Anketasi</span>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePrint}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-2 shadow-md transition-all cursor-pointer"
+                >
+                  <Printer size={16} /> 🖨️ Chop etish (Print A4)
+                </button>
+
+                <button
+                  onClick={() => setSelectedCandidateForPrint(null)}
+                  className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 rounded-xl transition-all cursor-pointer"
+                  title="Yopish"
+                >
+                  <X size={22} />
+                </button>
+              </div>
+            </div>
+
+            {/* PRINTABLE ANKETA PAPER DOCUMENT */}
+            <div id="anketa-printable-area" className="p-4 sm:p-8 text-slate-900 space-y-6 bg-white">
+              
+              {/* Document Header */}
+              <div className="border-b-2 border-slate-900 pb-4 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-extrabold uppercase tracking-widest text-slate-500">
+                    FAMILY HOTEL MEHMONXONALAR TARMOQ'I
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 uppercase mt-1">
+                    ISHGA KIRUVCHI NOMZOD SHAXSIY ANKETASI
+                  </h2>
+                  <div className="text-xs text-slate-600 font-medium mt-1">
+                    Rasmiy HR Hujjati № FH-ANK-{selectedCandidateForPrint.id.toString().padStart(4, '0')}
+                  </div>
+                </div>
+
+                <div className="w-24 h-32 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-center p-2 text-slate-400 text-[10px]">
+                  <Users size={28} className="mb-1 opacity-50" />
+                  <span>3x4 Rasm O'rni</span>
+                </div>
+              </div>
+
+              {/* 1. Personal Info Section */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 bg-slate-100 px-3 py-1.5 rounded-lg border-l-4 border-slate-900">
+                  I. SHAXSIY MA'LUMOTLAR
+                </h3>
+                
+                <table className="w-full text-xs border-collapse border border-slate-300">
+                  <tbody>
+                    <tr className="border-b border-slate-300">
+                      <td className="w-1/3 bg-slate-50 p-2.5 font-bold border-r border-slate-300">Nomzodning F.I.SH:</td>
+                      <td className="p-2.5 font-extrabold text-sm text-slate-900">{selectedCandidateForPrint.name}</td>
+                    </tr>
+                    <tr className="border-b border-slate-300">
+                      <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Topshirayotgan Lavozimi:</td>
+                      <td className="p-2.5 font-bold text-indigo-900">
+                        {selectedCandidateForPrint.position === 'Tozalik xodimi' ? '🧹 Tozalik xodimi (Farrosh / Housekeeper)' : '🛎️ Administrator (Front Desk Manager)'}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-slate-300">
+                      <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Tanlagan Filiali:</td>
+                      <td className="p-2.5 font-bold">{selectedCandidateForPrint.branch?.name || 'Barcha filiallar'}</td>
+                    </tr>
+                    <tr className="border-b border-slate-300">
+                      <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Telefon Raqami:</td>
+                      <td className="p-2.5 font-extrabold text-emerald-900">{selectedCandidateForPrint.phone}</td>
+                    </tr>
+                    <tr className="border-b border-slate-300">
+                      <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Arizaning Kelib Tushgan Vaqti:</td>
+                      <td className="p-2.5 font-medium">
+                        {new Date(selectedCandidateForPrint.createdAt).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 2. Experience Section */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 bg-slate-100 px-3 py-1.5 rounded-lg border-l-4 border-slate-900">
+                  II. MEHNAT TAJRIBASI VA STAJI
+                </h3>
+                
+                <table className="w-full text-xs border-collapse border border-slate-300">
+                  <tbody>
+                    <tr className="border-b border-slate-300">
+                      <td className="w-1/3 bg-slate-50 p-2.5 font-bold border-r border-slate-300">Umumiy Ish Staji:</td>
+                      <td className="p-2.5 font-bold">{selectedCandidateForPrint.yearsOfExperience || 'Tajribasiz'}</td>
+                    </tr>
+                    <tr>
+                      <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Oldingi Ish Joylari va Tajribasi:</td>
+                      <td className="p-2.5 leading-relaxed font-medium">{selectedCandidateForPrint.experience || 'Tavsif berilmagan'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 3. Test Results Section */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800 bg-slate-100 px-3 py-1.5 rounded-lg border-l-4 border-slate-900">
+                  III. KASBIY VA PSIXOLOGIK SARALASH TESTI NATIJASI
+                </h3>
+                
+                <div className="border border-slate-300 p-3 rounded-lg flex items-center justify-between bg-slate-50">
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block">Saralash Testi Umumiy Bali:</span>
+                    <span className="text-xl font-black text-emerald-700">
+                      {selectedCandidateForPrint.score} / {selectedCandidateForPrint.totalQuestions || 10} Ball ({Math.round((selectedCandidateForPrint.score / (selectedCandidateForPrint.totalQuestions || 10)) * 100)}%)
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs rounded-md uppercase">
+                      ✅ Saralashdan O'tdi
+                    </span>
+                  </div>
+                </div>
+
+                {/* Detailed test answers */}
+                {parseAnswers(selectedCandidateForPrint.answersJson).length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <div className="text-xs font-bold text-slate-700">Berilgan savollar va nomzodning javoblari:</div>
+                    <table className="w-full text-[11px] border-collapse border border-slate-300">
+                      <thead>
+                        <tr className="bg-slate-200 text-slate-800 font-bold border-b border-slate-300">
+                          <th className="p-1.5 border-r border-slate-300 text-center w-8">№</th>
+                          <th className="p-1.5 border-r border-slate-300 text-left">Nomzodning Tanlagan Javobi</th>
+                          <th className="p-1.5 text-center w-20">Natija</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parseAnswers(selectedCandidateForPrint.answersJson).map((ans, idx) => (
+                          <tr key={idx} className="border-b border-slate-200">
+                            <td className="p-1.5 border-r border-slate-300 text-center font-bold">{idx + 1}</td>
+                            <td className="p-1.5 border-r border-slate-300 font-medium">{ans.selected}</td>
+                            <td className="p-1.5 text-center font-bold">
+                              {ans.isCorrect ? (
+                                <span className="text-emerald-700 flex items-center justify-center gap-0.5"><Check size={12} /> To'g'ri</span>
+                              ) : (
+                                <span className="text-rose-600 flex items-center justify-center gap-0.5"><X size={12} /> Xato</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. HR & Director Decision Section */}
+              <div className="pt-4 space-y-4 border-t border-slate-300">
+                <div className="grid grid-cols-2 gap-6 text-xs">
+                  <div className="border border-slate-300 p-3 rounded-lg space-y-3">
+                    <div className="font-bold uppercase text-slate-800">HR MENEJER XULOSASI:</div>
+                    <div className="h-10 border-b border-dashed border-slate-400"></div>
+                    <div className="flex justify-between text-[11px] font-medium pt-2">
+                      <span>Imzo: _______________</span>
+                      <span>Sana: ___ . ___ . 2026 y.</span>
+                    </div>
+                  </div>
+
+                  <div className="border border-slate-300 p-3 rounded-lg space-y-3">
+                    <div className="font-bold uppercase text-slate-800">BOSH DIREKTOR / OWNER QARORI:</div>
+                    <div className="flex items-center gap-4 text-[11px] font-bold py-1">
+                      <span>[  ] Suhbatga chaqirilsin</span>
+                      <span>[  ] Ishga olinsin</span>
+                      <span>[  ] Rad etilsin</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] font-medium pt-2">
+                      <span>Imzo: _______________</span>
+                      <span>Muhr o'rni (M.O'.)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
       )}
     </div>
