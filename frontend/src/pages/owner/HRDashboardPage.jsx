@@ -495,18 +495,42 @@ export default function HRDashboardPage() {
             </button>
           </div>
           <div className="flex-1 min-h-[80px]">
-            {(!stats?.upcomingBirthdays || stats.upcomingBirthdays.length === 0) ? (
-              <div className="flex items-center justify-center h-full text-slate-400 text-sm">Keyingi 30 kun ichida hech kimning tug'ilgan kuni yo'q</div>
-            ) : (
-              <div className="space-y-3">
-                {stats.upcomingBirthdays.map((b, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-700">{b.name}</span>
-                    <span className="text-slate-500 text-xs">{b.daysLeft === 0 ? 'Bugun!' : `${b.daysLeft} kundan so'ng`} ({b.ageTurning} yosh)</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const rawList = stats?.upcomingBirthdays || [];
+              const uniqueList = [];
+              const seenNames = new Set();
+              rawList.forEach(b => {
+                const key = b.name ? b.name.trim().toLowerCase().replace(/\s+/g, ' ') : '';
+                if (key && !seenNames.has(key)) {
+                  seenNames.add(key);
+                  uniqueList.push(b);
+                }
+              });
+
+              if (uniqueList.length === 0) {
+                return <div className="flex items-center justify-center h-full text-slate-400 text-sm">Keyingi 30 kun ichida hech kimning tug'ilgan kuni yo'q</div>;
+              }
+
+              return (
+                <div className="space-y-3">
+                  {uniqueList.map((b, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-700">{b.name}</span>
+                        {b.branchName && (
+                          <span className="text-[10px] bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded-full border border-slate-200">
+                            {b.branchName}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-slate-500 text-xs font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-lg border border-blue-100">
+                        {b.daysLeft === 0 ? '🎉 Bugun!' : `⏳ ${b.daysLeft} kundan so'ng`} ({b.ageTurning} yosh)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
 

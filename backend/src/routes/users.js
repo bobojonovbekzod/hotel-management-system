@@ -298,24 +298,39 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const newThisMonth = allStaff.filter(u => new Date(u.createdAt) >= monthStart).length;
 
-    // Upcoming birthdays (next 30 days)
+    // Upcoming birthdays (next 30 days) - Deduplicated per person
     const upcomingBirthdays = [];
+    const seenPersons = new Set();
+
     allStaff.forEach(u => {
       if (u.birthDate) {
-        const bDate = new Date(u.birthDate);
-        let nextBirthday = new Date(now.getFullYear(), bDate.getMonth(), bDate.getDate());
-        if (nextBirthday < now) {
-          nextBirthday = new Date(now.getFullYear() + 1, bDate.getMonth(), bDate.getDate());
-        }
-        const diffDays = Math.ceil((nextBirthday - now) / (1000 * 60 * 60 * 24));
-        if (diffDays <= 30) {
-          upcomingBirthdays.push({
-            id: u.id,
-            name: u.name,
-            birthDate: u.birthDate,
-            daysLeft: diffDays,
-            ageTurning: nextBirthday.getFullYear() - bDate.getFullYear()
-          });
+        const normName = (u.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        const phone = (u.phone || '').trim();
+        const passport = (u.passportNumber || '').trim().toUpperCase();
+        
+        // Key to identify unique physical person across multiple branch/role accounts
+        const personKey = passport ? `pass_${passport}` : (normName ? `name_${normName}` : (phone ? `phone_${phone}` : `id_${u.id}`));
+
+        if (!seenPersons.has(personKey)) {
+          seenPersons.add(personKey);
+
+          const bDate = new Date(u.birthDate);
+          let nextBirthday = new Date(now.getFullYear(), bDate.getMonth(), bDate.getDate());
+          if (nextBirthday < now) {
+            nextBirthday = new Date(now.getFullYear() + 1, bDate.getMonth(), bDate.getDate());
+          }
+          const diffDays = Math.ceil((nextBirthday - now) / (1000 * 60 * 60 * 24));
+          if (diffDays <= 30) {
+            upcomingBirthdays.push({
+              id: u.id,
+              name: u.name,
+              birthDate: u.birthDate,
+              daysLeft: diffDays,
+              ageTurning: nextBirthday.getFullYear() - bDate.getFullYear(),
+              branchName: u.branch?.name || '',
+              role: u.role
+            });
+          }
         }
       }
     });
