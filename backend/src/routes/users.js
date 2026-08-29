@@ -316,7 +316,7 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
 
     // Upcoming birthdays (next 30 days) - Deduplicated per person
     const upcomingBirthdays = [];
-    const seenPersons = new Set();
+    const seenBirthdayPersons = new Set();
 
     allStaff.forEach(u => {
       if (u.birthDate) {
@@ -327,8 +327,8 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
         // Key to identify unique physical person across multiple branch/role accounts
         const personKey = passport ? `pass_${passport}` : (normName ? `name_${normName}` : (phone ? `phone_${phone}` : `id_${u.id}`));
 
-        if (!seenPersons.has(personKey)) {
-          seenPersons.add(personKey);
+        if (!seenBirthdayPersons.has(personKey)) {
+          seenBirthdayPersons.add(personKey);
 
           const bDate = new Date(u.birthDate);
           let nextBirthday = new Date(now.getFullYear(), bDate.getMonth(), bDate.getDate());
