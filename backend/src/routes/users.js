@@ -230,19 +230,17 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
       select: {
         id: true, name: true, role: true, isActive: true, createdAt: true,
         birthDate: true, gender: true, telegram: true, phone: true, photoUrl: true,
-        passportNumber: true,
         branch: { select: { id: true, name: true } }
       }
     });
 
-    // Deduplicate staff by physical person (passport > normalized name > phone)
+    // Deduplicate staff by physical person (normalized name > phone > id)
     const seenPersons = new Set();
     const allStaff = [];
     rawStaff.forEach(u => {
       const normName = (u.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
       const phone = (u.phone || '').trim();
-      const passport = (u.passportNumber || '').trim().toUpperCase();
-      const personKey = passport ? `pass_${passport}` : (normName ? `name_${normName}` : (phone ? `phone_${phone}` : `id_${u.id}`));
+      const personKey = normName ? `name_${normName}` : (phone ? `phone_${phone}` : `id_${u.id}`);
 
       if (!seenPersons.has(personKey)) {
         seenPersons.add(personKey);
@@ -322,10 +320,9 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
       if (u.birthDate) {
         const normName = (u.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
         const phone = (u.phone || '').trim();
-        const passport = (u.passportNumber || '').trim().toUpperCase();
         
         // Key to identify unique physical person across multiple branch/role accounts
-        const personKey = passport ? `pass_${passport}` : (normName ? `name_${normName}` : (phone ? `phone_${phone}` : `id_${u.id}`));
+        const personKey = normName ? `name_${normName}` : (phone ? `phone_${phone}` : `id_${u.id}`);
 
         if (!seenBirthdayPersons.has(personKey)) {
           seenBirthdayPersons.add(personKey);
