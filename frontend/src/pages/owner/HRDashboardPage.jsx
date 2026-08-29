@@ -30,7 +30,7 @@ export default function HRDashboardPage() {
   const genderData = [
     { name: 'Erkak', value: stats?.genderDist?.male || 0, color: '#3b82f6' }, // Blue
     { name: 'Ayol', value: stats?.genderDist?.female || 0, color: '#ec4899' }, // Pink
-    { name: 'Boshqa', value: stats?.genderDist?.other || 0, color: '#64748b' }, // Slate
+    { name: 'Kiritilmagan', value: stats?.genderDist?.other || 0, color: '#94a3b8' }, // Slate neutral
   ].filter(d => d.value > 0);
 
   // If no data, show a grey empty ring

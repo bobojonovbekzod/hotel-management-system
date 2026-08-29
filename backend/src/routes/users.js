@@ -225,12 +225,28 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
     const where = { companyId: req.user.companyId, role: { notIn: ['owner', 'superadmin'] } };
     if (req.user.role === 'director') where.branchId = req.user.branchId;
 
-    const allStaff = await prisma.user.findMany({
+    const rawStaff = await prisma.user.findMany({
       where,
       select: {
         id: true, name: true, role: true, isActive: true, createdAt: true,
         birthDate: true, gender: true, telegram: true, phone: true, photoUrl: true,
+        passportNumber: true,
         branch: { select: { id: true, name: true } }
+      }
+    });
+
+    // Deduplicate staff by physical person (passport > normalized name > phone)
+    const seenPersons = new Set();
+    const allStaff = [];
+    rawStaff.forEach(u => {
+      const normName = (u.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const phone = (u.phone || '').trim();
+      const passport = (u.passportNumber || '').trim().toUpperCase();
+      const personKey = passport ? `pass_${passport}` : (normName ? `name_${normName}` : (phone ? `phone_${phone}` : `id_${u.id}`));
+
+      if (!seenPersons.has(personKey)) {
+        seenPersons.add(personKey);
+        allStaff.push(u);
       }
     });
 
@@ -263,12 +279,12 @@ router.get('/hr-stats', authenticate, authorize('owner', 'director', 'supervisor
       }
     });
 
-    // Gender distribution
+    // Gender distribution (ensuring male + female + other === total)
     const genderDist = { male: 0, female: 0, other: 0 };
     allStaff.forEach(u => {
       if (u.gender === 'male' || u.gender === 'Erkak') genderDist.male++;
       else if (u.gender === 'female' || u.gender === 'Ayol') genderDist.female++;
-      else if (u.gender) genderDist.other++;
+      else genderDist.other++;
     });
 
     // Profile completion
