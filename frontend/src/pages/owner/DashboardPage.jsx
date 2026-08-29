@@ -559,7 +559,7 @@ export default function OwnerDashboard() {
       {['owner', 'supervisor', 'director'].includes(user?.role) && data?.topAdmins?.length > 0 && (
         <div className="card mt-6">
           <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-6 flex items-center gap-2">
-            <TrendingUp size={20} className="text-primary-500" /> Top 5 Eng yaxshi adminlar
+            <TrendingUp size={20} className="text-primary-500" /> Eng ko'p savdo qilgan admin
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full">
