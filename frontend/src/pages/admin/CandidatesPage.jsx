@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   Users, Search, Filter, Phone, Calendar, Award, Briefcase, 
   CheckCircle, XCircle, Clock, Trash2, UserCheck, ChevronLeft, ChevronRight,
@@ -8,6 +9,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
 export default function CandidatesPage() {
+  const { user } = useAuth();
   const [candidates, setCandidates] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -227,16 +229,23 @@ export default function CandidatesPage() {
           </div>
 
           {/* Branch Filter */}
-          <select
-            value={selectedBranch}
-            onChange={(e) => { setSelectedBranch(e.target.value); setPage(1); }}
-            className="input-field text-xs"
-          >
-            <option value="">Barcha filiallar</option>
-            {branches.map(b => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
+          {['owner', 'hr', 'superadmin', 'supervisor'].includes(user?.role) ? (
+            <select
+              value={selectedBranch}
+              onChange={(e) => { setSelectedBranch(e.target.value); setPage(1); }}
+              className="input-field text-xs"
+            >
+              <option value="">Barcha filiallar</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="input-field text-xs bg-slate-100 font-bold text-slate-700 flex items-center justify-between">
+              <span>Filial: {branches.find(b => b.id === user?.branchId)?.name || 'O\'z filialingiz'}</span>
+              <Shield size={14} className="text-indigo-500" />
+            </div>
+          )}
 
           {/* Status Filter */}
           <select
