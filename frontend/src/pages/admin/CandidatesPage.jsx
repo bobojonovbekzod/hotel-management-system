@@ -544,37 +544,6 @@ export default function CandidatesPage() {
                     </span>
                   </div>
                 </div>
-
-                {/* Detailed test answers */}
-                {parseAnswers(selectedCandidateForPrint.answersJson).length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <div className="text-xs font-bold text-slate-700">Berilgan savollar va nomzodning javoblari:</div>
-                    <table className="w-full text-[11px] border-collapse border border-slate-300">
-                      <thead>
-                        <tr className="bg-slate-200 text-slate-800 font-bold border-b border-slate-300">
-                          <th className="p-1.5 border-r border-slate-300 text-center w-8">№</th>
-                          <th className="p-1.5 border-r border-slate-300 text-left">Nomzodning Tanlagan Javobi</th>
-                          <th className="p-1.5 text-center w-20">Natija</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {parseAnswers(selectedCandidateForPrint.answersJson).map((ans, idx) => (
-                          <tr key={idx} className="border-b border-slate-200">
-                            <td className="p-1.5 border-r border-slate-300 text-center font-bold">{idx + 1}</td>
-                            <td className="p-1.5 border-r border-slate-300 font-medium">{ans.selected}</td>
-                            <td className="p-1.5 text-center font-bold">
-                              {ans.isCorrect ? (
-                                <span className="text-emerald-700 flex items-center justify-center gap-0.5"><Check size={12} /> To'g'ri</span>
-                              ) : (
-                                <span className="text-rose-600 flex items-center justify-center gap-0.5"><X size={12} /> Xato</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
               </div>
 
               {/* 4. HR & Director Decision Section */}
