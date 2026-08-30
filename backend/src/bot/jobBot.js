@@ -14,9 +14,9 @@ const ADMIN_QUESTIONS = [
     id: 1,
     question: "1/10 (Admin). Mehmonxona mehmoni xonasidan shikoyat qilib, judayam jahli chiqib baqirib keldi. Sizning birinchi harakatingiz qanday bo'lishi kerak?",
     options: [
-      { text: "A) Uni botiqlik bilan tinglab, kechirim so'rash va muammoni zudlik bilan hal qilishga harakat qilish.", isCorrect: true },
+      { text: "A) Uni bosiqlik bilan tinglab, kechirim so'rash va muammoni zudlik bilan hal qilishga harakat qilish.", isCorrect: true },
       { text: "B) Uni tinchlanishini aytib, baland ovozda mehmonxonaning qoidalarini tushuntirish.", isCorrect: false },
-      { text: "C) Uning e'rozini eshitmasdan, xavfsizlik xodimini chaqirish.", isCorrect: false },
+      { text: "C) Uning e'tirozini eshitmasdan, xavfsizlik xodimini chaqirish.", isCorrect: false },
       { text: "D) Admin xonasiga kirib ketib, mehmonni e'tiborsiz qoldirish.", isCorrect: false }
     ]
   },
@@ -255,7 +255,7 @@ function setupJobBot() {
     // 2. TEXT MESSAGES HANDLER
     bot.on('message', async (msg) => {
       if (msg.text && msg.text.startsWith('/')) return;
-      if (msg.contact) return; // Prevent contact messages from triggering text validation errors!
+      if (msg.contact) return; 
 
       const chatId = msg.chat.id;
       const state = userStates.get(chatId);
@@ -313,25 +313,50 @@ function setupJobBot() {
           { parse_mode: 'Markdown' }
         );
       }
-      // Step 6: YEARS -> START TEST
+      // Step 6: YEARS -> EDUCATION
       else if (state.step === 'YEARS') {
         if (!text) return;
         state.yearsOfExperience = text;
-        state.step = 'TEST';
-        state.currentQuestion = 0;
-        state.score = 0;
+        state.step = 'EDUCATION';
         userStates.set(chatId, state);
 
-        const posName = state.position === 'Tozalik xodimi' ? 'Tozalik xodimi' : 'Administrator';
         await bot.sendMessage(chatId, 
-          `✅ **Ma'lumotlar saqlandi!**\n\n` +
-          `📋 Endi **10 talik ${posName} lavozimi testi** boshlanadi.\n` +
-          `Har bir savolga A, B, C, D variantlaridan birini tanlaysiz.\n\n` +
-          `Tayyormisiz? Birinchi savol:`,
-          { parse_mode: 'Markdown' }
+          `🎓 **Ma'lumotingiz darajasi qanday?**\nQuyidagi variantlardan birini tanlang:`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "🎓 Oliy (Bakalavr / Magistr)", callback_data: "edu_Oliy" }],
+                [{ text: "🏫 O'rta-maxsus (Kollej / Texnikum)", callback_data: "edu_OrtaMaxsus" }],
+                [{ text: "📚 O'rta (Maktab)", callback_data: "edu_Orta" }]
+              ]
+            }
+          }
         );
+      }
+      // Step 8: ADDRESS -> LANGUAGES
+      else if (state.step === 'ADDRESS') {
+        if (!text || text.length < 3) {
+          return bot.sendMessage(chatId, "⚠️ Iltimos, doimiy yashash manzilingizni kiriting:");
+        }
+        state.addressString = text;
+        state.step = 'LANGUAGES';
+        userStates.set(chatId, state);
 
-        sendQuestion(chatId, 0, state.position);
+        await bot.sendMessage(chatId, 
+          `🗣️ **Chet tillarini bilish darajangiz qanday?**\nQuyidagi variantlardan birini tanlang:`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "🌟 Rus va Ingliz tili (Erkin)", callback_data: "lang_RusIngErkin" }],
+                [{ text: "🇷🇺 Rus tili (Erkin), Ingliz tili (O'rta)", callback_data: "lang_RusErkinIngOrta" }],
+                [{ text: "🇷🇺 Rus tili (Muloqot darajasida)", callback_data: "lang_RusOrta" }],
+                [{ text: "🇺🇿 Faqat O'zbek tili", callback_data: "lang_FaqatUz" }]
+              ]
+            }
+          }
+        );
       }
     });
 
@@ -351,7 +376,6 @@ function setupJobBot() {
           state.step = 'BRANCH';
           userStates.set(chatId, state);
 
-          // Fetch branches from DB (EXCLUDE Zangiota)
           let branches = [];
           try {
             branches = await prisma.branch.findMany({ 
@@ -404,6 +428,78 @@ function setupJobBot() {
               }
             }
           );
+        }
+      }
+      // Handle Education selection
+      else if (data.startsWith('edu_')) {
+        if (state && state.step === 'EDUCATION') {
+          let eduVal = "O'rta";
+          if (data === 'edu_Oliy') eduVal = "Oliy (Bakalavr / Magistr)";
+          else if (data === 'edu_OrtaMaxsus') eduVal = "O'rta-maxsus (Kollej / Texnikum)";
+          else eduVal = "O'rta (Maktab)";
+
+          state.educationString = eduVal;
+          state.step = 'ADDRESS';
+          userStates.set(chatId, state);
+
+          await bot.sendMessage(chatId, 
+            `🏠 **Doimiy yashash manzilingiz va tumaningizni kiriting:**\n` +
+            `(Masalan: *"Toshkent shahri, Yunusobod tumani"* yoki *"Buxoro shahri"*):`,
+            { parse_mode: 'Markdown' }
+          );
+        }
+      }
+      // Handle Language selection
+      else if (data.startsWith('lang_')) {
+        if (state && state.step === 'LANGUAGES') {
+          let langVal = "O'zbek tili";
+          if (data === 'lang_RusIngErkin') langVal = "O'zbek, Rus va Ingliz tili (Erkin)";
+          else if (data === 'lang_RusErkinIngOrta') langVal = "O'zbek, Rus (Erkin), Ingliz (O'rta)";
+          else if (data === 'lang_RusOrta') langVal = "O'zbek, Rus tili (Muloqot darajasida)";
+          else langVal = "O'zbek tili";
+
+          state.languagesString = langVal;
+          state.step = 'AVAILABILITY';
+          userStates.set(chatId, state);
+
+          await bot.sendMessage(chatId, 
+            `⏱️ **Ishga qachondan chiqa olasiz?**\nQuyidagi variantlardan birini tanlang:`,
+            {
+              parse_mode: 'Markdown',
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "⚡ Zudlik bilan (Bugundan)", callback_data: "avail_Zudlik" }],
+                  [{ text: "🗓️ 3-5 kun ichida", callback_data: "avail_3_5_kun" }],
+                  [{ text: "📆 1 haftadan keyin", callback_data: "avail_1_hafta" }]
+                ]
+              }
+            }
+          );
+        }
+      }
+      // Handle Availability selection -> START TEST
+      else if (data.startsWith('avail_')) {
+        if (state && state.step === 'AVAILABILITY') {
+          let availVal = "Zudlik bilan (Bugundan)";
+          if (data === 'avail_3_5_kun') availVal = "3-5 kun ichida";
+          else if (data === 'avail_1_hafta') availVal = "1 haftadan keyin";
+
+          state.availabilityString = availVal;
+          state.step = 'TEST';
+          state.currentQuestion = 0;
+          state.score = 0;
+          userStates.set(chatId, state);
+
+          const posName = state.position === 'Tozalik xodimi' ? 'Tozalik xodimi' : 'Administrator';
+          await bot.sendMessage(chatId, 
+            `✅ **Barcha ma'lumotlar saqlandi!**\n\n` +
+            `📋 Endi **10 talik ${posName} lavozimi testi** boshlanadi.\n` +
+            `Har bir savolga variantlardan birini tanlaysiz.\n\n` +
+            `Tayyormisiz? Birinchi savol:`,
+            { parse_mode: 'Markdown' }
+          );
+
+          sendQuestion(chatId, 0, state.position);
         }
       }
       // Handle Test Answer selection
@@ -484,6 +580,10 @@ async function finishTest(chatId, state) {
           phone: state.phone || '',
           experience: state.experience || '',
           yearsOfExperience: state.yearsOfExperience || '',
+          educationString: state.educationString || 'O\'rta',
+          addressString: state.addressString || '',
+          languagesString: state.languagesString || 'O\'zbek tili',
+          availabilityString: state.availabilityString || 'Zudlik bilan',
           score: finalScore,
           totalQuestions: 10,
           status: 'new',

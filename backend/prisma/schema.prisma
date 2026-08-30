@@ -654,6 +654,10 @@ model Candidate {
   phone             String
   experience        String   @db.Text
   yearsOfExperience String
+  educationString   String?
+  addressString     String?
+  languagesString   String?
+  availabilityString String?
   score             Int      // Score out of 10
   totalQuestions    Int      @default(10)
   status            String   @default("new") // 'new', 'interviewed', 'hired', 'rejected'

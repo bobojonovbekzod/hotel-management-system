@@ -342,17 +342,17 @@ export default function CandidatesPage() {
                 </div>
 
                 <div className="bg-slate-50 p-3 rounded-xl space-y-1">
-                  <span className="text-slate-400 font-medium block">Ish Staji (Tajribasi)</span>
+                  <span className="text-slate-400 font-medium block">Ish Staji va Ma'lumoti</span>
                   <div className="flex items-center gap-2 font-bold text-slate-800">
                     <Briefcase size={14} className="text-indigo-600" />
-                    {c.yearsOfExperience || 'Belgilanmagan'}
+                    {c.yearsOfExperience || 'Tajribasiz'} ({c.educationString || 'O\'rta'})
                   </div>
                 </div>
 
                 <div className="bg-slate-50 p-3 rounded-xl space-y-1">
-                  <span className="text-slate-400 font-medium block">Oldingi Ish Joylari</span>
-                  <p className="text-slate-800 font-medium line-clamp-2">
-                    {c.experience || 'Tavsif berilmagan'}
+                  <span className="text-slate-400 font-medium block">Manzil va Tillar</span>
+                  <p className="text-slate-800 font-semibold line-clamp-2">
+                    📍 {c.addressString || 'Ko\'rsatilmagan'} | 🗣️ {c.languagesString || 'O\'zbek tili'}
                   </p>
                 </div>
               </div>
@@ -495,6 +495,30 @@ export default function CandidatesPage() {
                       <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Telefon Raqami:</td>
                       <td className="p-2.5 font-extrabold text-emerald-900">{selectedCandidateForPrint.phone}</td>
                     </tr>
+                    {selectedCandidateForPrint.addressString && (
+                      <tr className="border-b border-slate-300">
+                        <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Yashash Manzili:</td>
+                        <td className="p-2.5 font-medium">{selectedCandidateForPrint.addressString}</td>
+                      </tr>
+                    )}
+                    {selectedCandidateForPrint.educationString && (
+                      <tr className="border-b border-slate-300">
+                        <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Ma'lumoti:</td>
+                        <td className="p-2.5 font-medium">{selectedCandidateForPrint.educationString}</td>
+                      </tr>
+                    )}
+                    {selectedCandidateForPrint.languagesString && (
+                      <tr className="border-b border-slate-300">
+                        <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Tillar Bilish Darajasi:</td>
+                        <td className="p-2.5 font-medium">{selectedCandidateForPrint.languagesString}</td>
+                      </tr>
+                    )}
+                    {selectedCandidateForPrint.availabilityString && (
+                      <tr className="border-b border-slate-300">
+                        <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Ishga Chiqish Tayyorgarligi:</td>
+                        <td className="p-2.5 font-bold text-blue-900">{selectedCandidateForPrint.availabilityString}</td>
+                      </tr>
+                    )}
                     <tr className="border-b border-slate-300">
                       <td className="bg-slate-50 p-2.5 font-bold border-r border-slate-300">Arizaning Kelib Tushgan Vaqti:</td>
                       <td className="p-2.5 font-medium">
