@@ -116,12 +116,18 @@ export default function TasksPage() {
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
     const task = tasks.find(t => t.id === parseInt(taskId));
-    // Check permission to drag drop (Owner or Assignee)
+    
+    // Check permission (Owner, Branch Director/Supervisor, Assignee, Creator)
+    const canMoveTask = user?.role === 'owner' || 
+      ['director', 'supervisor'].includes(user?.role) || 
+      task?.assigneeId === user?.id || 
+      task?.creatorId === user?.id;
+
     if (task && task.status !== newStatus) {
-      if (user.role === 'owner' || task.assigneeId === user.id) {
+      if (canMoveTask) {
         handleStatusChange(parseInt(taskId), newStatus);
       } else {
-        toast.error("Faqat o'zingizga biriktirilgan vazifani sura olasiz!");
+        toast.error("Vazifa holatini o'zgartirishga ruxsat yo'q!");
       }
     }
   };
@@ -181,12 +187,12 @@ export default function TasksPage() {
                 <p className="text-sm text-slate-600 line-clamp-2 mb-3">{task.description}</p>
               )}
 
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[10px]" title={`Ijrachi: ${task.assignee.name}`}>
-                    {task.assignee.name.charAt(0)}
+                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[10px]" title={`Ijrachi: ${task.assignee?.name}`}>
+                    {task.assignee?.name?.charAt(0) || 'U'}
                   </div>
-                  <span className="truncate max-w-[80px]">{task.assignee.name}</span>
+                  <span className="truncate max-w-[80px]">{task.assignee?.name || 'Xodim'}</span>
                 </div>
                 
                 {task.dueDate && (
@@ -195,6 +201,20 @@ export default function TasksPage() {
                     {format(new Date(task.dueDate), 'dd MMM')}
                   </div>
                 )}
+              </div>
+
+              {/* Mobile / Touchscreen Quick Status Switcher */}
+              <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-slate-400 font-medium">Holati:</span>
+                <select
+                  value={task.status}
+                  onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                  className="text-xs font-semibold py-1 px-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 focus:outline-none cursor-pointer"
+                >
+                  <option value="TODO">⏳ Bajarilishi kerak</option>
+                  <option value="IN_PROGRESS">🔄 Jarayonda</option>
+                  <option value="DONE">✅ Bajarildi</option>
+                </select>
               </div>
             </div>
           ))}

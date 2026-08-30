@@ -102,15 +102,18 @@ router.put('/:id', authenticate, authorize('owner', 'director', 'admin', 'superv
       return res.status(403).json({ success: false, message: 'Ruxsat yoq.' });
     }
 
-    // Agar owner bo'lmasa, faqat o'ziga tegishli vazifaning statusini o'zgartira oladi
+    // Check permissions for non-owner users
     if (req.user.role !== 'owner') {
-      if (existingTask.assigneeId !== req.user.id) {
-        return res.status(403).json({ success: false, message: 'Faqat o`zingizga biriktirilgan vazifa holatini o`zgartira olasiz.' });
+      const isDirectorOrSupervisorOfBranch = ['director', 'supervisor'].includes(req.user.role) && existingTask.branchId === req.user.branchId;
+      const isAssigneeOrCreator = existingTask.assigneeId === req.user.id || existingTask.creatorId === req.user.id;
+
+      if (!isDirectorOrSupervisorOfBranch && !isAssigneeOrCreator) {
+        return res.status(403).json({ success: false, message: 'Vazifa holatini o\'zgartirishga ruxsat yo\'q.' });
       }
       
       const updatedTask = await prisma.task.update({
         where: { id: taskId },
-        data: { status }, // faqat statusni o'zgartirish ruxsat etiladi
+        data: { status }, // status change for branch managers / assignees
         include: {
           creator: { select: { id: true, name: true, role: true } },
           assignee: { select: { id: true, name: true, role: true } },
