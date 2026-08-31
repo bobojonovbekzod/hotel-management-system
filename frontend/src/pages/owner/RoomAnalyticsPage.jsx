@@ -31,9 +31,6 @@ export default function RoomAnalyticsPage() {
       const res = await api.get('/branches');
       if (res.data?.data) {
         setBranches(res.data.data);
-        if (res.data.data.length > 0) {
-          setBranchFilter(res.data.data[0].name);
-        }
       }
     } catch (err) {
       toast.error("Filiallarni yuklashda xatolik yuz berdi");
@@ -43,8 +40,10 @@ export default function RoomAnalyticsPage() {
   };
 
   useEffect(() => {
-    if (branchFilter && branches.length > 0) {
+    if (branchFilter) {
       fetchRooms();
+    } else {
+      setRooms([]);
     }
   }, [branchFilter, filterMonth]);
 
@@ -253,8 +252,14 @@ export default function RoomAnalyticsPage() {
           </div>
 
           {chartData.length === 0 ? (
-            <div className="py-20 text-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl">
-              Diagramma chiqarish uchun filial va oy bo'yicha ma'lumotlar topilmadi
+            <div className="py-20 text-center text-slate-500 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2">
+              <BarChart3 className="w-10 h-10 text-slate-300" />
+              <p className="font-extrabold text-slate-700 text-sm">
+                {!branchFilter ? "🏢 Tahlillarni ko'rish uchun yuqoridagi menyudan filialni tanlang" : "Ushbu filial va oy bo'yicha ma'lumotlar topilmadi"}
+              </p>
+              <p className="text-xs text-slate-400">
+                {!branchFilter ? "Filial tanlangandan so'ng xonalar tushum diagrammasi avtomat shakllanadi" : "Filialni o'zgartiring yoki boshqa oy uchun tekshirib ko'ring"}
+              </p>
             </div>
           ) : (
             <div className="w-full h-[400px] pt-4">
@@ -331,7 +336,7 @@ export default function RoomAnalyticsPage() {
                 {filteredRooms.length === 0 && (
                   <tr>
                     <td colSpan="4" className="px-6 py-12 text-center text-slate-500 border-dashed">
-                      {branchFilter ? "Ma'lumot topilmadi" : "Filialni tanlang"}
+                      {!branchFilter ? "🏢 Tahlillarni ko'rish uchun yuqoridagi menyudan filialni tanlang" : "Ushbu filial va oy bo'yicha ma'lumotlar topilmadi"}
                     </td>
                   </tr>
                 )}
