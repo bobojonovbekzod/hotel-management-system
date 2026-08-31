@@ -93,10 +93,10 @@ export default function RoomAnalyticsPage() {
       const data = payload[0].payload;
       return (
         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-xs space-y-1">
-          <p className="font-extrabold text-sm text-primary-400">{data.roomNumber}</p>
+          <p className="font-bold text-sm text-primary-400">{data.roomNumber}</p>
           <p className="text-slate-300">Filial: <strong className="text-white">{data.branchName}</strong></p>
-          <p className="text-slate-300">Jami tushum: <strong className="text-emerald-400 font-mono text-sm">{data.totalIncome.toLocaleString()} so'm</strong></p>
-          <p className="text-slate-300">Foydalanishlar: <strong className="text-white font-mono">{data.totalBookings} marta</strong></p>
+          <p className="text-slate-300">Jami tushum: <strong className="text-emerald-400 font-bold text-sm">{data.totalIncome.toLocaleString()} so'm</strong></p>
+          <p className="text-slate-300">Foydalanishlar: <strong className="text-white font-semibold">{data.totalBookings} marta</strong></p>
         </div>
       );
     }
@@ -110,10 +110,10 @@ export default function RoomAnalyticsPage() {
       {/* Header & Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <Activity className="text-primary-500" /> Xonalar Tahlili
           </h1>
-          <p className="text-slate-600 text-sm mt-1">Xonalarning oylik tushum daromadi va foydalanish statistikasi</p>
+          <p className="text-slate-600 text-sm mt-1 font-medium">Xonalarning oylik tushum daromadi va foydalanish statistikasi</p>
         </div>
       </div>
 
@@ -198,8 +198,8 @@ export default function RoomAnalyticsPage() {
           </div>
           <div>
             <p className="text-xs text-slate-500 font-medium">Jami Oylik Tushum</p>
-            <h3 className="text-xl font-black text-slate-900 font-mono mt-0.5">
-              {totalIncomeAll.toLocaleString()} <span className="text-xs font-normal text-slate-500">so'm</span>
+            <h3 className="text-xl font-bold text-slate-900 mt-0.5">
+              {totalIncomeAll.toLocaleString()} <span className="text-xs font-medium text-slate-500">so'm</span>
             </h3>
           </div>
         </div>
@@ -210,8 +210,8 @@ export default function RoomAnalyticsPage() {
           </div>
           <div>
             <p className="text-xs text-slate-500 font-medium">Jami Foydalanishlar</p>
-            <h3 className="text-xl font-black text-slate-900 font-mono mt-0.5">
-              {totalBookingsAll} <span className="text-xs font-normal text-slate-500">marta</span>
+            <h3 className="text-xl font-bold text-slate-900 mt-0.5">
+              {totalBookingsAll} <span className="text-xs font-medium text-slate-500">marta</span>
             </h3>
           </div>
         </div>
@@ -222,10 +222,10 @@ export default function RoomAnalyticsPage() {
           </div>
           <div>
             <p className="text-xs text-slate-500 font-medium">Eng Ko'p Daromad Keltirgan</p>
-            <h3 className="text-xl font-black text-slate-900 mt-0.5">
+            <h3 className="text-xl font-bold text-slate-900 mt-0.5">
               {topEarningRoom ? `#${topEarningRoom.roomNumber}-xona` : "Yo'q"}
               {topEarningRoom && (
-                <span className="text-xs font-normal text-emerald-600 ml-2 font-mono">
+                <span className="text-xs font-semibold text-emerald-600 ml-2">
                   ({topEarningRoom.totalIncome?.toLocaleString()} so'm)
                 </span>
               )}
@@ -240,13 +240,13 @@ export default function RoomAnalyticsPage() {
         <div className="card p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-primary-500" />
                 Xonalar bo'yicha tushum diagrammasi
               </h3>
-              <p className="text-xs text-slate-500">X-o'qida: Xona raqami | Y-o'qida: Tushum summasi (so'mda)</p>
+              <p className="text-xs text-slate-500 font-medium">X-o'qida: Xona raqami | Y-o'qida: Tushum summasi (so'mda)</p>
             </div>
-            <span className="text-xs font-semibold bg-slate-100 text-slate-700 px-3 py-1 rounded-lg">
+            <span className="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-lg">
               {filteredRooms.length} ta xona
             </span>
           </div>
@@ -254,10 +254,10 @@ export default function RoomAnalyticsPage() {
           {chartData.length === 0 ? (
             <div className="py-20 text-center text-slate-500 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2">
               <BarChart3 className="w-10 h-10 text-slate-300" />
-              <p className="font-extrabold text-slate-700 text-sm">
+              <p className="font-bold text-slate-700 text-sm">
                 {!branchFilter ? "🏢 Tahlillarni ko'rish uchun yuqoridagi menyudan filialni tanlang" : "Ushbu filial va oy bo'yicha ma'lumotlar topilmadi"}
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 font-medium">
                 {!branchFilter ? "Filial tanlangandan so'ng xonalar tushum diagrammasi avtomat shakllanadi" : "Filialni o'zgartiring yoki boshqa oy uchun tekshirib ko'ring"}
               </p>
             </div>
@@ -295,10 +295,10 @@ export default function RoomAnalyticsPage() {
         /* JADVAL KO'RINISHI (TABLE VIEW) */
         <div className="card p-0 overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-            <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
               <Table className="w-4 h-4 text-slate-500" /> Xonalar jadvali
             </h3>
-            <span className="text-xs text-slate-500">Jami {filteredRooms.length} ta xona</span>
+            <span className="text-xs text-slate-500 font-medium">Jami {filteredRooms.length} ta xona</span>
           </div>
 
           <div className="overflow-x-auto">
@@ -316,15 +316,15 @@ export default function RoomAnalyticsPage() {
                   <tr key={room.id} className="table-row">
                     <td className="table-td">
                       <div className="font-bold text-slate-900 text-base">#{room.roomNumber}</div>
-                      <div className="text-xs text-slate-600">{room.branchName}</div>
+                      <div className="text-xs text-slate-600 font-medium">{room.branchName}</div>
                     </td>
                     <td className="table-td text-center">
-                      <span className="font-mono text-slate-900 text-lg font-bold">{room.totalBookings}</span> marta
+                      <span className="text-slate-900 text-lg font-bold">{room.totalBookings}</span> marta
                     </td>
                     <td className="table-td text-center">
-                      <span className="font-mono text-emerald-600 font-extrabold text-lg">{room.totalIncome?.toLocaleString()}</span> <span className="text-xs text-slate-600">so'm</span>
+                      <span className="text-emerald-600 font-bold text-lg">{room.totalIncome?.toLocaleString()}</span> <span className="text-xs text-slate-600">so'm</span>
                     </td>
-                    <td className="table-td text-slate-800">
+                    <td className="table-td text-slate-800 font-medium text-xs">
                       {room.lastOccupiedDate ? (
                         format(new Date(room.lastOccupiedDate), 'dd MMM, yyyy HH:mm', { locale: uz })
                       ) : (
@@ -335,7 +335,7 @@ export default function RoomAnalyticsPage() {
                 ))}
                 {filteredRooms.length === 0 && (
                   <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500 border-dashed">
+                    <td colSpan="4" className="px-6 py-12 text-center text-slate-500 border-dashed font-medium text-sm">
                       {!branchFilter ? "🏢 Tahlillarni ko'rish uchun yuqoridagi menyudan filialni tanlang" : "Ushbu filial va oy bo'yicha ma'lumotlar topilmadi"}
                     </td>
                   </tr>
