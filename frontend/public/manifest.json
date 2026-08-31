@@ -1,21 +1,26 @@
 {
   "name": "Family Hotel",
-  "short_name": "Hotel",
+  "short_name": "Family Hotel",
   "description": "Family Hotel boshqaruv tizimi",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f8fafc",
   "theme_color": "#0ea5e9",
   "icons": [
     {
       "src": "/logo.jpg",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     },
     {
       "src": "/logo.jpg",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }

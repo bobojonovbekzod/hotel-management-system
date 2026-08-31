@@ -74,6 +74,7 @@ export default function ExpensesPage() {
   const [form, setForm] = useState({ 
     categoryId: '', 
     branchId: '', 
+    paymentSource: 'cash', // 'cash', 'bank', 'transfer'
     amount: '', 
     description: '',
     expenseDate: todayStr
@@ -83,6 +84,32 @@ export default function ExpensesPage() {
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  useEffect(() => {
+    if (isOwner && activeTab === 'company') {
+      fetchCompanyExpenses();
+    }
+  }, [activeTab, companyStartDate, companyEndDate]);
+
+  const fetchCompanyExpenses = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/expenses', {
+        params: {
+          isCompanyExpense: 'true',
+          startDate: companyStartDate,
+          endDate: companyEndDate
+        }
+      });
+      if (res.data?.success) {
+        setCompanyExpenses(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching company expenses:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOwner && user) {
@@ -184,6 +211,8 @@ export default function ExpensesPage() {
         expenseDate: form.expenseDate,
         branchId: isOwner && form.branchId ? parseInt(form.branchId) : undefined,
         shiftId: activeShift?.id,
+        isCompanyExpense: activeTab === 'company',
+        paymentSource: form.paymentSource || 'cash'
       });
       toast.success('Xarajat muvaffaqiyatli qo\'shildi!');
       setForm(prev => ({ 
@@ -195,6 +224,9 @@ export default function ExpensesPage() {
       setShowForm(false);
       if (canFetch) {
         fetchExpenses();
+      }
+      if (isOwner && activeTab === 'company') {
+        fetchCompanyExpenses();
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Xato yuz berdi');
@@ -695,81 +727,129 @@ export default function ExpensesPage() {
           </div>
 
           {/* Company Filter Card */}
-          <div className="card p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                  <CalendarIcon size={16} /> Boshlanish sanasi
-                </label>
-                <input
-                  type="date"
-                  value={companyStartDate}
-                  onChange={(e) => setCompanyStartDate(e.target.value)}
-                  className="input-field font-semibold text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                  <CalendarIcon size={16} /> Tugash sanasi
-                </label>
-                <input
-                  type="date"
-                  value={companyEndDate}
-                  onChange={(e) => setCompanyEndDate(e.target.value)}
-                  className="input-field font-semibold text-slate-800"
-                />
-              </div>
-
-              <div>
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="btn-primary w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  <Plus size={18} /> Kompaniya Xarajati Qo'shish
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Company KPI Cards */}
+          {/* Company Expenses KPI & List */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="card p-4 border-l-4 border-indigo-500 bg-gradient-to-br from-indigo-50/50 to-white">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Jami Kompaniya Xarajati</p>
-              <h3 className="text-2xl font-bold text-indigo-700 mt-1">0 so'm</h3>
+              <h3 className="text-2xl font-bold text-indigo-700 mt-1">
+                {companyExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()} so'm
+              </h3>
               <p className="text-xs text-slate-400 mt-1">Tanlangan davr bo'yicha</p>
             </div>
 
             <div className="card p-4 border-l-4 border-blue-500 bg-gradient-to-br from-blue-50/50 to-white">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Xarajatlar Soni</p>
-              <h3 className="text-2xl font-bold text-blue-700 mt-1">0 ta</h3>
+              <h3 className="text-2xl font-bold text-blue-700 mt-1">{companyExpenses.length} ta</h3>
               <p className="text-xs text-slate-400 mt-1">Kompaniya chiqimlari</p>
             </div>
 
             <div className="card p-4 border-l-4 border-purple-500 bg-gradient-to-br from-purple-50/50 to-white">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Qamrov Sohasi</p>
               <h3 className="text-base font-bold text-purple-700 mt-1">Boshqaruv Kompaniyasi</h3>
-              <p className="text-xs text-slate-400 mt-1">Barcha filiallar tushumidan minus bo'ladi</p>
+              <p className="text-xs text-slate-400 mt-1">Tanlangan filial hisobidan ayiriladi</p>
             </div>
           </div>
 
-          {/* Company Expense List Card */}
-          <div className="card p-8 text-center space-y-3">
-            <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-              <Briefcase size={32} />
+          {/* Company Expense Table */}
+          <div className="card overflow-hidden">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <Briefcase size={18} className="text-indigo-600" /> Boshqaruv Kompaniyasi Xarajatlari Ro'yxati
+              </h3>
+              <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full">
+                {companyExpenses.length} ta xarajat
+              </span>
             </div>
-            <h3 className="text-lg font-bold text-slate-800">Kompaniya xarajatlari interfeysi tayyor</h3>
-            <p className="text-slate-500 text-sm max-w-md mx-auto">
-              Bu bo'limda kiritilgan xarajatlar filiallar kassa va operatsion hisobotlariga ta'sir qilmaydi, faqat umumiy tarmoq foydasidan ayiriladi.
-            </p>
-            <div className="pt-2">
-              <button
-                onClick={() => setShowForm(true)}
-                className="btn-primary inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                <Plus size={18} /> Kompaniya xarajatini kiritish
-              </button>
-            </div>
+
+            {companyExpenses.length === 0 ? (
+              <div className="p-12 text-center text-slate-500 space-y-3">
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto">
+                  <Inbox size={24} />
+                </div>
+                <p className="font-medium">Ushbu davrda kompaniya xarajatlari mavjud emas</p>
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="btn-primary inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-2"
+                >
+                  <Plus size={16} /> Kompaniya Xarajati Qo'shish
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-100/70 text-slate-600 text-xs uppercase font-semibold">
+                    <tr>
+                      <th className="py-3 px-4">Sana</th>
+                      <th className="py-3 px-4">Manba Filiali & Hisob</th>
+                      <th className="py-3 px-4">Turkum</th>
+                      <th className="py-3 px-4">Tavsif</th>
+                      <th className="py-3 px-4 text-right">Summa</th>
+                      <th className="py-3 px-4 text-center">Kiritdi</th>
+                      {isOwner && <th className="py-3 px-4 text-center">Amal</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {companyExpenses.map(e => (
+                      <tr key={e.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 px-4 font-medium text-slate-800">
+                          {format(new Date(e.expenseDate || e.createdAt), 'dd.MM.yyyy')}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            e.paymentSource === 'bank'
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                              : e.paymentSource === 'transfer'
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                              : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          }`}>
+                            {e.paymentSource === 'bank' && '🏛️ '}
+                            {e.paymentSource === 'transfer' && '💳 '}
+                            {(!e.paymentSource || e.paymentSource === 'cash') && '💵 '}
+                            {e.branch?.name || 'Filial'} — {
+                              e.paymentSource === 'bank' ? 'Hisob raqam' :
+                              e.paymentSource === 'transfer' ? 'Kartadan kartaga' : 'Naqd kassa'
+                            }
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600 font-medium">
+                          {e.category?.name || 'Boshqa'}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-500 max-w-xs truncate">
+                          {e.description || '—'}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-bold text-slate-900">
+                          {e.amount.toLocaleString()} so'm
+                        </td>
+                        <td className="py-3.5 px-4 text-center text-xs text-slate-500 font-medium">
+                          {e.admin?.name || 'Owner'}
+                        </td>
+                        {isOwner && (
+                          <td className="py-3.5 px-4 text-center">
+                            <button
+                              onClick={async () => {
+                                if (window.confirm('Haqiqatan ham ushbu kompaniya xarajatini o\'chirmoqchimisiz?')) {
+                                  try {
+                                    await api.delete(`/expenses/${e.id}`);
+                                    toast.success('Xarajat o\'chirildi');
+                                    fetchCompanyExpenses();
+                                  } catch (err) {
+                                    toast.error('O\'chirishda xatolik');
+                                  }
+                                }
+                              }}
+                              className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+                              title="O'chirish"
+                            >
+                              <X size={16} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -778,19 +858,23 @@ export default function ExpensesPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-md card">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Xarajat qo'shish</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-4">
+              {activeTab === 'company' ? '💼 Kompaniya Xarajati Qo\'shish' : '💸 Filial Xarajati Qo\'shish'}
+            </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {isOwner && (
+              {(isOwner || activeTab === 'company') && (
                 <div>
-                  <label className="block text-sm text-slate-600 mb-1">Filial</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">
+                    Mablag' yechiladigan filial <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={form.branchId}
                     onChange={(e) => setForm({ ...form, branchId: e.target.value })}
                     className="input-field"
                     required
                   >
-                    <option value="">Tanlang...</option>
+                    <option value="">Filialni tanlang...</option>
                     {branches.map(b => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
@@ -798,15 +882,38 @@ export default function ExpensesPage() {
                 </div>
               )}
 
+              {activeTab === 'company' && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">
+                    Mablag' yechiladigan hisob manbasi <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={form.paymentSource}
+                    onChange={(e) => setForm({ ...form, paymentSource: e.target.value })}
+                    className="input-field font-semibold"
+                    required
+                  >
+                    <option value="cash">💵 Naqd (Filial kassasidan)</option>
+                    <option value="bank">🏛️ Hisob raqam (QrCode va Terminal bank hisobidan)</option>
+                    <option value="transfer">💳 Kartadan kartaga (O'tkazma)</option>
+                  </select>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Tanlangan filialning aynan shu hisob qoldig'idan ayiriladi.
+                  </p>
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm text-slate-600 mb-1">Turkum</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Xarajat turkumi <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={form.categoryId}
                   onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
                   className="input-field"
                   required
                 >
-                  <option value="">Tanlang...</option>
+                  <option value="">Turkumni tanlang...</option>
                   {categories.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -814,20 +921,24 @@ export default function ExpensesPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-slate-600 mb-1">Summa (so'm)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Summa (so'm) <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={formatNumberInput(form.amount)}
                   onChange={(e) => setForm({ ...form, amount: parseNumberInput(e.target.value) })}
-                  className="input-field"
-                  placeholder="Masalan: 50 000"
+                  className="input-field font-bold text-slate-900 text-lg"
+                  placeholder="Masalan: 500 000"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-slate-600 mb-1">Sana</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Sana <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
                   value={form.expenseDate}
@@ -838,7 +949,7 @@ export default function ExpensesPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-slate-600 mb-1">Tavsif (ixtiyoriy)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Tavsif (ixtiyoriy)</label>
                 <input
                   type="text"
                   value={form.description}
@@ -868,3 +979,4 @@ export default function ExpensesPage() {
     </div>
   );
 }
+

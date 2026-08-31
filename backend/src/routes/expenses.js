@@ -8,10 +8,14 @@ const prisma = new PrismaClient();
 // GET /api/expenses
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { branchId, categoryId, startDate, endDate, month, year, search } = req.query;
+    const { branchId, categoryId, startDate, endDate, search, isCompanyExpense } = req.query;
     const where = {};
     if (req.user.companyId) {
       where.companyId = req.user.companyId;
+    }
+
+    if (isCompanyExpense !== undefined) {
+      where.isCompanyExpense = isCompanyExpense === 'true';
     }
 
     if (req.user.role === 'admin' || req.user.role === 'director') {
@@ -47,7 +51,6 @@ router.get('/', authenticate, async (req, res) => {
     const processedExpenses = allExpenses.map(e => {
       let effectiveDateObj = new Date(e.expenseDate || e.createdAt);
 
-      // If linked to a night shift within 24h, attribute to night shift start date (for breakfast/late night expenses)
       if (e.shift?.startTime && e.shift?.shiftType === 'night') {
         const shiftStart = new Date(e.shift.startTime);
         const diffHours = (effectiveDateObj.getTime() - shiftStart.getTime()) / (1000 * 60 * 60);
@@ -78,7 +81,6 @@ router.get('/', authenticate, async (req, res) => {
       expenses = processedExpenses.filter(e => e.shiftDateStr <= endDate);
     }
 
-    // Sort by effective shift date desc
     expenses.sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
 
     const total = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -105,30 +107,36 @@ router.get('/', authenticate, async (req, res) => {
 // POST /api/expenses - Xarajat qo'shish
 router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (req, res) => {
   try {
-    const { categoryId, amount, description, expenseDate, shiftId } = req.body;
+    const { categoryId, amount, description, expenseDate, shiftId, branchId, isCompanyExpense, paymentSource } = req.body;
 
     if (req.user.role === 'admin' && !shiftId) {
       return res.status(403).json({ success: false, message: 'Avval smena boshlang!' });
     }
 
+    const targetBranchId = branchId ? parseInt(branchId) : req.user.branchId;
+
     const expense = await prisma.expense.create({
       data: {
-        companyId: req.user.companyId,
-        branchId: req.user.branchId,
+        companyId: req.user.companyId || 1,
+        branchId: targetBranchId,
         adminId: req.user.id,
         shiftId: shiftId ? parseInt(shiftId) : null,
         categoryId: parseInt(categoryId),
         amount: parseFloat(amount),
         description,
+        isCompanyExpense: Boolean(isCompanyExpense),
+        paymentSource: paymentSource || 'cash', // 'cash', 'bank', 'transfer'
         expenseDate: expenseDate ? new Date(expenseDate) : new Date(),
       },
     });
 
     res.status(201).json({ success: true, data: expense, message: 'Xarajat muvaffaqiyatli qo\'shildi.' });
   } catch (error) {
+    console.error('Error in POST /api/expenses:', error);
     res.status(500).json({ success: false, message: 'Server xatosi.' });
   }
 });
+
 
 // DELETE /api/expenses/:id
 router.delete('/:id', authenticate, authorize('owner', 'superadmin'), async (req, res) => {

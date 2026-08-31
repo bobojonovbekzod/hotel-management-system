@@ -323,16 +323,18 @@ enum ShiftStatus {
 
 // Xarajatlar
 model Expense {
-  id          Int      @id @default(autoincrement())
-  companyId   Int
-  branchId    Int
-  adminId     Int
-  shiftId     Int?
-  categoryId  Int
-  amount      Float
-  description String?
-  expenseDate DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  branchId         Int
+  adminId          Int
+  shiftId          Int?
+  categoryId       Int
+  amount           Float
+  description      String?
+  paymentSource    String?  @default("cash") // 'cash', 'bank', 'transfer'
+  isCompanyExpense Boolean  @default(false)
+  expenseDate      DateTime @default(now())
+  createdAt        DateTime @default(now())
 
   company  Company         @relation(fields: [companyId], references: [id])
   branch   Branch          @relation(fields: [branchId], references: [id])

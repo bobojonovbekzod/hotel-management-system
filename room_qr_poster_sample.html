@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A4 Xona QR Kod Plakati — Family Hotel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .a4-page {
+      width: 210mm;
+      height: 297mm;
+      background: #ffffff;
+      padding: 18mm 20mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* Top & Bottom Aesthetic Borders */
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 12px;
+      background: linear-gradient(90deg, #0ea5e9 0%, #6366f1 50%, #8b5cf6 100%);
+    }
+
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: #0f172a;
+    }
+
+    /* Header Section */
+    .header {
+      text-align: center;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #0284c7;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .hotel-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 14px;
+      letter-spacing: -0.5px;
+    }
+
+    .room-tag {
+      display: inline-block;
+      margin-top: 10px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 6px 24px;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    /* Main Notice Container */
+    .notice-card {
+      background: #f8fafc;
+      border: 2px dashed #94a3b8;
+      border-radius: 24px;
+      padding: 24px 30px;
+      text-align: center;
+      width: 100%;
+      margin: 15px 0;
+    }
+
+    .notice-headline-uz {
+      font-size: 24px;
+      font-weight: 800;
+      color: #1e293b;
+      line-height: 1.35;
+    }
+
+    .notice-headline-en {
+      font-size: 16px;
+      font-weight: 600;
+      color: #64748b;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    .notice-desc {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.6;
+      margin-top: 14px;
+      font-weight: 500;
+    }
+
+    /* QR Code Section */
+    .qr-container {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .qr-box {
+      width: 220px;
+      height: 220px;
+      background: #ffffff;
+      border: 4px solid #0ea5e9;
+      border-radius: 24px;
+      padding: 12px;
+      box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .scan-instruction {
+      margin-top: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #e0f2fe;
+      padding: 8px 20px;
+      border-radius: 50px;
+      border: 1px solid #bae6fd;
+    }
+
+    /* Steps List */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .step-item {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 14px 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: white;
+      font-weight: 800;
+      font-size: 15px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px auto;
+    }
+
+    .step-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .step-sub {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 3px;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 14px;
+      width: 100%;
+    }
+
+    .thank-you {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .footer-sub {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* Print settings */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+      .a4-page {
+        box-shadow: none;
+        border-radius: 0;
+        width: 210mm;
+        height: 297mm;
+      }
+      .no-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Print Button Bar (Hidden when printing) -->
+  <div class="no-print" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+    <button onclick="window.print()" style="background: #0ea5e9; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 4px 14px rgba(14,165,233,0.4);">
+      🖨️ A4 Plakatni Chop Etish (Print)
+    </button>
+  </div>
+
+  <div class="a4-page">
+    <div class="top-bar"></div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="brand-badge">
+        <span>🏨 Family Hotel Management</span>
+      </div>
+      <h1 class="hotel-title">HURMATLI MEHMONIMIZ!</h1>
+      <div class="room-tag">XONA № 105</div>
+    </div>
+
+    <!-- Notice Card -->
+    <div class="notice-card">
+      <div class="notice-headline-uz">
+        Xonada qandaydir kamchilik yoki noqulaylik sezdingizmi?
+      </div>
+      <div class="notice-headline-en">
+        Found any inconvenience or issue in your room?
+      </div>
+      <div class="notice-desc">
+        Sizning mamnunligingiz va qulayligingiz biz uchun <strong>eng oliy maqsad!</strong><br>
+        Xonadagi tozalik, jihozlar, issiq suv yoki konditsioner bilan bog'liq har qanday noqulaylikni rasmga olib, <strong>to'g'ridan-to'g'ri Mehmonxona Rahbariyatiga (Owner)</strong> yuboring.
+      </div>
+    </div>
+
+    <!-- QR Code Box -->
+    <div class="qr-container">
+      <div class="qr-box">
+        <!-- 100% Valid Real Camera Scannable QR Code -->
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAJYAQMAAACEqAqfAAAABlBMVEX///8PFyqAptkDAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACPElEQVR4nO3cTXLiMBAGUKdYZMkROApHg6NxFI4wyyxc0RDZkts/ZKaomtgD71uqpSd2XZKNm0bkFXNM8/wKxXPT5LE2rDksrGlZLBaLxVrfOjcx79m6Tb8MxbfxRl0xZMdisVgs1lasMrEtVkxKn2VFGm+U88lisVgs1patQxkJxVs+MspisVgs1n9kdZVLU7Mbb8RisVgs1gtYIbHX3lachuldHrpfZbFYLBbrR6xZYgs893eik/44C4vFYrFYa1v3U3eJLfDBsFgsFov17626IqdrgTWX/sw3ybVccp6+Nnqru7BYLBaLtabV9CMx+wId/+bBHYvFYrFYz2cdR9eeNddQLNN342Iz9NpU71dZLBaLxVrZyunmfjT3ssvF/XSjZuk9GBaLxWKx1rDScObruPh6Sp5e++PHdwdCFovFYrE2YMWRnENZcRpVuoeA17zs8udnhiwWi8Vi/ax1nj5+iwnFFPpjzdKdKIvFYrFYz2HFkYUj4vA5lNCI0937VRaLxWKx1rPGfx1P4YjYDBvNU1b2YbFYLBZrTetODnnupb8TnXz/q/6KNP13AovFYrFY61nHNE/8puU47wsfB+vSslgsFou1vnVemB4z+6Zll+5XzN9dYbFYLBbrWazQMWs7TQ/fr7JYLBaLtS2rg05fw/VOdPIfvJCWxWKxWKyNWzn1WDc5EIaNWCwWi8XahhUSrWPeoFTq6ysxpcJisVgs1gasWeI95qkfa4u4X1iQWCwWi8V6Lkvk9fIbGlXznk2/a8MAAAAASUVORK5CYII=" alt="100% Valid QR Code">
+      </div>
+      <div class="scan-instruction">
+        📱 Telefon kamerasida skanerlang (Scan with camera)
+      </div>
+    </div>
+
+    <!-- 3 Steps -->
+    <div class="steps-grid">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-title">QR Kodni Skanerlang</div>
+        <div class="step-sub">Kamerani yaqinlashtiring</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-title">Kamchilikni Rasmga Oling</div>
+        <div class="step-sub">Va izoh yozing</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-title">Rahbariyatga Yuboring</div>
+        <div class="step-sub">Tezkor hal etiladi</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="thank-you">Biz bilan birga bo'lganingiz uchun rahmat!</div>
+      <div class="footer-sub">Thank you for staying with us! | Family Hotel Group — Rahbariyat</div>
+    </div>
+
+    <div class="bottom-bar"></div>
+  </div>
+
+</body>
+</html>
