@@ -405,14 +405,11 @@ export default function RoomsPage() {
                       </div>
                     </div>
 
-                    {/* Price & Active Guests Preview */}
+                    {/* Active Guests Preview */}
                     <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-                      <span className="font-bold text-slate-900">
-                        {Number(room.pricePerNight || 0).toLocaleString()} <span className="text-[10px] font-normal text-slate-500">so'm/tun</span>
-                      </span>
-
+                      <span className="text-[11px] text-slate-500 font-medium">Holat:</span>
                       {room.activeGuests && room.activeGuests.length > 0 ? (
-                        <span className="text-[11px] text-blue-600 font-semibold flex items-center gap-1 truncate max-w-[140px]" title={room.activeGuests.map(g => g.name).join(', ')}>
+                        <span className="text-[11px] text-blue-600 font-semibold flex items-center gap-1 truncate max-w-[160px]" title={room.activeGuests.map(g => g.name).join(', ')}>
                           <User className="w-3 h-3 shrink-0" /> {room.activeGuests[0]?.name || `${room.activeGuests.length} kishi`}
                         </span>
                       ) : (
