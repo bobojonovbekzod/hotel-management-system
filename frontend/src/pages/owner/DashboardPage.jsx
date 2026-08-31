@@ -145,8 +145,15 @@ export default function OwnerDashboard() {
       icon: Wallet,
       gradient: 'linear-gradient(135deg, #2980b9 0%, #56CCF2 100%)',
       shadow: 'rgba(41, 128, 185, 0.4)',
+    },
+    {
+      label: 'Hisob raqam (Bank)', value: (ov?.bankBalance || 0).toLocaleString(), unit: "so'm",
+      icon: Building2,
+      gradient: 'linear-gradient(135deg, #00b4db 0%, #0083b0 100%)',
+      shadow: 'rgba(0, 180, 219, 0.4)',
     }
   ];
+
 
   const totalBandDays = data?.occupancyStats?.reduce((sum, item) => sum + (item.band || 0), 0) || 0;
   const daysWithData = data?.occupancyStats?.filter(item => item.band !== null)?.length || 1;

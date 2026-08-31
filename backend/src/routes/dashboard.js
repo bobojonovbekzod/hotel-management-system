@@ -370,7 +370,32 @@ router.get('/summary', authenticate, async (req, res) => {
       loopDate.setDate(loopDate.getDate() + 1);
     }
 
-    const cashBalance = cashTotal - totalExpenses;
+    // Bank (qrcode + terminal) va Transfer xarajatlarini ayiramiz
+    const companyBankExpenses = await prisma.expense.aggregate({
+      where: {
+        ...branchFilter,
+        isCompanyExpense: true,
+        paymentSource: 'bank',
+        expenseDate: { gte: startDate, lte: endDate }
+      },
+      _sum: { amount: true }
+    });
+    const bankExpensesSum = companyBankExpenses._sum.amount || 0;
+    const bankBalance = (qrcodeTotal + terminalTotal) - bankExpensesSum;
+
+    const companyTransferExpenses = await prisma.expense.aggregate({
+      where: {
+        ...branchFilter,
+        isCompanyExpense: true,
+        paymentSource: 'transfer',
+        expenseDate: { gte: startDate, lte: endDate }
+      },
+      _sum: { amount: true }
+    });
+    const transferExpensesSum = companyTransferExpenses._sum.amount || 0;
+    const transferBalance = transferTotal - transferExpensesSum;
+
+    const cashBalance = cashTotal - (totalExpenses - bankExpensesSum - transferExpensesSum);
 
     res.json({
       success: true,
@@ -380,12 +405,15 @@ router.get('/summary', authenticate, async (req, res) => {
           totalExpenses,
           netProfit: totalIncome - totalExpenses,
           cashBalance,
+          bankBalance,
+          transferBalance,
           occupiedRooms,
           totalRooms,
           occupancyRate: totalRooms > 0 ? ((occupiedRooms / totalRooms) * 100).toFixed(1) : 0,
           todayBookings,
           todayCheckouts,
         },
+
         monthlyShifts,
         roomOccupancyByType,
         dailyIncome,
