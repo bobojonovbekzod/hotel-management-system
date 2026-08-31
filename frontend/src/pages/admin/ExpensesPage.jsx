@@ -665,7 +665,6 @@ export default function ExpensesPage() {
                       <th className="table-th">Kategoriya</th>
                       <th className="table-th">Tavsif (Izoh)</th>
                       <th className="table-th text-right">Summa</th>
-                      {isOwner && <th className="table-th text-center">Amallar</th>}
                     </tr>
                   </thead>
 
@@ -726,29 +725,6 @@ export default function ExpensesPage() {
                         <td className="table-td text-right font-bold text-rose-600 whitespace-nowrap">
                           -{expense.amount.toLocaleString()} <span className="text-xs text-slate-500 font-normal">so'm</span>
                         </td>
-
-                        {/* Amallar */}
-                        {isOwner && (
-                          <td className="table-td text-center whitespace-nowrap">
-                            <button
-                              onClick={async () => {
-                                if (window.confirm('Haqiqatan ham ushbu xarajatni o\'chirmoqchimisiz?')) {
-                                  try {
-                                    await api.delete(`/expenses/${expense.id}`);
-                                    toast.success('Xarajat o\'chirildi');
-                                    fetchExpenses();
-                                  } catch {
-                                    toast.error('O\'chirishda xatolik');
-                                  }
-                                }
-                              }}
-                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                              title="O'chirish"
-                            >
-                              <X size={15} />
-                            </button>
-                          </td>
-                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -760,9 +736,9 @@ export default function ExpensesPage() {
                       <td className="table-td text-right font-bold text-lg text-rose-600 whitespace-nowrap">
                         -{totalAmount.toLocaleString()} <span className="text-xs text-slate-500 font-normal">so'm</span>
                       </td>
-                      {isOwner && <td className="table-td"></td>}
                     </tr>
                   </tfoot>
+
 
                 </table>
               </div>
@@ -854,7 +830,6 @@ export default function ExpensesPage() {
                       <th className="py-3 px-4">Tavsif</th>
                       <th className="py-3 px-4 text-right">Summa</th>
                       <th className="py-3 px-4 text-center">Kiritdi</th>
-                      {isOwner && <th className="py-3 px-4 text-center">Amal</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -892,31 +867,11 @@ export default function ExpensesPage() {
                         <td className="py-3.5 px-4 text-center text-xs text-slate-500 font-medium">
                           {e.admin?.name || 'Owner'}
                         </td>
-                        {isOwner && (
-                          <td className="py-3.5 px-4 text-center">
-                            <button
-                              onClick={async () => {
-                                if (window.confirm('Haqiqatan ham ushbu kompaniya xarajatini o\'chirmoqchimisiz?')) {
-                                  try {
-                                    await api.delete(`/expenses/${e.id}`);
-                                    toast.success('Xarajat o\'chirildi');
-                                    fetchCompanyExpenses();
-                                  } catch (err) {
-                                    toast.error('O\'chirishda xatolik');
-                                  }
-                                }
-                              }}
-                              className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                              title="O'chirish"
-                            >
-                              <X size={15} />
-                            </button>
-                          </td>
-                        )}
-
                       </tr>
                     ))}
                   </tbody>
+
+
                 </table>
               </div>
             )}
