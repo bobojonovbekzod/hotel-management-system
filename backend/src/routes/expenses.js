@@ -138,14 +138,50 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
 });
 
 
+// PUT /api/expenses/:id - Xarajatni tahrirlash
+router.put('/:id', authenticate, authorize('owner', 'superadmin', 'admin', 'director'), async (req, res) => {
+  try {
+    const expenseId = parseInt(req.params.id);
+    const { categoryId, amount, description, expenseDate, branchId, isCompanyExpense, paymentSource } = req.body;
+
+    const existingExpense = await prisma.expense.findFirst({
+      where: { id: expenseId, companyId: req.user.companyId || 1 }
+    });
+
+    if (!existingExpense) {
+      return res.status(404).json({ success: false, message: 'Xarajat topilmadi.' });
+    }
+
+    const updateData = {};
+    if (categoryId) updateData.categoryId = parseInt(categoryId);
+    if (amount) updateData.amount = parseFloat(amount);
+    if (description !== undefined) updateData.description = description;
+    if (expenseDate) updateData.expenseDate = new Date(expenseDate);
+    if (branchId) updateData.branchId = parseInt(branchId);
+    if (isCompanyExpense !== undefined) updateData.isCompanyExpense = Boolean(isCompanyExpense);
+    if (paymentSource) updateData.paymentSource = paymentSource;
+
+    const updatedExpense = await prisma.expense.update({
+      where: { id: expenseId },
+      data: updateData
+    });
+
+    res.json({ success: true, data: updatedExpense, message: 'Xarajat muvaffaqiyatli tahrirlandi.' });
+  } catch (error) {
+    console.error('Error in PUT /api/expenses/:id:', error);
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
 // DELETE /api/expenses/:id
 router.delete('/:id', authenticate, authorize('owner', 'superadmin'), async (req, res) => {
   try {
-    await prisma.expense.delete({ where: { id: parseInt(req.params.id), companyId: req.user.companyId } });
+    await prisma.expense.delete({ where: { id: parseInt(req.params.id), companyId: req.user.companyId || 1 } });
     res.json({ success: true, message: 'Xarajat o\'chirildi.' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server xatosi.' });
   }
 });
+
 
 module.exports = router;

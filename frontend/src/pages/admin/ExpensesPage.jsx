@@ -23,8 +23,10 @@ import {
   Building,
   ShieldCheck,
   CreditCard,
-  Receipt
+  Receipt,
+  Pencil
 } from 'lucide-react';
+
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
@@ -70,7 +72,8 @@ export default function ExpensesPage() {
   // Sorting
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' or 'asc'
 
-  // Form State
+  // Form State & Editing State
+  const [editingExpense, setEditingExpense] = useState(null);
   const [form, setForm] = useState({ 
     categoryId: '', 
     branchId: '', 
@@ -80,6 +83,34 @@ export default function ExpensesPage() {
     expenseDate: todayStr
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const handleOpenAdd = () => {
+    setEditingExpense(null);
+    setForm({
+      categoryId: categories.length > 0 ? categories[0].id : '',
+      branchId: selectedBranch && selectedBranch !== 'all' ? selectedBranch : '',
+      paymentSource: 'cash',
+      amount: '',
+      description: '',
+      expenseDate: todayStr
+    });
+    setShowForm(true);
+  };
+
+  const handleOpenEdit = (expense) => {
+    setEditingExpense(expense);
+    const expDate = expense.expenseDate ? new Date(expense.expenseDate).toISOString().split('T')[0] : todayStr;
+    setForm({
+      categoryId: expense.categoryId || '',
+      branchId: expense.branchId ? String(expense.branchId) : '',
+      paymentSource: expense.paymentSource || 'cash',
+      amount: String(expense.amount || ''),
+      description: expense.description || '',
+      expenseDate: expDate
+    });
+    setShowForm(true);
+  };
+
 
   useEffect(() => {
     fetchInitialData();
@@ -204,7 +235,7 @@ export default function ExpensesPage() {
     }
     setSubmitting(true);
     try {
-      await api.post('/expenses', {
+      const payload = {
         categoryId: form.categoryId,
         amount: parsedAmount,
         description: form.description,
@@ -213,14 +244,23 @@ export default function ExpensesPage() {
         shiftId: activeShift?.id,
         isCompanyExpense: activeTab === 'company',
         paymentSource: form.paymentSource || 'cash'
-      });
-      toast.success('Xarajat muvaffaqiyatli qo\'shildi!');
+      };
+
+      if (editingExpense) {
+        await api.put(`/expenses/${editingExpense.id}`, payload);
+        toast.success('Xarajat muvaffaqiyatli tahrirlandi!');
+      } else {
+        await api.post('/expenses', payload);
+        toast.success('Xarajat muvaffaqiyatli qo\'shildi!');
+      }
+
       setForm(prev => ({ 
         ...prev, 
         amount: '', 
         description: '',
         expenseDate: todayStr 
       }));
+      setEditingExpense(null);
       setShowForm(false);
       if (canFetch) {
         fetchExpenses();
@@ -233,6 +273,7 @@ export default function ExpensesPage() {
     } finally {
       setSubmitting(false);
     }
+
   };
 
   // Sort expenses by shift effective date
@@ -624,6 +665,7 @@ export default function ExpensesPage() {
                       <th className="table-th">Kategoriya</th>
                       <th className="table-th">Tavsif (Izoh)</th>
                       <th className="table-th text-right">Summa</th>
+                      <th className="table-th text-center">Amallar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -683,6 +725,38 @@ export default function ExpensesPage() {
                         <td className="table-td text-right font-bold text-rose-600 whitespace-nowrap">
                           -{expense.amount.toLocaleString()} <span className="text-xs text-slate-500 font-normal">so'm</span>
                         </td>
+
+                        {/* Amallar */}
+                        <td className="table-td text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleOpenEdit(expense)}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Tahrirlash"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            {isOwner && (
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm('Haqiqatan ham ushbu xarajatni o\'chirmoqchimisiz?')) {
+                                    try {
+                                      await api.delete(`/expenses/${expense.id}`);
+                                      toast.success('Xarajat o\'chirildi');
+                                      fetchExpenses();
+                                    } catch {
+                                      toast.error('O\'chirishda xatolik');
+                                    }
+                                  }
+                                }}
+                                className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                title="O'chirish"
+                              >
+                                <X size={15} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -694,6 +768,7 @@ export default function ExpensesPage() {
                       <td className="table-td text-right font-bold text-lg text-rose-600 whitespace-nowrap">
                         -{totalAmount.toLocaleString()} <span className="text-xs text-slate-500 font-normal">so'm</span>
                       </td>
+                      <td className="table-td"></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -703,6 +778,7 @@ export default function ExpensesPage() {
         </div>
       )}
       </div>
+
 
       {/* 3. Company Expenses Tab View (Owner Only - Tab 2) */}
       {isOwner && (
@@ -825,23 +901,32 @@ export default function ExpensesPage() {
                         </td>
                         {isOwner && (
                           <td className="py-3.5 px-4 text-center">
-                            <button
-                              onClick={async () => {
-                                if (window.confirm('Haqiqatan ham ushbu kompaniya xarajatini o\'chirmoqchimisiz?')) {
-                                  try {
-                                    await api.delete(`/expenses/${e.id}`);
-                                    toast.success('Xarajat o\'chirildi');
-                                    fetchCompanyExpenses();
-                                  } catch (err) {
-                                    toast.error('O\'chirishda xatolik');
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => handleOpenEdit(e)}
+                                className="text-blue-600 hover:text-blue-800 p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                                title="Tahrirlash"
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm('Haqiqatan ham ushbu kompaniya xarajatini o\'chirmoqchimisiz?')) {
+                                    try {
+                                      await api.delete(`/expenses/${e.id}`);
+                                      toast.success('Xarajat o\'chirildi');
+                                      fetchCompanyExpenses();
+                                    } catch (err) {
+                                      toast.error('O\'chirishda xatolik');
+                                    }
                                   }
-                                }
-                              }}
-                              className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
-                              title="O'chirish"
-                            >
-                              <X size={16} />
-                            </button>
+                                }}
+                                className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                                title="O'chirish"
+                              >
+                                <X size={15} />
+                              </button>
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -858,10 +943,19 @@ export default function ExpensesPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-md card">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">
-              {activeTab === 'company' ? '💼 Kompaniya Xarajati Qo\'shish' : '💸 Filial Xarajati Qo\'shish'}
+            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              {editingExpense ? (
+                <>
+                  <Pencil size={20} className="text-blue-600" /> Xarajatni Tahrirlash
+                </>
+              ) : activeTab === 'company' ? (
+                <>💼 Kompaniya Xarajati Qo'shish</>
+              ) : (
+                <>💸 Filial Xarajati Qo'shish</>
+              )}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
+
               
               {(isOwner || activeTab === 'company') && (
                 <div>
