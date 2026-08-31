@@ -171,7 +171,7 @@ export default function RoomsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <BedDouble className="text-primary-500" /> Real-Vaqtdagi Xonalar Dashboardi
+            <BedDouble className="text-primary-500" /> Real-vaqtdagi xonalar dashboardi
           </h1>
           <p className="text-slate-600 text-sm mt-1">Filiallardagi xonalarning hozirgi bandlik va tozalik holati</p>
         </div>
@@ -204,7 +204,7 @@ export default function RoomsPage() {
       {!filterBranch ? (
         <div className="bg-white p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center space-y-3">
           <Building2 className="w-12 h-12 mx-auto text-slate-300" />
-          <h3 className="text-base font-extrabold text-slate-800">
+          <h3 className="text-base font-bold text-slate-800">
             🏢 Xonalarning real-vaqtdagi holatini ko'rish uchun avval filialni tanlang
           </h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
@@ -220,7 +220,7 @@ export default function RoomsPage() {
                 <BedDouble className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Jami Xonalar</p>
+                <p className="text-xs text-slate-500 font-medium">Jami xonalar</p>
                 <h3 className="text-lg font-bold text-slate-900">{totalRoomsCount} ta</h3>
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function RoomsPage() {
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs text-emerald-700 font-medium">Bo'sh Xonalar</p>
+                <p className="text-xs text-emerald-700 font-medium">Bo'sh xonalar</p>
                 <h3 className="text-lg font-bold text-emerald-700">{availableRoomsCount} ta</h3>
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function RoomsPage() {
                 <User className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs text-rose-700 font-medium">Band Xonalar</p>
+                <p className="text-xs text-rose-700 font-medium">Band xonalar</p>
                 <h3 className="text-lg font-bold text-rose-700">{occupiedRoomsCount} ta</h3>
               </div>
             </div>
@@ -434,8 +434,8 @@ export default function RoomsPage() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
             <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
-                <BedDouble className="text-primary-500" /> Yangi Xona Qo'shish
+              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                <BedDouble className="text-primary-500" /> Yangi xona qo'shish
               </h3>
               <button 
                 onClick={() => setShowAddModal(false)}

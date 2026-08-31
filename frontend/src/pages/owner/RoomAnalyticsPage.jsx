@@ -111,7 +111,7 @@ export default function RoomAnalyticsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Activity className="text-primary-500" /> Xonalar Tahlili
+            <Activity className="text-primary-500" /> Xonalar tahlili
           </h1>
           <p className="text-slate-600 text-sm mt-1 font-medium">Xonalarning oylik tushum daromadi va foydalanish statistikasi</p>
         </div>
@@ -197,7 +197,7 @@ export default function RoomAnalyticsPage() {
             <DollarSign className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium">Jami Oylik Tushum</p>
+            <p className="text-xs text-slate-500 font-medium">Jami oylik tushum</p>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5">
               {totalIncomeAll.toLocaleString()} <span className="text-xs font-medium text-slate-500">so'm</span>
             </h3>
@@ -209,7 +209,7 @@ export default function RoomAnalyticsPage() {
             <BedDouble className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium">Jami Foydalanishlar</p>
+            <p className="text-xs text-slate-500 font-medium">Jami foydalanishlar</p>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5">
               {totalBookingsAll} <span className="text-xs font-medium text-slate-500">marta</span>
             </h3>
@@ -221,7 +221,7 @@ export default function RoomAnalyticsPage() {
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-medium">Eng Ko'p Daromad Keltirgan</p>
+            <p className="text-xs text-slate-500 font-medium">Eng ko'p daromad keltirgan</p>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5">
               {topEarningRoom ? `#${topEarningRoom.roomNumber}-xona` : "Yo'q"}
               {topEarningRoom && (

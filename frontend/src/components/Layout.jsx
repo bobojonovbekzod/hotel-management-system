@@ -170,7 +170,7 @@ const ownerNavGroups = [
     items: [
       { path: '/owner/branches', icon: Building2, label: 'Filiallar' },
       { path: '/owner/rooms', icon: BedDouble, label: 'Xonalar' },
-      { path: '/owner/room-analytics', icon: Activity, label: 'Xonalar Tahlili' },
+      { path: '/owner/room-analytics', icon: Activity, label: 'Xonalar tahlili' },
       { path: '/owner/attendance', icon: CalendarClock, label: 'Davomat' },
       { path: '/owner/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
       { path: '/owner/shift-issues', icon: ShieldAlert, label: 'Smena Muammolari' },
