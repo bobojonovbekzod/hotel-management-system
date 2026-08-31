@@ -3,15 +3,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { 
-  CheckSquare, Plus, Clock, CheckCircle2, Circle, Search, Filter, 
-  Trash2, X, Users, AlertCircle
+  CheckSquare, Plus, Clock, CheckCircle2, Circle, Filter, 
+  Trash2, X
 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function TasksPage() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [branches, setBranches] = useState([]);
   const [allUsers, setAllUsers] = useState([]);

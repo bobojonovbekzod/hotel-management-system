@@ -3,7 +3,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { 
   Activity, Search, Clock, Table, BarChart3, 
-  TrendingUp, DollarSign, BedDouble, Calendar
+  TrendingUp, DollarSign, BedDouble
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { uz } from 'date-fns/locale';

@@ -1,38 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Building2, 
   BedDouble, 
   Search, 
-  Filter, 
   RefreshCw, 
   User, 
-  Phone, 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Sparkles, 
-  Plus, 
   PhoneCall, 
   PhoneOff, 
   Grid, 
-  ChevronDown, 
-  MapPin, 
-  DollarSign, 
-  Layers, 
-  Flame, 
-  X, 
-  Check, 
-  Info,
-  SlidersHorizontal,
-  Home,
   Headset
 } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { io } from 'socket.io-client';
 import { UserAgent, Registerer, Inviter, SessionState } from 'sip.js';
-import { SIP_AUDIO_CONSTRAINTS, SIP_SDH_OPTIONS } from '../../lib/sipAudioConfig';
+import { SIP_SDH_OPTIONS } from '../../lib/sipAudioConfig';
 
 export default function OperatorRoomsPage() {
   const [branches, setBranches] = useState([]);

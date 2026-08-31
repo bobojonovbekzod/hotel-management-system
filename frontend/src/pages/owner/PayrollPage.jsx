@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Download, Printer, Filter, Calendar, Wallet, CheckCircle, Search, TrendingUp, TrendingDown, DollarSign, X, Trash2 } from 'lucide-react';
+import { Download, Printer, Filter, Wallet, CheckCircle, Search, TrendingUp, TrendingDown, DollarSign, X, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 

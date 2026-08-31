@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Building2, Plus, Edit2, ShieldCheck, X, Activity, CalendarDays } from 'lucide-react';
+import { Plus, Edit2, ShieldCheck, X, Activity, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function CompaniesPage() {

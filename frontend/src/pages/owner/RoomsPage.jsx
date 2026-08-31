@@ -3,8 +3,8 @@ import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { 
-  BedDouble, Building2, Search, Filter, RefreshCw, 
-  User, CheckCircle2, AlertCircle, Sparkles, Clock, Layers
+  BedDouble, Building2, Search, 
+  User, CheckCircle2, Sparkles
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
@@ -27,7 +27,7 @@ export default function RoomsPage() {
       if (res.data?.data) {
         setBranches(res.data.data);
       }
-    } catch (error) {
+    } catch {
       toast.error('Filiallarni yuklashda xatolik');
     }
   };
@@ -61,7 +61,7 @@ export default function RoomsPage() {
       if (res.data?.success) {
         setRooms(res.data.data || []);
       }
-    } catch (error) {
+    } catch {
       toast.error('Xonalarni yuklashda xatolik');
     } finally {
       setLoading(false);
@@ -71,9 +71,6 @@ export default function RoomsPage() {
   // Filter rooms
   const filteredRooms = rooms.filter(room => {
     const matchSearch = room.roomNumber.toString().includes(searchQuery.trim());
-    
-    const total = room.totalBeds || room.capacity || 1;
-    const occupied = room.occupiedBeds || 0;
     const computedStatus = room.computedStatus || room.status;
 
     let matchStatus = true;
@@ -90,7 +87,6 @@ export default function RoomsPage() {
     return matchSearch && matchStatus;
   });
 
-  // Calculate statistics
   const totalRoomsCount = rooms.length;
   let availableRoomsCount = 0;
   let occupiedRoomsCount = 0;
@@ -102,8 +98,6 @@ export default function RoomsPage() {
     else if (st === 'occupied' || st === 'partial') occupiedRoomsCount++;
     if (r.status === 'cleaning') cleaningRoomsCount++;
   });
-
-  const selectedBranchObj = branches.find(b => b.id.toString() === filterBranch.toString());
 
   // Create Room Modal States
   const [showAddModal, setShowAddModal] = useState(false);

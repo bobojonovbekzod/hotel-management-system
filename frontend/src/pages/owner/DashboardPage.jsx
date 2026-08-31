@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { DollarSign, TrendingUp, Bed, LogOut, CheckCircle, Clock, Building2, ClipboardList, Wallet, Smartphone, CreditCard, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { DollarSign, TrendingUp, LogOut, CheckCircle, Clock, Building2, ClipboardList, Wallet, Smartphone, CreditCard, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import ActiveIssuesBar from '../../components/admin/ActiveIssuesBar';
 
 export default function OwnerDashboard() {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, User, Printer, ScanFace, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, TrendingUp, TrendingDown, Clock, CreditCard, X, Trash2, Headset } from 'lucide-react';
+import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, User, Printer, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, Trash2, Headset } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
 import FullScreenLoader from '../../components/common/FullScreenLoader';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
@@ -38,8 +38,6 @@ export default function StaffPage() {
 
   const [showFaceModal, setShowFaceModal] = useState(false);
   const [faceUser, setFaceUser] = useState(null);
-  const [devices, setDevices] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState('');
   const [faceImageBase64, setFaceImageBase64] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
   const [uploadingFace, setUploadingFace] = useState(false);

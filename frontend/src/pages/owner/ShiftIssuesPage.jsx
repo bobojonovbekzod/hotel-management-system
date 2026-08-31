@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { ShieldAlert, CheckCircle2, AlertTriangle, User, Calendar, Building2, UserCheck } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, AlertTriangle, Calendar, Building2, UserCheck } from 'lucide-react';
 import FullScreenLoader from '../../components/common/FullScreenLoader';
 
 export default function ShiftIssuesPage() {

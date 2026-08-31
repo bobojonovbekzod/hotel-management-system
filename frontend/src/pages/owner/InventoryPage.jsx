@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Package, Plus, History, Archive, AlertTriangle, Building2, Search, ArrowDownLeft, ArrowUpRight, CheckCircle2, Info } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Package, Plus, History, Archive, AlertTriangle, Building2, ArrowDownLeft, ArrowUpRight, CheckCircle2, Info } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { uz } from 'date-fns/locale';
-import { useAuth } from '../../contexts/AuthContext';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
 export default function InventoryPage() {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('stock'); // stock, incoming, history
   
   const [categories, setCategories] = useState([]);
