@@ -105,6 +105,66 @@ export default function RoomsPage() {
 
   const selectedBranchObj = branches.find(b => b.id.toString() === filterBranch.toString());
 
+  // Create Room Modal States
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newRoomForm, setNewRoomForm] = useState({
+    branchId: '',
+    roomNumber: '',
+    roomType: 'Standard',
+    floor: '1',
+    capacity: '2',
+    pricePerNight: '300000',
+    description: ''
+  });
+  const [submittingRoom, setSubmittingRoom] = useState(false);
+
+  const openAddModal = () => {
+    setNewRoomForm({
+      branchId: filterBranch || (branches[0]?.id?.toString() || ''),
+      roomNumber: '',
+      roomType: 'Standard',
+      floor: '1',
+      capacity: '2',
+      pricePerNight: '300000',
+      description: ''
+    });
+    setShowAddModal(true);
+  };
+
+  const handleCreateRoom = async (e) => {
+    e.preventDefault();
+    if (!newRoomForm.branchId || !newRoomForm.roomNumber || !newRoomForm.pricePerNight) {
+      return toast.error("Barcha majburiy maydonlarni to'ldiring");
+    }
+
+    setSubmittingRoom(true);
+    try {
+      const res = await api.post('/rooms', {
+        branchId: parseInt(newRoomForm.branchId),
+        roomNumber: newRoomForm.roomNumber.trim(),
+        roomType: newRoomForm.roomType,
+        floor: parseInt(newRoomForm.floor) || 1,
+        capacity: parseInt(newRoomForm.capacity) || 1,
+        pricePerNight: parseFloat(newRoomForm.pricePerNight) || 0,
+        description: newRoomForm.description || ''
+      });
+
+      if (res.data?.success) {
+        toast.success(`Xona #${newRoomForm.roomNumber} muvaffaqiyatli qo'shildi! 🎉`);
+        setShowAddModal(false);
+        if (filterBranch === newRoomForm.branchId.toString()) {
+          fetchRooms();
+        } else {
+          setFilterBranch(newRoomForm.branchId.toString());
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Xona qo'shishda xatolik");
+    } finally {
+      setSubmittingRoom(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-10">
       {/* Header */}
@@ -116,10 +176,10 @@ export default function RoomsPage() {
           <p className="text-slate-600 text-sm mt-1">Filiallardagi xonalarning hozirgi bandlik va tozalik holati</p>
         </div>
 
-        {/* Branch Selector */}
-        <div className="w-full sm:w-64 shrink-0">
+        {/* Branch Selector & Add Room Button */}
+        <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
           <select
-            className="input-field text-sm font-bold bg-white shadow-xs border-primary-300"
+            className="input-field text-sm font-bold bg-white shadow-xs border-primary-300 min-w-[200px]"
             value={filterBranch}
             onChange={e => setFilterBranch(e.target.value)}
           >
@@ -128,6 +188,15 @@ export default function RoomsPage() {
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
+
+          {user?.role === 'owner' && (
+            <button
+              onClick={openAddModal}
+              className="btn-primary flex items-center gap-2 whitespace-nowrap py-2.5 px-4 font-bold shadow-md cursor-pointer"
+            >
+              <span>+ Yangi xona</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -358,6 +427,138 @@ export default function RoomsPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* ADD ROOM MODAL */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <BedDouble className="text-primary-500" /> Yangi Xona Qo'shish
+              </h3>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="w-8 h-8 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateRoom} className="p-6 space-y-4">
+              <div>
+                <label className="label">Filial *</label>
+                <select
+                  className="input-field font-semibold"
+                  value={newRoomForm.branchId}
+                  onChange={e => setNewRoomForm({ ...newRoomForm, branchId: e.target.value })}
+                  required
+                >
+                  <option value="" disabled>Filial tanlang...</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Xona raqami *</label>
+                  <input
+                    type="text"
+                    placeholder="Masalan: 105"
+                    className="input-field font-bold"
+                    value={newRoomForm.roomNumber}
+                    onChange={e => setNewRoomForm({ ...newRoomForm, roomNumber: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="label">Xona tipi *</label>
+                  <select
+                    className="input-field"
+                    value={newRoomForm.roomType}
+                    onChange={e => setNewRoomForm({ ...newRoomForm, roomType: e.target.value })}
+                  >
+                    <option value="Standard">Standard</option>
+                    <option value="Lux">Lux</option>
+                    <option value="VIP">VIP</option>
+                    <option value="Family">Family</option>
+                    <option value="Deluxe">Deluxe</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Qavat *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="input-field"
+                    value={newRoomForm.floor}
+                    onChange={e => setNewRoomForm({ ...newRoomForm, floor: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="label">Kravatlar (Sig'im) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="input-field"
+                    value={newRoomForm.capacity}
+                    onChange={e => setNewRoomForm({ ...newRoomForm, capacity: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Bir kunlik narxi (so'm) *</label>
+                <input
+                  type="number"
+                  step="1000"
+                  placeholder="300000"
+                  className="input-field font-mono font-bold"
+                  value={newRoomForm.pricePerNight}
+                  onChange={e => setNewRoomForm({ ...newRoomForm, pricePerNight: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label">Tavsif (ixtiyoriy)</label>
+                <textarea
+                  placeholder="Masalan: Balkonli, konditsioner bor..."
+                  className="input-field min-h-[60px]"
+                  value={newRoomForm.description}
+                  onChange={e => setNewRoomForm({ ...newRoomForm, description: e.target.value })}
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="btn bg-slate-100 text-slate-700 hover:bg-slate-200"
+                >
+                  Bekor qilish
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={submittingRoom}
+                  className="btn-primary flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {submittingRoom ? "Saqlanmoqda..." : "Saqlash va qo'shish"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
