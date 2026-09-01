@@ -428,6 +428,16 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
   const [txType, setTxType] = useState('penalty');
   const [txAmount, setTxAmount] = useState('');
   const [txDesc, setTxDesc] = useState('');
+  const [txDate, setTxDate] = useState(() => {
+    if (month) {
+      const todayStr = new Date().toISOString().slice(0, 7);
+      if (month === todayStr) {
+        return new Date().toISOString().slice(0, 10);
+      }
+      return `${month}-28`;
+    }
+    return new Date().toISOString().slice(0, 10);
+  });
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState([]);
 
@@ -459,7 +469,8 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
         type: txType,
         amount: parsedAmount,
         description: txDesc,
-        month
+        month,
+        date: txDate
       });
 
       toast.success('Saqlandi');
@@ -469,6 +480,7 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
       setSubmitting(false);
     }
   };
+
 
   const handleDelete = async (id) => {
     if (!window.confirm('Ushbu amaliyotni o\'chirishni xohlaysizmi?')) return;
@@ -559,10 +571,24 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
               </div>
             </div>
 
-            <div>
-              <label className="label">Summa (so'm)</label>
-              <input type="text" inputMode="decimal" className="input-field text-lg font-bold text-slate-900 bg-slate-100" placeholder="Masalan: 100 000" value={formatNumberInput(txAmount)} onChange={e => setTxAmount(parseNumberInput(e.target.value))} required />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="label">Summa (so'm)</label>
+                <input type="text" inputMode="decimal" className="input-field text-lg font-bold text-slate-900 bg-slate-100" placeholder="Masalan: 100 000" value={formatNumberInput(txAmount)} onChange={e => setTxAmount(parseNumberInput(e.target.value))} required />
+              </div>
+
+              <div>
+                <label className="label">Operatsiya sanasi</label>
+                <input
+                  type="date"
+                  className="input-field font-semibold text-slate-900 cursor-pointer"
+                  value={txDate}
+                  onChange={e => setTxDate(e.target.value)}
+                  required
+                />
+              </div>
             </div>
+
 
             <div>
               <label className="label">Izoh (ixtiyoriy)</label>
