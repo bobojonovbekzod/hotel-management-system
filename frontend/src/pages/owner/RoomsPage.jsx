@@ -119,7 +119,7 @@ export default function RoomsPage() {
       roomType: 'Standard',
       floor: '1',
       capacity: '2',
-      pricePerNight: '300000',
+      pricePerNight: '',
       description: ''
     });
     setShowAddModal(true);
@@ -127,9 +127,10 @@ export default function RoomsPage() {
 
   const handleCreateRoom = async (e) => {
     e.preventDefault();
-    if (!newRoomForm.branchId || !newRoomForm.roomNumber || !newRoomForm.pricePerNight) {
+    if (!newRoomForm.branchId || !newRoomForm.roomNumber) {
       return toast.error("Barcha majburiy maydonlarni to'ldiring");
     }
+
 
     setSubmittingRoom(true);
     try {
@@ -508,17 +509,17 @@ export default function RoomsPage() {
               </div>
 
               <div>
-                <label className="label">Bir kunlik narxi (so'm) *</label>
+                <label className="label">Bir kunlik narxi (so'm) — ixtiyoriy</label>
                 <input
                   type="number"
                   step="1000"
-                  placeholder="300000"
+                  placeholder="Masalan: 300000"
                   className="input-field font-mono font-bold"
                   value={newRoomForm.pricePerNight}
                   onChange={e => setNewRoomForm({ ...newRoomForm, pricePerNight: e.target.value })}
-                  required
                 />
               </div>
+
 
               <div>
                 <label className="label">Tavsif (ixtiyoriy)</label>

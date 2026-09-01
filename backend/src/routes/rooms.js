@@ -108,7 +108,16 @@ router.post('/', authenticate, authorize('owner'), async (req, res) => {
     const targetBranchId = req.user.role === 'director' ? req.user.branchId : parseInt(branchId);
 
     const room = await prisma.room.create({
-      data: { companyId: req.user.companyId, branchId: targetBranchId, roomNumber, roomType, floor: parseInt(floor), capacity: parseInt(capacity), pricePerNight: parseFloat(pricePerNight), description },
+      data: {
+        companyId: req.user.companyId,
+        branchId: targetBranchId,
+        roomNumber,
+        roomType,
+        floor: parseInt(floor) || 1,
+        capacity: parseInt(capacity) || 1,
+        pricePerNight: pricePerNight ? (parseFloat(pricePerNight) || 0) : 0,
+        description: description || ''
+      },
     });
 
     res.status(201).json({ success: true, data: room, message: 'Xona muvaffaqiyatli qo\'shildi.' });
@@ -159,12 +168,20 @@ router.put('/:id', authenticate, authorize('owner'), async (req, res) => {
     const { roomNumber, roomType, floor, capacity, pricePerNight, description } = req.body;
     const room = await prisma.room.update({
       where: { id: parseInt(req.params.id), companyId: req.user.companyId },
-      data: { roomNumber, roomType, floor: parseInt(floor), capacity: parseInt(capacity), pricePerNight: parseFloat(pricePerNight), description },
+      data: {
+        roomNumber,
+        roomType,
+        floor: parseInt(floor) || 1,
+        capacity: parseInt(capacity) || 1,
+        pricePerNight: pricePerNight ? (parseFloat(pricePerNight) || 0) : 0,
+        description: description || ''
+      },
     });
     res.json({ success: true, data: room });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server xatosi.' });
   }
 });
+
 
 module.exports = router;
