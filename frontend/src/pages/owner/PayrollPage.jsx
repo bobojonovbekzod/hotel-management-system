@@ -526,7 +526,7 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
                   <span>Avans (- )</span>
                 </button>
 
-                {currentUser?.role === 'owner' && (
+                {['owner', 'director'].includes(currentUser?.role) && (
                   <>
                     <button
                       type="button"

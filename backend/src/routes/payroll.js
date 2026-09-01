@@ -349,16 +349,14 @@ router.post('/', authenticate, async (req, res) => {
 
     // DIRECTOR PERMISSION CHECK
     if (req.user.role === 'director') {
-      if (type !== 'penalty' && type !== 'advance') {
-        return res.status(403).json({ success: false, message: 'Siz faqatgina xodimlarga jarima va avans yoza olasiz xolos. Oylik to\'lash yoki bonus berishga ruxsatingiz yo\'q.' });
-      }
-      if (user.role !== 'admin' && user.role !== 'cleaner') {
-        return res.status(403).json({ success: false, message: 'Siz faqat Admin va Tozalik xodimlariga jarima yoki avans yoza olasiz.' });
+      if (['owner', 'director'].includes(user.role)) {
+        return res.status(403).json({ success: false, message: 'Siz faqat o\'zingizga biriktirilgan xodimlarga moliyaviy operatsiya bajara olasiz.' });
       }
       if (user.branchId !== req.user.branchId) {
-        return res.status(403).json({ success: false, message: 'Siz faqat o\'z filialingizdagi xodimlarga jarima yoki avans yoza olasiz.' });
+        return res.status(403).json({ success: false, message: 'Siz faqat o\'z filialingizdagi xodimlarga operatsiya bajara olasiz.' });
       }
     }
+
 
     const tx = await prisma.payrollTransaction.create({
       data: {
