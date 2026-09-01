@@ -11,9 +11,11 @@ import { format } from 'date-fns';
 export default function TasksPage() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [branches, setBranches] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+
   
   // Filters
   const [filterBranch, setFilterBranch] = useState(user?.role !== 'owner' ? user?.branchId || '' : '');
