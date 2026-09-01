@@ -458,8 +458,10 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
         userId: user.id,
         type: txType,
         amount: parsedAmount,
-        description: txDesc
+        description: txDesc,
+        month
       });
+
       toast.success('Saqlandi');
       onClose(true); // close and refresh
     } catch (err) {

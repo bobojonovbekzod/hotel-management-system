@@ -340,7 +340,7 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Faqat rahbarlar moliyaviy operatsiya qila oladi.' });
     }
 
-    const { userId, type, amount, description } = req.body; // type: 'advance', 'penalty', 'bonus', 'salary_payment'
+    const { userId, type, amount, description, month, date } = req.body; // type: 'advance', 'penalty', 'bonus', 'salary_payment'
 
     const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
     if (!user || user.companyId !== req.user.companyId) {
@@ -357,6 +357,13 @@ router.post('/', authenticate, async (req, res) => {
       }
     }
 
+    let effectiveDate = new Date();
+    if (date) {
+      effectiveDate = new Date(date);
+    } else if (month && typeof month === 'string' && month.includes('-')) {
+      const [y, m] = month.split('-').map(Number);
+      effectiveDate = new Date(y, m - 1, 28, 12, 0, 0);
+    }
 
     const tx = await prisma.payrollTransaction.create({
       data: {
@@ -366,11 +373,12 @@ router.post('/', authenticate, async (req, res) => {
         adminId: req.user.id,
         type,
         amount: parseFloat(amount),
-        description
+        description,
+        date: effectiveDate
       }
     });
 
-    // Agar bu oylik to'lovi (salary_payment) bo'lsa, xarajat (Expense) sifatida ham yozib qo'yamiz
+    // Agar bu oylik to'lovi (salary_payment) yoki avans bo'lsa, xarajat (Expense) sifatida ham yozib qo'yamiz
     if (type === 'salary_payment' || type === 'advance') {
       let category = await prisma.expenseCategory.findFirst({
         where: { companyId: user.companyId, name: 'Xodimlar maoshi' }
@@ -392,10 +400,12 @@ router.post('/', authenticate, async (req, res) => {
           adminId: req.user.id,
           categoryId: category.id,
           amount: parseFloat(amount),
-          description: `${type === 'advance' ? 'Avans' : 'Oylik to\'lovi'} - ${user.name} ${description ? `(${description})` : ''}`
+          description: `${type === 'advance' ? 'Avans' : 'Oylik to\'lovi'} - ${user.name} ${description ? `(${description})` : ''}`,
+          expenseDate: effectiveDate
         }
       });
     }
+
 
     res.json({ success: true, data: tx, message: 'Operatsiya muvaffaqiyatli saqlandi' });
   } catch (error) {
