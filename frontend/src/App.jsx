@@ -178,6 +178,11 @@ function AppRoutes() {
           <CleaningTasksPage />
         </ProtectedRoute>
       } />
+      <Route path="/admin/attendance" element={
+        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'supervisor']}>
+          <AttendancePage />
+        </ProtectedRoute>
+      } />
       <Route path="/admin/integrations" element={
         <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'operator']}>
           <IntegrationsPage />

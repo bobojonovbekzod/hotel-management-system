@@ -432,10 +432,10 @@ router.post('/web-photo', authenticate, express.json({ limit: '10mb' }), async (
 });
 
 // GET /api/attendance/monthly-matrix - Faqat Tozalik xodimlari uchun oylik tabel matritsasi
-router.get('/monthly-matrix', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+router.get('/monthly-matrix', authenticate, authorize('owner', 'director', 'supervisor', 'admin'), async (req, res) => {
   try {
     const { branchId, month } = req.query; // month format: YYYY-MM e.g. 2026-09
-    const targetBranchId = branchId ? parseInt(branchId) : (req.user.role === 'director' ? req.user.branchId : null);
+    const targetBranchId = branchId ? parseInt(branchId) : (['director', 'admin'].includes(req.user.role) ? req.user.branchId : null);
 
     const now = new Date();
     const targetMonth = month ? month : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -549,7 +549,7 @@ router.get('/monthly-matrix', authenticate, authorize('owner', 'director', 'supe
 });
 
 // POST /api/attendance/set-monthly-salary - Muayyan oy uchun xodimning stavka narxini saqlash
-router.post('/set-monthly-salary', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+router.post('/set-monthly-salary', authenticate, authorize('owner', 'director', 'supervisor', 'admin'), async (req, res) => {
   try {
     const { userId, month, salary, salaryType } = req.body;
     const targetUserId = parseInt(userId);
@@ -600,7 +600,7 @@ router.post('/set-monthly-salary', authenticate, authorize('owner', 'director', 
 
 
 // POST /api/attendance/toggle-cell - Tabel katakchasini o'zgartirish (Keldi / Kelmadi)
-router.post('/toggle-cell', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+router.post('/toggle-cell', authenticate, authorize('owner', 'director', 'supervisor', 'admin'), async (req, res) => {
   try {
     const { userId, dateStr, isPresent } = req.body;
     const targetUserId = parseInt(userId);
@@ -647,4 +647,3 @@ router.post('/toggle-cell', authenticate, authorize('owner', 'director', 'superv
 });
 
 module.exports = router;
-

@@ -57,7 +57,7 @@ const adminNav = [
   { path: '/admin/bookings', icon: ClipboardList, label: 'Mijozlar' },
   { path: '/admin/shifts', icon: Clock, label: 'Smenalar' },
   { path: '/admin/expenses', icon: Wallet, label: 'Xarajatlar' },
-  { path: '/admin/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
+  { path: '/admin/attendance', icon: CalendarClock, label: 'Davomat (Tabel)' },
   { path: '/admin/salary', icon: UserCheck, label: 'Mening Oyligim' },
   { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
 ];
