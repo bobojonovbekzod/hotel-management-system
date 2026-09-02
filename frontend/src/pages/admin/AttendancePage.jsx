@@ -166,18 +166,22 @@ export default function AttendancePage() {
             >
               <TableProperties size={16} /> Farroshlar Tabeli
             </button>
-            <button
-              onClick={() => setActiveTab('attendance')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'attendance' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Kunlik Rasm/Vaqt
-            </button>
-            <button
-              onClick={() => setActiveTab('shifts')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'shifts' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Admin Smenalari
-            </button>
+            {user?.role !== 'admin' && (
+              <>
+                <button
+                  onClick={() => setActiveTab('attendance')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'attendance' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Kunlik Rasm/Vaqt
+                </button>
+                <button
+                  onClick={() => setActiveTab('shifts')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'shifts' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Admin Smenalari
+                </button>
+              </>
+            )}
           </div>
 
           {(user?.role === 'owner' || user?.role === 'supervisor') && (
