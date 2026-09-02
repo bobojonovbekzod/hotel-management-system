@@ -493,6 +493,31 @@ router.get('/monthly-matrix', authenticate, authorize('owner', 'director', 'supe
       }
     });
 
+    // Query month-specific salary history records for targetMonth
+    const salaryHistories = await prisma.userSalaryHistory.findMany({
+      where: {
+        userId: { in: cleanerIds },
+        month: targetMonth
+      }
+    });
+
+    const monthSalaryMap = {};
+    salaryHistories.forEach(sh => {
+      monthSalaryMap[sh.userId] = { salary: sh.salary, salaryType: sh.salaryType };
+    });
+
+    // Process cleaners with month-specific rates if present
+    const processedCleaners = cleaners.map(c => {
+      if (monthSalaryMap[c.id]) {
+        return {
+          ...c,
+          salary: monthSalaryMap[c.id].salary,
+          salaryType: monthSalaryMap[c.id].salaryType
+        };
+      }
+      return c;
+    });
+
     // Build attendance matrix map: { userId: { 'YYYY-MM-DD': true } }
     const matrix = {};
     cleaners.forEach(c => {
@@ -513,7 +538,7 @@ router.get('/monthly-matrix', authenticate, authorize('owner', 'director', 'supe
       data: {
         month: targetMonth,
         days,
-        cleaners,
+        cleaners: processedCleaners,
         matrix
       }
     });
@@ -522,6 +547,57 @@ router.get('/monthly-matrix', authenticate, authorize('owner', 'director', 'supe
     res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 });
+
+// POST /api/attendance/set-monthly-salary - Muayyan oy uchun xodimning stavka narxini saqlash
+router.post('/set-monthly-salary', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+  try {
+    const { userId, month, salary, salaryType } = req.body;
+    const targetUserId = parseInt(userId);
+
+    const user = await prisma.user.findUnique({
+      where: { id: targetUserId }
+    });
+
+    if (!user || user.companyId !== req.user.companyId) {
+      return res.status(404).json({ success: false, message: 'Xodim topilmadi.' });
+    }
+
+    const targetSalary = parseFloat(salary);
+    const targetSalaryType = salaryType || 'per_shift';
+
+    // Upsert UserSalaryHistory for (userId, month)
+    await prisma.userSalaryHistory.upsert({
+      where: {
+        userId_month: {
+          userId: targetUserId,
+          month
+        }
+      },
+      update: {
+        salary: targetSalary,
+        salaryType: targetSalaryType
+      },
+      create: {
+        userId: targetUserId,
+        month,
+        salary: targetSalary,
+        salaryType: targetSalaryType
+      }
+    });
+
+    // Also update default user.salary
+    await prisma.user.update({
+      where: { id: targetUserId },
+      data: { salary: targetSalary, salaryType: targetSalaryType }
+    });
+
+    res.json({ success: true, message: `${month} oyi uchun kunlik stavka saqlandi.` });
+  } catch (error) {
+    console.error('Error in POST /api/attendance/set-monthly-salary:', error);
+    res.status(500).json({ success: false, message: 'Server xatosi' });
+  }
+});
+
 
 // POST /api/attendance/toggle-cell - Tabel katakchasini o'zgartirish (Keldi / Kelmadi)
 router.post('/toggle-cell', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {

@@ -46,6 +46,21 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
 
     const userIds = allUsers.map(u => u.id);
 
+    const targetMonthStr = month ? month : `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+
+    // Fetch month-specific salary history records for targetMonth
+    const salaryHistories = await prisma.userSalaryHistory.findMany({
+      where: {
+        userId: { in: userIds },
+        month: targetMonthStr
+      }
+    });
+
+    const monthSalaryMap = {};
+    salaryHistories.forEach(sh => {
+      monthSalaryMap[sh.userId] = { salary: sh.salary, salaryType: sh.salaryType };
+    });
+
     // 1. Smenalarni (shifts) guruhlab tortish
     const shiftsStats = await prisma.shift.groupBy({
       by: ['adminId', 'shiftType'],
@@ -146,15 +161,18 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
       let shiftEarnings = 0;
       let kpiEarnings = 0;
 
-      if (user.salaryType === 'per_shift') {
+      const effectiveSalary = monthSalaryMap[user.id]?.salary !== undefined ? monthSalaryMap[user.id].salary : (user.salary || 0);
+      const effectiveSalaryType = monthSalaryMap[user.id]?.salaryType || user.salaryType;
+
+      if (effectiveSalaryType === 'per_shift') {
         if (['admin', 'owner', 'supervisor', 'director'].includes(user.role)) {
-          shiftEarnings = (dayShifts + nightShifts) * (user.salary || 0);
+          shiftEarnings = (dayShifts + nightShifts) * effectiveSalary;
         } else {
-          shiftEarnings = attendances * (user.salary || 0);
+          shiftEarnings = attendances * effectiveSalary;
         }
-      } else if (user.salaryType === 'per_room') {
+      } else if (effectiveSalaryType === 'per_room') {
         const cleanedRoomsCount = cleaningMap[user.id] || 0;
-        shiftEarnings = cleanedRoomsCount * (user.salary || 0);
+        shiftEarnings = cleanedRoomsCount * effectiveSalary;
       }
 
       let effectiveKpiPercentage = user.kpiPercentage || 0;
@@ -193,7 +211,7 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
         kpiEarnings = totalShiftIncome * (effectiveKpiPercentage / 100);
       }
 
-      const baseSalary = appliedFixedSalary !== null ? appliedFixedSalary : (user.salaryType === 'static' ? (user.salary || 0) : shiftEarnings);
+      const baseSalary = appliedFixedSalary !== null ? appliedFixedSalary : (effectiveSalaryType === 'static' ? effectiveSalary : shiftEarnings);
 
       const userTx = txMap[user.id] || { advance: 0, penalty: 0, bonus: 0, salary_payment: 0 };
       const totalAdvances = userTx.advance;

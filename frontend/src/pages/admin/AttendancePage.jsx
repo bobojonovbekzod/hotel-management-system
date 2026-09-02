@@ -106,7 +106,7 @@ export default function AttendancePage() {
 
   const handleEditDailySalary = async (cleaner) => {
     const inputVal = window.prompt(
-      `${cleaner.name} uchun kunlik smena narxini kiriting (masalan: 200000 yoki 250000):`,
+      `${cleaner.name} ning ${matrixMonth} oyi uchun kunlik smena narxini kiriting (masalan: 200000 yoki 250000):`,
       cleaner.salary || ''
     );
     if (inputVal === null) return;
@@ -117,11 +117,13 @@ export default function AttendancePage() {
     }
 
     try {
-      await api.put(`/users/${cleaner.id}`, {
+      await api.post('/attendance/set-monthly-salary', {
+        userId: cleaner.id,
+        month: matrixMonth,
         salary: newSalary,
         salaryType: 'per_shift'
       });
-      toast.success(`${cleaner.name} ning kunlik stavkasi ${newSalary.toLocaleString('ru-RU')} so'm qilib yangilandi.`);
+      toast.success(`${cleaner.name} ning ${matrixMonth} oyi uchun kunlik stavkasi ${newSalary.toLocaleString('ru-RU')} so'm qilib yangilandi.`);
       fetchMatrix();
     } catch (error) {
       toast.error("Stavkani saqlashda xatolik yuz berdi");
