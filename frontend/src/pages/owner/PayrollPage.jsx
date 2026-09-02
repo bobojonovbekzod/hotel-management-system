@@ -122,7 +122,7 @@ export default function PayrollPage() {
     <div className="p-4 sm:p-8 space-y-6">
 
       {/* Print View Only */}
-      <div className="hidden print:block print-area p-8 text-black bg-white min-h-screen font-serif">
+      <div className="hidden print:block print-area p-8 text-black bg-white min-h-screen font-sans">
         <h1 className="text-2xl font-bold mb-1 uppercase text-center text-[#2f5597] tracking-wide">
           FAMILY HOTELS ({branchName})
         </h1>
@@ -158,10 +158,10 @@ export default function PayrollPage() {
                 <td className="border border-black p-2 text-center font-medium">{idx + 1}</td>
                 <td className="border border-black p-2 font-semibold text-center">{item.user.name}</td>
                 <td className="border border-black p-2 text-center capitalize font-medium">{item.user.role}</td>
-                <td className="border border-black p-2 text-right tabular-nums pr-4 font-semibold">{item.stats.totalAdvances ? item.stats.totalAdvances.toLocaleString() : ''}</td>
+                <td className="border border-black p-2 text-right font-medium pr-4">{item.stats.totalAdvances ? item.stats.totalAdvances.toLocaleString('ru-RU') : ''}</td>
                 <td className="border border-black p-2 text-center"></td>
                 <td className="border border-black p-2"></td>
-                <td className="border border-black p-2 text-right tabular-nums pr-4 font-semibold text-sm">{item.stats.totalPayable ? item.stats.totalPayable.toLocaleString() : ''}</td>
+                <td className="border border-black p-2 text-right font-semibold text-sm pr-4">{item.stats.totalPayable ? item.stats.totalPayable.toLocaleString('ru-RU') : ''}</td>
                 <td className="border border-black p-2 text-center"></td>
                 <td className="border border-black p-2"></td>
               </tr>
@@ -169,14 +169,15 @@ export default function PayrollPage() {
             {/* Total Row */}
             <tr className="bg-white font-bold text-sm">
               <td colSpan="3" className="border border-black p-2 text-right pr-4">Jami:</td>
-              <td className="border border-black p-2 text-right tabular-nums pr-4">{totalAdvances ? totalAdvances.toLocaleString() : ''}</td>
+              <td className="border border-black p-2 text-right pr-4">{totalAdvances ? totalAdvances.toLocaleString('ru-RU') : ''}</td>
               <td colSpan="2" className="border border-black p-2"></td>
-              <td className="border border-black p-2 text-right tabular-nums pr-4">{totalPayable ? totalPayable.toLocaleString() : ''}</td>
+              <td className="border border-black p-2 text-right pr-4">{totalPayable ? totalPayable.toLocaleString('ru-RU') : ''}</td>
               <td colSpan="2" className="border border-black p-2"></td>
             </tr>
 
           </tbody>
         </table>
+
 
         <div className="mt-8 space-y-6 text-lg font-medium ml-10">
           <div className="flex items-center gap-2">
