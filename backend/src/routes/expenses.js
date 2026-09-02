@@ -115,6 +115,23 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
 
     const targetBranchId = branchId ? parseInt(branchId) : req.user.branchId;
 
+    let finalExpenseDate = expenseDate ? new Date(expenseDate) : new Date();
+
+    if (shiftId) {
+      const activeShift = await prisma.shift.findUnique({
+        where: { id: parseInt(shiftId) }
+      });
+      if (activeShift && activeShift.startTime) {
+        const shiftStart = new Date(activeShift.startTime);
+        // Calculate business date of shift (if startTime < 08:00 AM, it belongs to previous calendar day)
+        const businessDate = new Date(shiftStart);
+        if (shiftStart.getHours() < 8) {
+          businessDate.setDate(businessDate.getDate() - 1);
+        }
+        finalExpenseDate = new Date(businessDate.getFullYear(), businessDate.getMonth(), businessDate.getDate(), 12, 0, 0);
+      }
+    }
+
     const expense = await prisma.expense.create({
       data: {
         companyId: req.user.companyId || 1,
@@ -126,9 +143,10 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
         description,
         isCompanyExpense: Boolean(isCompanyExpense),
         paymentSource: paymentSource || 'cash', // 'cash', 'bank', 'transfer'
-        expenseDate: expenseDate ? new Date(expenseDate) : new Date(),
+        expenseDate: finalExpenseDate,
       },
     });
+
 
     res.status(201).json({ success: true, data: expense, message: 'Xarajat muvaffaqiyatli qo\'shildi.' });
   } catch (error) {

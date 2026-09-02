@@ -76,19 +76,15 @@ router.get('/summary', authenticate, async (req, res) => {
       { name: 'Karta/Karta', value: transferTotal },
     ];
 
-    // Expense date range (start of 1st day 00:00:00)
-    const expenseStartDate = start && end 
-      ? new Date(start.split('-')[0], parseInt(start.split('-')[1]) - 1, parseInt(start.split('-')[2]), 0, 0, 0, 0)
-      : new Date(startDate.getFullYear(), startDate.getMonth(), 1, 0, 0, 0, 0);
-
-    // Oylik xarajatlar
+    // Oylik xarajatlar (Smena biznes kunlari chegarasida)
     const monthlyExpenses = await prisma.expense.aggregate({
       where: {
         ...branchFilter,
-        expenseDate: { gte: expenseStartDate, lte: endDate },
+        expenseDate: { gte: startDate, lte: endDate },
       },
       _sum: { amount: true },
     });
+
 
 
     const totalExpenses = monthlyExpenses._sum.amount || 0;
@@ -179,7 +175,7 @@ router.get('/summary', authenticate, async (req, res) => {
       by: ['categoryId'],
       where: {
         ...branchFilter,
-        expenseDate: { gte: expenseStartDate, lte: endDate },
+        expenseDate: { gte: startDate, lte: endDate },
       },
       _sum: { amount: true },
     });
@@ -382,7 +378,7 @@ router.get('/summary', authenticate, async (req, res) => {
         ...branchFilter,
         isCompanyExpense: true,
         paymentSource: 'bank',
-        expenseDate: { gte: expenseStartDate, lte: endDate }
+        expenseDate: { gte: startDate, lte: endDate }
       },
       _sum: { amount: true }
     });
@@ -394,7 +390,7 @@ router.get('/summary', authenticate, async (req, res) => {
         ...branchFilter,
         isCompanyExpense: true,
         paymentSource: 'transfer',
-        expenseDate: { gte: expenseStartDate, lte: endDate }
+        expenseDate: { gte: startDate, lte: endDate }
       },
       _sum: { amount: true }
     });
