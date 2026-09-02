@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalendarClock, Search, Filter, Check, TableProperties } from 'lucide-react';
+import { CalendarClock, Search, Filter, Check, TableProperties, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -103,6 +103,31 @@ export default function AttendancePage() {
       setTogglingCell(null);
     }
   };
+
+  const handleEditDailySalary = async (cleaner) => {
+    const inputVal = window.prompt(
+      `${cleaner.name} uchun kunlik smena narxini kiriting (masalan: 200000 yoki 250000):`,
+      cleaner.salary || ''
+    );
+    if (inputVal === null) return;
+    const newSalary = parseFloat(inputVal);
+    if (isNaN(newSalary) || newSalary < 0) {
+      toast.error("Iltimos, yaroqli musbat raqam kiriting");
+      return;
+    }
+
+    try {
+      await api.put(`/users/${cleaner.id}`, {
+        salary: newSalary,
+        salaryType: 'per_shift'
+      });
+      toast.success(`${cleaner.name} ning kunlik stavkasi ${newSalary.toLocaleString('ru-RU')} so'm qilib yangilandi.`);
+      fetchMatrix();
+    } catch (error) {
+      toast.error("Stavkani saqlashda xatolik yuz berdi");
+    }
+  };
+
 
   const formatTime = (isoString) => {
     if (!isoString) return '—';
@@ -249,7 +274,19 @@ export default function AttendancePage() {
                           {cleaner.branch?.name || "—"}
                         </td>
                         <td className="px-3 py-3 text-center text-xs font-mono text-slate-700">
-                          {cleaner.salary ? `${cleaner.salary.toLocaleString('ru-RU')} so'm` : '0 so\'m'}
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span>{cleaner.salary ? `${cleaner.salary.toLocaleString('ru-RU')} so'm` : '0 so\'m'}</span>
+                            {['owner', 'director', 'supervisor'].includes(user?.role) && (
+                              <button
+                                type="button"
+                                onClick={() => handleEditDailySalary(cleaner)}
+                                className="p-1 text-slate-400 hover:text-primary-600 hover:bg-slate-100 rounded transition-colors"
+                                title="Kunlik smena narxini o'zgartirish"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                            )}
+                          </div>
                         </td>
 
                         {matrixData.days.map(d => {
