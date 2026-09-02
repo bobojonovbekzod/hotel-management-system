@@ -59,9 +59,9 @@ const adminNav = [
   { path: '/admin/expenses', icon: Wallet, label: 'Xarajatlar' },
   { path: '/admin/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
   { path: '/admin/salary', icon: UserCheck, label: 'Mening Oyligim' },
-  { path: '/admin/candidates', icon: UserCheck, label: 'Nomzodlar' },
   { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
 ];
+
 
 const directorNav = null; // director uses directorNavGroups below
 

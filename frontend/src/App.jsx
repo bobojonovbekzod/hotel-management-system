@@ -184,20 +184,21 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
       <Route path="/admin/candidates" element={
-        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'hr']}>
+        <ProtectedRoute allowedRoles={['director', 'owner', 'hr']}>
           <CandidatesPage />
         </ProtectedRoute>
       } />
       <Route path="/owner/candidates" element={
-        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'hr']}>
+        <ProtectedRoute allowedRoles={['director', 'owner', 'hr']}>
           <CandidatesPage />
         </ProtectedRoute>
       } />
       <Route path="/director/candidates" element={
-        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'hr']}>
+        <ProtectedRoute allowedRoles={['director', 'owner', 'hr']}>
           <CandidatesPage />
         </ProtectedRoute>
       } />
+
 
       {/* Director routes (reuse same pages with director auth) */}
       <Route path="/director/dashboard" element={
