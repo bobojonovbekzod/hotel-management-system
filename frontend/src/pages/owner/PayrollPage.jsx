@@ -161,19 +161,20 @@ export default function PayrollPage() {
                 <td className="border border-black p-2 text-right tabular-nums pr-4 font-semibold">{item.stats.totalAdvances ? item.stats.totalAdvances.toLocaleString() : ''}</td>
                 <td className="border border-black p-2 text-center"></td>
                 <td className="border border-black p-2"></td>
-                <td className="border border-black p-2 text-right tabular-nums pr-4 font-bold text-base">{item.stats.totalPayable ? item.stats.totalPayable.toLocaleString() : ''}</td>
+                <td className="border border-black p-2 text-right tabular-nums pr-4 font-semibold text-sm">{item.stats.totalPayable ? item.stats.totalPayable.toLocaleString() : ''}</td>
                 <td className="border border-black p-2 text-center"></td>
                 <td className="border border-black p-2"></td>
               </tr>
             ))}
             {/* Total Row */}
-            <tr className="bg-white font-bold text-base">
+            <tr className="bg-white font-bold text-sm">
               <td colSpan="3" className="border border-black p-2 text-right pr-4">Jami:</td>
               <td className="border border-black p-2 text-right tabular-nums pr-4">{totalAdvances ? totalAdvances.toLocaleString() : ''}</td>
               <td colSpan="2" className="border border-black p-2"></td>
               <td className="border border-black p-2 text-right tabular-nums pr-4">{totalPayable ? totalPayable.toLocaleString() : ''}</td>
               <td colSpan="2" className="border border-black p-2"></td>
             </tr>
+
           </tbody>
         </table>
 
