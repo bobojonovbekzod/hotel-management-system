@@ -427,6 +427,10 @@ router.post('/web-photo', authenticate, express.json({ limit: '10mb' }), async (
     res.json({ success: true, message: 'Davomat yozildi', photoUrl });
   } catch (error) {
     console.error('web-photo error:', error);
+    res.status(500).json({ success: false, message: 'Server xatosi' });
+  }
+});
+
 // GET /api/attendance/monthly-matrix - Faqat Tozalik xodimlari uchun oylik tabel matritsasi
 router.get('/monthly-matrix', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
   try {
