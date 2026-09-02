@@ -427,8 +427,144 @@ router.post('/web-photo', authenticate, express.json({ limit: '10mb' }), async (
     res.json({ success: true, message: 'Davomat yozildi', photoUrl });
   } catch (error) {
     console.error('web-photo error:', error);
+// GET /api/attendance/monthly-matrix - Faqat Tozalik xodimlari uchun oylik tabel matritsasi
+router.get('/monthly-matrix', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+  try {
+    const { branchId, month } = req.query; // month format: YYYY-MM e.g. 2026-09
+    const targetBranchId = branchId ? parseInt(branchId) : (req.user.role === 'director' ? req.user.branchId : null);
+
+    const now = new Date();
+    const targetMonth = month ? month : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const [year, mStr] = targetMonth.split('-').map(Number);
+    
+    // Days in month
+    const daysInMonth = new Date(year, mStr, 0).getDate();
+    const days = [];
+    const dayNamesUz = ['Ya', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh'];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateObj = new Date(year, mStr - 1, d, 12, 0, 0);
+      const dateStr = `${year}-${String(mStr).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({
+        dateStr,
+        dayNum: d,
+        dayName: dayNamesUz[dateObj.getDay()],
+        isWeekend: dateObj.getDay() === 0 || dateObj.getDay() === 6
+      });
+    }
+
+    // Query ONLY cleaner staff (role: 'cleaner')
+    const userWhere = {
+      companyId: req.user.companyId,
+      role: 'cleaner',
+      isActive: true
+    };
+    if (targetBranchId) {
+      userWhere.branchId = targetBranchId;
+    }
+
+    const cleaners = await prisma.user.findMany({
+      where: userWhere,
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        salary: true,
+        salaryType: true,
+        branch: { select: { id: true, name: true } }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    const cleanerIds = cleaners.map(c => c.id);
+
+    const startDate = new Date(year, mStr - 1, 1, 0, 0, 0, 0);
+    const endDate = new Date(year, mStr - 1, daysInMonth, 23, 59, 59, 999);
+
+    // Query Attendance records for cleaners in month
+    const attendanceRecords = await prisma.attendance.findMany({
+      where: {
+        userId: { in: cleanerIds },
+        workDate: { gte: startDate, lte: endDate }
+      }
+    });
+
+    // Build attendance matrix map: { userId: { 'YYYY-MM-DD': true } }
+    const matrix = {};
+    cleaners.forEach(c => {
+      matrix[c.id] = {};
+    });
+
+    attendanceRecords.forEach(att => {
+      if (att.workDate && att.userId) {
+        const dStr = att.workDate.toISOString().slice(0, 10);
+        if (matrix[att.userId]) {
+          matrix[att.userId][dStr] = true;
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        month: targetMonth,
+        days,
+        cleaners,
+        matrix
+      }
+    });
+  } catch (error) {
+    console.error('Error in GET /api/attendance/monthly-matrix:', error);
+    res.status(500).json({ success: false, message: 'Server xatosi' });
+  }
+});
+
+// POST /api/attendance/toggle-cell - Tabel katakchasini o'zgartirish (Keldi / Kelmadi)
+router.post('/toggle-cell', authenticate, authorize('owner', 'director', 'supervisor'), async (req, res) => {
+  try {
+    const { userId, dateStr, isPresent } = req.body;
+    const targetUserId = parseInt(userId);
+
+    const user = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: { branch: true }
+    });
+
+    if (!user || user.companyId !== req.user.companyId) {
+      return res.status(404).json({ success: false, message: 'Xodim topilmadi.' });
+    }
+
+    const workDate = new Date(dateStr + 'T12:00:00.000Z');
+
+    if (isPresent) {
+      const existing = await prisma.attendance.findFirst({
+        where: { userId: targetUserId, workDate }
+      });
+
+      if (!existing) {
+        await prisma.attendance.create({
+          data: {
+            companyId: user.companyId,
+            branchId: user.branchId || req.user.branchId || 1,
+            userId: targetUserId,
+            workDate,
+            checkIn: workDate,
+            notes: 'Tabel orqali kiritildi'
+          }
+        });
+      }
+    } else {
+      await prisma.attendance.deleteMany({
+        where: { userId: targetUserId, workDate }
+      });
+    }
+
+    res.json({ success: true, message: 'Davomat yangilandi.' });
+  } catch (error) {
+    console.error('Error in POST /api/attendance/toggle-cell:', error);
     res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 });
 
 module.exports = router;
+
