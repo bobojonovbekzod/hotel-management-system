@@ -13,8 +13,8 @@ const upload = multer();
 // GET /api/attendance/my-status - User's current attendance status
 router.get('/my-status', authenticate, async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0));
 
     const record = await prisma.attendance.findFirst({
       where: { userId: req.user.id, workDate: today }
