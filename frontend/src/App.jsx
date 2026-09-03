@@ -78,6 +78,7 @@ function getDefaultRoute(role) {
   if (role === 'hr') return '/owner/hr';
   if (role === 'cleaner') return '/cleaner/dashboard';
   if (role === 'operator') return '/operator/statistics';
+  if (role === 'investor') return '/investor/dashboard';
   return '/login';
 }
 
@@ -93,6 +94,12 @@ function AppRoutes() {
       <Route path="/tasks" element={
         <ProtectedRoute allowedRoles={['owner', 'director', 'admin', 'supervisor']}>
           <TasksPage />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/investor/dashboard" element={
+        <ProtectedRoute allowedRoles={['investor', 'owner', 'director']}>
+          <InvestorDashboardPage />
         </ProtectedRoute>
       } />
 

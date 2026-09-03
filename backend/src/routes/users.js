@@ -40,7 +40,7 @@ router.get('/', authenticate, authorize('owner', 'director', 'hr', 'admin'), asy
       where,
       select: {
         id: true, name: true, username: true, role: true, phone: true,
-        salary: true, salaryType: true, kpiPercentage: true, isActive: true, createdAt: true,
+        salary: true, salaryType: true, kpiPercentage: true, investorSharePercentage: true, investorBranchIds: true, isActive: true, createdAt: true,
         isFaceRegistered: true, photoUrl: true, birthDate: true, gender: true, telegram: true,
         branch: { select: { id: true, name: true } },
       },
@@ -57,7 +57,7 @@ router.get('/', authenticate, authorize('owner', 'director', 'hr', 'admin'), asy
 // POST /api/users - Yangi foydalanuvchi
 router.post('/', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
   try {
-    const { name, username, password, role, phone, salary, salaryType, kpiPercentage, branchId, birthDate, gender, telegram } = req.body;
+    const { name, username, password, role, phone, salary, salaryType, kpiPercentage, investorSharePercentage, investorBranchIds, branchId, birthDate, gender, telegram } = req.body;
 
     const targetBranchId = req.user.role === 'director' ? req.user.branchId : (branchId ? parseInt(branchId) : null);
 
@@ -73,6 +73,8 @@ router.post('/', authenticate, authorize('owner', 'director', 'hr'), async (req,
         salaryType: salaryType || 'static',
         salary: parseFloat(salary || 0), 
         kpiPercentage: kpiPercentage ? parseFloat(kpiPercentage) : 0,
+        investorSharePercentage: investorSharePercentage ? parseFloat(investorSharePercentage) : 0,
+        investorBranchIds: investorBranchIds ? (typeof investorBranchIds === 'string' ? investorBranchIds : JSON.stringify(investorBranchIds)) : null,
         branchId: targetBranchId,
         birthDate: birthDate ? new Date(birthDate) : null,
         gender: gender || null,
@@ -93,7 +95,7 @@ router.post('/', authenticate, authorize('owner', 'director', 'hr'), async (req,
 // PUT /api/users/:id
 router.put('/:id', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
   try {
-    const { name, phone, salary, salaryType, kpiPercentage, isActive, role, birthDate, gender, telegram } = req.body;
+    const { name, phone, salary, salaryType, kpiPercentage, investorSharePercentage, investorBranchIds, isActive, role, birthDate, gender, telegram } = req.body;
     const user = await prisma.user.update({
       where: { id: parseInt(req.params.id), companyId: req.user.companyId },
       data: { 
@@ -102,13 +104,15 @@ router.put('/:id', authenticate, authorize('owner', 'director', 'hr'), async (re
         salaryType: salaryType || undefined, 
         salary: salary !== undefined && salary !== null && salary !== '' ? parseFloat(salary) : undefined, 
         kpiPercentage: kpiPercentage !== undefined && kpiPercentage !== null && kpiPercentage !== '' ? parseFloat(kpiPercentage) : undefined, 
+        investorSharePercentage: investorSharePercentage !== undefined && investorSharePercentage !== null && investorSharePercentage !== '' ? parseFloat(investorSharePercentage) : undefined,
+        investorBranchIds: investorBranchIds !== undefined ? (typeof investorBranchIds === 'string' ? investorBranchIds : JSON.stringify(investorBranchIds)) : undefined,
         isActive, 
         role,
         birthDate: birthDate ? new Date(birthDate) : null,
         gender: gender || null,
         telegram: telegram || null
       },
-      select: { id: true, name: true, username: true, role: true, phone: true, salaryType: true, salary: true, kpiPercentage: true, isActive: true, isFaceRegistered: true, photoUrl: true, birthDate: true, gender: true, telegram: true },
+      select: { id: true, name: true, username: true, role: true, phone: true, salaryType: true, salary: true, kpiPercentage: true, investorSharePercentage: true, investorBranchIds: true, isActive: true, isFaceRegistered: true, photoUrl: true, birthDate: true, gender: true, telegram: true },
     });
     res.json({ success: true, data: user });
   } catch (error) {

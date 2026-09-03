@@ -14,12 +14,13 @@ const roleConfig = {
   admin: { label: 'Admin', icon: UserCog, color: 'text-primary-400 bg-primary-500/10 border-primary-500/20' },
   operator: { label: 'Call Operator', icon: Headset, color: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20' },
   hr: { label: 'HR Menejer', icon: Users, color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
+  investor: { label: 'Investor', icon: UserCheck, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
   cleaner: { label: 'Tozalik xodimi', icon: User, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
 };
 
 const emptyForm = {
   name: '', username: '', password: '', role: 'admin',
-  phone: '', salary: '', salaryType: 'static', kpiPercentage: '', branchId: '',
+  phone: '', salary: '', salaryType: 'static', kpiPercentage: '', investorSharePercentage: '', branchId: '',
   birthDate: '', gender: '', telegram: ''
 };
 
@@ -221,6 +222,7 @@ export default function StaffPage() {
         salary: form.salary,
         salaryType: form.salaryType,
         kpiPercentage: form.kpiPercentage,
+        investorSharePercentage: form.investorSharePercentage ? parseFloat(form.investorSharePercentage) : 0,
         branchId: form.branchId || undefined,
         birthDate: form.birthDate || undefined,
         gender: form.gender || undefined,

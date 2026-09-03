@@ -109,6 +109,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/leads', require('./routes/leads'));
 app.use('/api/candidates', require('./routes/candidates'));
+app.use('/api/investor', require('./routes/investor'));
 
 // Dynamic Audio Streamer from Asterisk PBX Server
 app.get('/api/recordings/fetch', async (req, res) => {

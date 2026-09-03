@@ -101,8 +101,10 @@ model User {
   phone            String?
   salary           Float?     @default(0)
   salaryType       SalaryType @default(static)
-  kpiPercentage    Float?     @default(0) // Kassadan tushadigan ulush foizi (masalan, 5%)
-  isActive         Boolean    @default(true)
+  kpiPercentage          Float?     @default(0) // Kassadan tushadigan ulush foizi (masalan, 5%)
+  investorSharePercentage Float?    @default(0) // Investorning sof foydadagi ulush foizi (masalan 25%)
+  investorBranchIds       String?    // Investor biriktirilgan filiallar ID ro'yxati (masalan "[1, 2, 5]")
+  isActive               Boolean    @default(true)
   birthDate        DateTime?
   gender           String?
   telegram         String?
@@ -163,6 +165,7 @@ enum Role {
   admin
   cleaner
   operator
+  investor
 }
 
 // Xonalar
