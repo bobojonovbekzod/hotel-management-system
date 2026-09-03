@@ -209,14 +209,9 @@ router.post('/webcam-checkin', authenticate, authorize('admin', 'director', 'sup
     const targetUser = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
     if (!targetUser) return res.status(404).json({ success: false, message: 'Foydalanuvchi topilmadi' });
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const record = await prisma.attendance.findFirst({
-      where: { userId: targetUser.id, workDate: today }
-    });
-
     const now = new Date();
+    // UTC noon date to prevent timezone shift issues across matrix queries
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0));
     
     // Agar director yoki owner bo'lsa targetUser.branchId orqali davomat qilamiz. Admin uchun req.user.branchId
     const branchId = req.user.branchId || targetUser.branchId || 1;
@@ -276,9 +271,9 @@ router.post('/bot-photo', express.json({ limit: '10mb' }), async (req, res) => {
     fs.writeFileSync(filePath, buffer);
     const photoUrl = `/uploads/attendance/${fileName}`;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     const now = new Date();
+    // UTC noon date to prevent timezone shift issues across matrix queries
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0));
 
     let record = await prisma.attendance.findFirst({
       where: { userId: targetUser.id, workDate: today }
@@ -373,9 +368,9 @@ router.post('/web-photo', authenticate, express.json({ limit: '10mb' }), async (
     fs.writeFileSync(filePath, buffer);
     const photoUrl = `/uploads/attendance/${fileName}`;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     const now = new Date();
+    // UTC noon date to prevent timezone shift issues across matrix queries
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0));
 
     let record = await prisma.attendance.findFirst({
       where: { userId: targetUser.id, workDate: today }
