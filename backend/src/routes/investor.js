@@ -81,8 +81,20 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
         ...branchWhere,
         createdAt: { gte: startDate, lte: endDate }
       },
-      select: { amount: true, category: true, title: true, createdAt: true }
+      select: {
+        amount: true,
+        title: true,
+        createdAt: true,
+        category: { select: { name: true } }
+      }
     });
+
+    const formattedExpenses = expenses.map(e => ({
+      amount: e.amount,
+      title: e.title,
+      category: e.category?.name || "Operatsion",
+      createdAt: e.createdAt
+    }));
 
     const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
@@ -128,7 +140,7 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
           activeBookings,
           occupancyRate
         },
-        expenses: expenses.slice(0, 10) // Recent 10 expenses for transparency
+        expenses: formattedExpenses.slice(0, 10) // Recent 10 expenses for transparency
       }
     });
   } catch (error) {

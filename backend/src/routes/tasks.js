@@ -20,7 +20,7 @@ router.get('/my-pending-count', authenticate, async (req, res) => {
 });
 
 // GET /api/tasks - Vazifalar ro'yxatini olish
-router.get('/', authenticate, authorize('owner', 'director', 'admin', 'supervisor'), async (req, res) => {
+router.get('/', authenticate, authorize('owner', 'director', 'admin', 'supervisor', 'investor'), async (req, res) => {
   try {
     const { branchId } = req.query;
     
