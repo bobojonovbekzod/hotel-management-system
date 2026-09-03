@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, User, Printer, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, Trash2, Headset } from 'lucide-react';
+import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, UserCheck, User, Printer, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, Trash2, Headset } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
 import FullScreenLoader from '../../components/common/FullScreenLoader';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
