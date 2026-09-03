@@ -49,9 +49,14 @@ router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), asyn
     }
 
     if (date) {
-      const targetDate = new Date(date);
-      targetDate.setHours(0, 0, 0, 0);
-      where.workDate = targetDate;
+      const [y, m, d] = date.slice(0, 10).split('-').map(Number);
+      const startOfDay = new Date(y, m - 1, d, 0, 0, 0, 0);
+      const endOfDay = new Date(y, m - 1, d, 23, 59, 59, 999);
+      
+      where.OR = [
+        { workDate: { gte: startOfDay, lte: endOfDay } },
+        { checkIn: { gte: startOfDay, lte: endOfDay } }
+      ];
     }
 
     const attendance = await prisma.attendance.findMany({
