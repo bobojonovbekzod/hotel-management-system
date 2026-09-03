@@ -175,7 +175,7 @@ router.get('/summary', authenticate, async (req, res) => {
       by: ['categoryId'],
       where: {
         ...branchFilter,
-        expenseDate: { gte: startDate, lte: endDate },
+        createdAt: { gte: startDate, lte: endDate },
       },
       _sum: { amount: true },
     });
@@ -291,7 +291,7 @@ router.get('/summary', authenticate, async (req, res) => {
           const additionalServices = payments.filter(p => p.type !== 'room' && p.type !== 'advance').reduce((sum, p) => sum + p.amount, 0);
 
           const expenses = await prisma.expense.aggregate({
-            where: { branchId: branch.id, expenseDate: { gte: startDate, lte: endDate } },
+            where: { branchId: branch.id, createdAt: { gte: startDate, lte: endDate } },
             _sum: { amount: true }
           });
           const totalExpenses = expenses._sum.amount || 0;
