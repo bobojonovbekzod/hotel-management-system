@@ -48,6 +48,7 @@ import OperatorStatsPage from './pages/operator/OperatorStatsPage';
 import OperatorPipelinePage from './pages/operator/OperatorPipelinePage';
 import OperatorRoomsPage from './pages/operator/OperatorRoomsPage';
 import OperatorCallsPage from './pages/operator/OperatorCallsPage';
+import InvestorDashboardPage from './pages/investor/InvestorDashboardPage';
 
 // Bot Pages
 import TelegramCameraPage from './pages/bot/TelegramCameraPage';
