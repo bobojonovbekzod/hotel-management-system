@@ -95,7 +95,6 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
       where: {
         userId: { in: userIds },
         branchId: targetBranchId ? targetBranchId : undefined,
-        checkIn: { not: null },
         workDate: { gte: startDate, lte: endDate }
       },
       _count: { id: true }

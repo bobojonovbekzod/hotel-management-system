@@ -627,7 +627,7 @@ router.post('/toggle-cell', authenticate, authorize('owner', 'director', 'superv
             branchId: user.branchId || req.user.branchId || 1,
             userId: targetUserId,
             workDate,
-            checkIn: workDate,
+            checkIn: null,
             notes: 'Tabel orqali kiritildi'
           }
         });
