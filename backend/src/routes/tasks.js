@@ -30,9 +30,20 @@ router.get('/', authenticate, authorize('owner', 'director', 'admin', 'superviso
       if (branchId) {
         where.branchId = parseInt(branchId);
       }
+    } else if (req.user.role === 'investor') {
+      let allowedIds = [];
+      if (req.user.investorBranchIds) {
+        try { allowedIds = JSON.parse(req.user.investorBranchIds); } catch(e){}
+      }
+      if (allowedIds.length > 0) {
+        where.branchId = { in: allowedIds };
+      } else if (req.user.branchId) {
+        where.branchId = req.user.branchId;
+      }
     } else {
-      where.branchId = req.user.branchId;
-      // Direktorlar va adminlar o'zlariga tegishli yoki o'z filialidagi vazifalarni ko'radi
+      if (req.user.branchId) {
+        where.branchId = req.user.branchId;
+      }
     }
 
     const tasks = await prisma.task.findMany({

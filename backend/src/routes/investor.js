@@ -145,7 +145,7 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
     });
   } catch (error) {
     console.error('Error in GET /api/investor/dashboard:', error);
-    res.status(500).json({ success: false, message: 'Server xatosi' });
+    res.status(500).json({ success: false, message: 'Server xatosi', detail: error.message, stack: error.stack });
   }
 });
 
