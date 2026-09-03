@@ -138,7 +138,11 @@ export default function AttendancePage() {
 
   const calculateHours = (checkIn, checkOut) => {
     if (!checkIn || !checkOut) return '—';
-    const diff = new Date(checkOut) - new Date(checkIn);
+    const start = new Date(checkIn).getTime();
+    const end = new Date(checkOut).getTime();
+    if (isNaN(start) || isNaN(end) || end < start) return '—';
+
+    const diff = end - start;
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${hours}s ${minutes}d`;
@@ -393,7 +397,7 @@ export default function AttendancePage() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-center font-bold text-slate-900">
-                          {calculateHours(checkIn, checkOut || new Date())}
+                          {calculateHours(checkIn, checkOut)}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex items-center justify-center gap-2">

@@ -48,15 +48,14 @@ router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), asyn
       where.branchId = parseInt(branchId);
     }
 
+    where.user = { role: 'cleaner' };
+
     if (date) {
       const [y, m, d] = date.slice(0, 10).split('-').map(Number);
-      const startOfDay = new Date(y, m - 1, d, 0, 0, 0, 0);
-      const endOfDay = new Date(y, m - 1, d, 23, 59, 59, 999);
+      const startOfDay = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+      const endOfDay = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
       
-      where.OR = [
-        { workDate: { gte: startOfDay, lte: endOfDay } },
-        { checkIn: { gte: startOfDay, lte: endOfDay } }
-      ];
+      where.checkIn = { gte: startOfDay, lte: endOfDay };
     }
 
     const attendance = await prisma.attendance.findMany({
@@ -65,7 +64,7 @@ router.get('/', authenticate, authorize('owner', 'director', 'supervisor'), asyn
         user: { select: { id: true, name: true, role: true } },
         branch: { select: { name: true } }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { checkIn: 'desc' }
     });
 
     res.json({ success: true, data: attendance });
