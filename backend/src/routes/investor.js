@@ -83,7 +83,7 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
       },
       select: {
         amount: true,
-        title: true,
+        description: true,
         createdAt: true,
         category: { select: { name: true } }
       }
@@ -91,8 +91,8 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
 
     const formattedExpenses = expenses.map(e => ({
       amount: e.amount,
-      title: e.title,
-      category: e.category?.name || "Operatsion",
+      title: e.description || "Operatsion xarajat",
+      category: e.category?.name || "General",
       createdAt: e.createdAt
     }));
 
