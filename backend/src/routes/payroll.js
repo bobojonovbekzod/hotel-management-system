@@ -88,16 +88,26 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
       branchIncomeMap[b.branchId] = b._sum.totalIncome || 0;
     }
 
-    // 2. Davomatlarni (attendances) guruhlab tortish
-    const attendanceStats = await prisma.attendance.groupBy({
-      by: ['userId'],
+    // 2. Davomatlarni tortish (bir kunda bir necha yozuv bo'lsa ham faqat 1 kun deb hisoblash)
+    const attendanceRecords = await prisma.attendance.findMany({
       where: {
         userId: { in: userIds },
         branchId: targetBranchId ? targetBranchId : undefined,
         workDate: { gte: startDate, lte: endDate }
       },
-      _count: { id: true }
+      select: { userId: true, workDate: true }
     });
+
+    const attMap = {};
+    const userAttendanceDays = {};
+    for (const a of attendanceRecords) {
+      if (!userAttendanceDays[a.userId]) userAttendanceDays[a.userId] = new Set();
+      const dayKey = new Date(a.workDate).toISOString().slice(0, 10);
+      userAttendanceDays[a.userId].add(dayKey);
+    }
+    for (const uid of Object.keys(userAttendanceDays)) {
+      attMap[uid] = userAttendanceDays[uid].size;
+    }
 
     // 3. Tozalangan xonalar sonini tortish (Farroshlar uchun ishbay)
     const cleaningStats = await prisma.cleaningTask.groupBy({
@@ -129,11 +139,6 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
       if (s.shiftType === 'morning') shiftMap[s.adminId].morning += s._count.id;
       if (s.shiftType === 'night') shiftMap[s.adminId].night += s._count.id;
       shiftMap[s.adminId].totalIncome += (s._sum.totalIncome || 0);
-    }
-
-    const attMap = {};
-    for (const a of attendanceStats) {
-      attMap[a.userId] = a._count.id;
     }
 
     const cleaningMap = {};
