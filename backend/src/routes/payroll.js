@@ -221,6 +221,12 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
       const totalPayable = baseSalary + kpiEarnings + totalBonuses - totalAdvances - totalPenalties - totalPaid;
 
       const hasWorkInBranch = dayShifts > 0 || nightShifts > 0 || attendances > 0 || (cleaningMap[user.id] || 0) > 0 || (totalAdvances+totalPenalties+totalBonuses+totalPaid) > 0;
+
+      // Agar xodim tanlangan oydan keyin ro'yxatdan o'tgan (ishga kirgan) bo'lsa va bu oyda hech qanday faoliyati bo'lmasa, hisobotda ko'rsatmaslik
+      if (user.createdAt && new Date(user.createdAt) > endDate && !hasWorkInBranch) {
+        continue;
+      }
+
       if (targetBranchId && user.branchId !== targetBranchId && !hasWorkInBranch) {
         continue;
       }
