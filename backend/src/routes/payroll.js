@@ -18,7 +18,6 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
 
     const whereUser = { 
       companyId: req.user.companyId, 
-      isActive: true,
       role: { not: 'owner' }
     };
 
@@ -224,6 +223,11 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
 
       // Agar xodim tanlangan oydan keyin ro'yxatdan o'tgan (ishga kirgan) bo'lsa va bu oyda hech qanday faoliyati bo'lmasa, hisobotda ko'rsatmaslik
       if (user.createdAt && new Date(user.createdAt) > endDate && !hasWorkInBranch) {
+        continue;
+      }
+
+      // Agar xodim nofaol (ishdan bo'shatilgan) bo'lsa va ushbu tanlangan oyda hech qanday faoliyati bo'lmasa, hisobotda ko'rsatmaslik
+      if (!user.isActive && !hasWorkInBranch) {
         continue;
       }
 
