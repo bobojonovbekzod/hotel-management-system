@@ -89,7 +89,8 @@ export default function PayrollPage() {
       "Bonuslar (so'm)": item.stats.totalBonuses,
       "Ushlanmalar (so'm)": item.stats.totalAdvances + item.stats.totalPenalties,
       "Berilgan maosh (so'm)": item.stats.totalPaid,
-      "To'lanishi kerak bo'lgan jami summa": item.stats.totalPayable
+      "Qoldiq (so'm)": item.stats.totalPayable,
+      "Jami hisoblangan oylik (so'm)": (item.stats.totalAdvances || 0) + (item.stats.totalPayable || 0)
     }));
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -97,7 +98,7 @@ export default function PayrollPage() {
     // Add columns width
     const wscols = [
       { wch: 5 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 10 },
-      { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 30 }
+      { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 30 }
     ];
     ws['!cols'] = wscols;
 
@@ -274,6 +275,7 @@ export default function PayrollPage() {
                     <th className="table-th text-right border-l border-slate-300 bg-red-500/5 text-red-300">Jarima</th>
                     <th className="table-th text-right border-l border-slate-300 bg-orange-500/5 text-orange-300">Avans</th>
                     <th className="table-th text-right border-l border-slate-300 bg-emerald-500/10 text-emerald-300 font-bold">Qoldiq</th>
+                    <th className="table-th text-right border-l border-slate-300 bg-blue-500/10 text-blue-300 font-bold">Jami hisoblangan oylik</th>
                     <th className="table-th text-center border-l border-slate-200">Boshqaruv</th>
                   </tr>
                 </thead>
@@ -392,6 +394,12 @@ export default function PayrollPage() {
                       <td className="table-td text-right border-l border-slate-300 bg-emerald-500/5">
                         <span className="text-base font-bold text-emerald-400">
                           {item.stats.totalPayable.toLocaleString()}
+                        </span>
+                      </td>
+
+                      <td className="table-td text-right border-l border-slate-300 bg-blue-500/5">
+                        <span className="text-base font-bold text-blue-400">
+                          {((item.stats.totalAdvances || 0) + (item.stats.totalPayable || 0)).toLocaleString()}
                         </span>
                       </td>
 
