@@ -150,6 +150,33 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
       if (t.type === 'salary_payment') txMap[t.userId].salary_payment += (t._sum.amount || 0);
     }
 
+    const allTransactions = await prisma.payrollTransaction.findMany({
+      where: {
+        userId: { in: userIds },
+        branchId: targetBranchId ? targetBranchId : undefined,
+        date: { gte: startDate, lte: endDate }
+      },
+      select: { userId: true, type: true, date: true },
+      orderBy: { date: 'asc' }
+    });
+
+    const txDatesMap = {};
+    for (const t of allTransactions) {
+      if (!txDatesMap[t.userId]) txDatesMap[t.userId] = { advanceDates: [], salaryPaymentDates: [] };
+      const formattedDate = new Date(t.date).toLocaleDateString('ru-RU', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        timeZone: 'Asia/Tashkent'
+      });
+      if (t.type === 'advance' && !txDatesMap[t.userId].advanceDates.includes(formattedDate)) {
+        txDatesMap[t.userId].advanceDates.push(formattedDate);
+      }
+      if (t.type === 'salary_payment' && !txDatesMap[t.userId].salaryPaymentDates.includes(formattedDate)) {
+        txDatesMap[t.userId].salaryPaymentDates.push(formattedDate);
+      }
+    }
+
     for (const user of allUsers) {
       const dayShifts = shiftMap[user.id]?.morning || 0;
       const nightShifts = shiftMap[user.id]?.night || 0;
@@ -261,7 +288,9 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
           totalPenalties,
           totalBonuses,
           totalPaid,
-          totalPayable
+          totalPayable,
+          advanceDates: txDatesMap[user.id]?.advanceDates || [],
+          salaryPaymentDates: txDatesMap[user.id]?.salaryPaymentDates || []
         }
       });
     }

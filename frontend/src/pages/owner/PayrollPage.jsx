@@ -87,6 +87,8 @@ export default function PayrollPage() {
       "Asosiy oylik (so'm)": item.stats.baseSalary,
       "KPI daromadi (so'm)": item.stats.kpiEarnings,
       "Bonuslar (so'm)": item.stats.totalBonuses,
+      "Avans (so'm)": item.stats.totalAdvances,
+      "Avans olingan sana": item.stats.advanceDates && item.stats.advanceDates.length > 0 ? item.stats.advanceDates.join(', ') : '',
       "Ushlanmalar (so'm)": item.stats.totalAdvances + item.stats.totalPenalties,
       "Berilgan maosh (so'm)": item.stats.totalPaid,
       "Qoldiq (so'm)": item.stats.totalPayable,
@@ -98,7 +100,7 @@ export default function PayrollPage() {
     // Add columns width
     const wscols = [
       { wch: 5 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 10 },
-      { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 30 }
+      { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 30 }
     ];
     ws['!cols'] = wscols;
 
@@ -166,10 +168,14 @@ export default function PayrollPage() {
                 <td className="border border-black p-2 font-semibold text-center">{item.user.name}</td>
                 <td className="border border-black p-2 text-center capitalize font-medium">{item.user.role}</td>
                 <td className="border border-black p-2 text-right font-medium pr-4">{item.stats.totalAdvances ? item.stats.totalAdvances.toLocaleString('ru-RU') : ''}</td>
-                <td className="border border-black p-2 text-center"></td>
+                <td className="border border-black p-2 text-center text-xs font-medium">
+                  {item.stats.advanceDates && item.stats.advanceDates.length > 0 ? item.stats.advanceDates.join(', ') : ''}
+                </td>
                 <td className="border border-black p-2"></td>
                 <td className="border border-black p-2 text-right font-semibold text-sm pr-4">{item.stats.totalPayable ? item.stats.totalPayable.toLocaleString('ru-RU') : ''}</td>
-                <td className="border border-black p-2 text-center"></td>
+                <td className="border border-black p-2 text-center text-xs font-medium">
+                  {item.stats.salaryPaymentDates && item.stats.salaryPaymentDates.length > 0 ? item.stats.salaryPaymentDates.join(', ') : ''}
+                </td>
                 <td className="border border-black p-2"></td>
               </tr>
             ))}
