@@ -507,9 +507,9 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
       const txs = res.data.data.transactions || [];
       if (month) {
         const monthFiltered = txs.filter(t => t.date && t.date.startsWith(month));
-        setHistory(monthFiltered.length > 0 ? monthFiltered : txs.slice(0, 10));
+        setHistory(monthFiltered.length > 0 ? monthFiltered : txs);
       } else {
-        setHistory(txs.slice(0, 10));
+        setHistory(txs);
       }
     } catch (e) {
       // ignore
@@ -558,17 +558,17 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose(false)}>
-      <div className="modal-content w-full max-w-lg p-0 bg-white border border-slate-200 overflow-hidden">
-        <div className="flex justify-between items-center p-5 border-b border-slate-200 bg-white shadow-sm">
+      <div className="modal-content w-full max-w-xl p-0 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+        <div className="flex justify-between items-center p-5 border-b border-slate-200 bg-white shadow-sm shrink-0">
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <Wallet className="text-indigo-400" /> {user.name} - Moliya
           </h2>
-          <button onClick={() => onClose(false)} className="p-2 text-slate-600 hover:text-slate-900 transition-colors bg-slate-100 rounded-lg hover:bg-slate-700">
+          <button onClick={() => onClose(false)} className="p-2 text-slate-600 hover:text-slate-900 transition-colors bg-slate-100 rounded-lg hover:bg-slate-200">
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="label">Amaliyot turini tanlang</label>
@@ -663,9 +663,18 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
           </form>
 
           {history.length > 0 && (
-            <div className="mt-8">
-              <p className="text-xs uppercase text-slate-600 font-bold mb-3 tracking-wider">So'nggi operatsiyalar</p>
-              <div className="space-y-2">
+            <div className="mt-6 pt-6 border-t border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs uppercase text-slate-600 font-bold tracking-wider">
+                  So'nggi operatsiyalar ({history.length} ta)
+                </p>
+                {month && (
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    {month} oyi
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2 max-h-72 overflow-y-auto custom-scrollbar pr-1">
                 {history.map(tx => (
                   <div key={tx.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-300">
                     <div className="flex-1 min-w-0 pr-3">
