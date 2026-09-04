@@ -692,11 +692,6 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
                           <span className="text-[11px] font-medium text-slate-700 bg-slate-200/70 px-2 py-0.5 rounded-md flex items-center gap-1" title={`Kiritgan mas'ul shaxs: ${tx.admin.name}`}>
                             <span className="text-slate-500">👤</span>
                             <span className="font-semibold text-slate-800">{tx.admin.name}</span>
-                            {tx.admin.role && (
-                              <span className="text-slate-500 text-[10px]">
-                                ({tx.admin.role === 'owner' ? 'Owner' : tx.admin.role === 'director' ? 'Direktor' : tx.admin.role})
-                              </span>
-                            )}
                           </span>
                         )}
                       </div>
