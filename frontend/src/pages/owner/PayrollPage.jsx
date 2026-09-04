@@ -111,8 +111,14 @@ export default function PayrollPage() {
     window.print();
   };
 
-  const totalAdvances = report.reduce((sum, item) => sum + item.stats.totalAdvances, 0);
-  const totalPayable = report.reduce((sum, item) => sum + item.stats.totalPayable, 0);
+  const totalShiftIncomeSum = report.reduce((sum, item) => sum + (item.stats.totalShiftIncome || 0), 0);
+  const totalBaseSalarySum = report.reduce((sum, item) => sum + (item.stats.baseSalary || 0), 0);
+  const totalKpiEarningsSum = report.reduce((sum, item) => sum + (item.stats.kpiEarnings || 0), 0);
+  const totalBonusesSum = report.reduce((sum, item) => sum + (item.stats.totalBonuses || 0), 0);
+  const totalPenaltiesSum = report.reduce((sum, item) => sum + (item.stats.totalPenalties || 0), 0);
+  const totalAdvancesSum = report.reduce((sum, item) => sum + (item.stats.totalAdvances || 0), 0);
+  const totalPayableSum = report.reduce((sum, item) => sum + (item.stats.totalPayable || 0), 0);
+  const totalEarnedSum = report.reduce((sum, item) => sum + ((item.stats.totalAdvances || 0) + (item.stats.totalPayable || 0)), 0);
   
   const [year, monthNum] = filterMonth.split('-');
   const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
@@ -170,9 +176,9 @@ export default function PayrollPage() {
             {/* Total Row */}
             <tr className="bg-white font-bold text-sm">
               <td colSpan="3" className="border border-black p-2 text-right pr-4">Jami:</td>
-              <td className="border border-black p-2 text-right pr-4">{totalAdvances ? totalAdvances.toLocaleString('ru-RU') : ''}</td>
+              <td className="border border-black p-2 text-right pr-4">{totalAdvancesSum ? totalAdvancesSum.toLocaleString('ru-RU') : ''}</td>
               <td colSpan="2" className="border border-black p-2"></td>
-              <td className="border border-black p-2 text-right pr-4">{totalPayable ? totalPayable.toLocaleString('ru-RU') : ''}</td>
+              <td className="border border-black p-2 text-right pr-4">{totalPayableSum ? totalPayableSum.toLocaleString('ru-RU') : ''}</td>
               <td colSpan="2" className="border border-black p-2"></td>
             </tr>
 
@@ -415,6 +421,39 @@ export default function PayrollPage() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300">
+                  <tr>
+                    <td className="table-td text-left font-bold text-slate-900">
+                      Jami ({report.length} xodim):
+                    </td>
+                    <td className="table-td text-center text-slate-500">—</td>
+                    <td className="table-td text-right font-mono text-sm text-slate-900">
+                      {totalShiftIncomeSum > 0 ? totalShiftIncomeSum.toLocaleString() : '0'}
+                    </td>
+                    <td className="table-td text-right border-l border-slate-300 text-indigo-700 font-bold">
+                      {totalBaseSalarySum.toLocaleString()}
+                    </td>
+                    <td className="table-td text-right border-l border-slate-300 text-emerald-700 font-bold">
+                      {totalKpiEarningsSum.toLocaleString()}
+                    </td>
+                    <td className="table-td text-right border-l border-slate-300 text-emerald-700 font-bold">
+                      {totalBonusesSum.toLocaleString()}
+                    </td>
+                    <td className="table-td text-right border-l border-slate-300 text-red-700 font-bold">
+                      {totalPenaltiesSum.toLocaleString()}
+                    </td>
+                    <td className="table-td text-right border-l border-slate-300 text-orange-700 font-bold">
+                      {totalAdvancesSum.toLocaleString()}
+                    </td>
+                    <td className="table-td text-right border-l border-slate-300 bg-emerald-500/10 text-emerald-700 font-bold text-base">
+                      {totalPayableSum.toLocaleString()}
+                    </td>
+                    <td className="table-td text-right border-l border-slate-300 bg-blue-500/10 text-blue-700 font-bold text-base">
+                      {totalEarnedSum.toLocaleString()}
+                    </td>
+                    <td className="table-td text-center border-l border-slate-200">—</td>
+                  </tr>
+                </tfoot>
               </table>
             )}
           </div>
