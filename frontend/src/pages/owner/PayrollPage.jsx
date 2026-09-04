@@ -504,9 +504,13 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
   const fetchHistory = async () => {
     try {
       const res = await api.get(`/payroll/${user.id}`);
-      // In a real app we'd filter res.data.data.transactions by month, 
-      // but for simplicity we'll just show the last 5 overall or filtered
-      setHistory(res.data.data.transactions.slice(0, 5));
+      const txs = res.data.data.transactions || [];
+      if (month) {
+        const monthFiltered = txs.filter(t => t.date && t.date.startsWith(month));
+        setHistory(monthFiltered.length > 0 ? monthFiltered : txs.slice(0, 10));
+      } else {
+        setHistory(txs.slice(0, 10));
+      }
     } catch (e) {
       // ignore
     }
@@ -664,18 +668,36 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
               <div className="space-y-2">
                 {history.map(tx => (
                   <div key={tx.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-300">
-                    <div className="flex-1">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-md mr-2 ${tx.type === 'penalty' ? 'text-red-400 bg-red-500/10' :
-                        tx.type === 'advance' ? 'text-orange-400 bg-orange-500/10' :
-                          tx.type === 'bonus' ? 'text-emerald-400 bg-emerald-500/10' :
-                            tx.type === 'salary_payment' ? 'text-indigo-400 bg-indigo-500/10' :
-                              'text-slate-600 bg-slate-500/10'
-                        }`}>
-                        {tx.type === 'penalty' ? 'Jarima' : tx.type === 'advance' ? 'Avans' : tx.type === 'bonus' ? 'Bonus' : tx.type === 'salary_payment' ? 'Oylik' : tx.type}
-                      </span>
-                      <span className="text-slate-600 text-xs">{new Date(tx.date).toLocaleDateString()}</span>
+                    <div className="flex-1 min-w-0 pr-3">
+                      <div className="flex items-center flex-wrap gap-1.5 mb-1">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${tx.type === 'penalty' ? 'text-red-500 bg-red-500/10 border border-red-200' :
+                          tx.type === 'advance' ? 'text-orange-500 bg-orange-500/10 border border-orange-200' :
+                            tx.type === 'bonus' ? 'text-emerald-500 bg-emerald-500/10 border border-emerald-200' :
+                              tx.type === 'salary_payment' ? 'text-indigo-500 bg-indigo-500/10 border border-indigo-200' :
+                                'text-slate-600 bg-slate-500/10 border border-slate-200'
+                          }`}>
+                          {tx.type === 'penalty' ? 'Jarima' : tx.type === 'advance' ? 'Avans' : tx.type === 'bonus' ? 'Bonus' : tx.type === 'salary_payment' ? 'Oylik' : tx.type}
+                        </span>
+                        <span className="text-slate-500 text-xs font-medium">{new Date(tx.date).toLocaleDateString('ru-RU')}</span>
+                        {tx.admin?.name && (
+                          <span className="text-[11px] font-medium text-slate-700 bg-slate-200/70 px-2 py-0.5 rounded-md flex items-center gap-1" title={`Kiritgan mas'ul shaxs: ${tx.admin.name}`}>
+                            <span className="text-slate-500">👤</span>
+                            <span className="font-semibold text-slate-800">{tx.admin.name}</span>
+                            {tx.admin.role && (
+                              <span className="text-slate-500 text-[10px]">
+                                ({tx.admin.role === 'owner' ? 'Owner' : tx.admin.role === 'director' ? 'Direktor' : tx.admin.role})
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      {tx.description && (
+                        <p className="text-xs text-slate-600 italic truncate max-w-md" title={tx.description}>
+                          {tx.description}
+                        </p>
+                      )}
                     </div>
-                    <span className="font-mono text-sm font-bold text-slate-900 mr-3">{tx.amount.toLocaleString()}</span>
+                    <span className="font-mono text-sm font-bold text-slate-900 mr-3 shrink-0">{tx.amount.toLocaleString()}</span>
                     {(currentUser?.role === 'owner' || currentUser?.role === 'director') && (
                       <button 
                         type="button" 
