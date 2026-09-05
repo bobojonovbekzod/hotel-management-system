@@ -135,9 +135,10 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
     // Olingan ma'lumotlarni JavaScript yordamida tezkor obyektlarga (Map) joylash
     const shiftMap = {};
     for (const s of shiftsStats) {
-      if (!shiftMap[s.adminId]) shiftMap[s.adminId] = { morning: 0, night: 0, totalIncome: 0 };
+      if (!shiftMap[s.adminId]) shiftMap[s.adminId] = { morning: 0, night: 0, daily: 0, totalIncome: 0 };
       if (s.shiftType === 'morning') shiftMap[s.adminId].morning += s._count.id;
       if (s.shiftType === 'night') shiftMap[s.adminId].night += s._count.id;
+      if (s.shiftType === 'daily') shiftMap[s.adminId].daily += s._count.id;
       shiftMap[s.adminId].totalIncome += (s._sum.totalIncome || 0);
     }
 
@@ -185,6 +186,7 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
     for (const user of allUsers) {
       const dayShifts = shiftMap[user.id]?.morning || 0;
       const nightShifts = shiftMap[user.id]?.night || 0;
+      const dailyShifts = shiftMap[user.id]?.daily || 0;
       const totalShiftIncome = shiftMap[user.id]?.totalIncome || 0;
       const attendances = attMap[user.id] || 0;
 
@@ -196,7 +198,7 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
 
       if (effectiveSalaryType === 'per_shift') {
         if (['admin', 'owner', 'supervisor', 'director'].includes(user.role)) {
-          shiftEarnings = (dayShifts + nightShifts) * effectiveSalary;
+          shiftEarnings = (dayShifts + nightShifts + dailyShifts) * effectiveSalary;
         } else {
           shiftEarnings = attendances * effectiveSalary;
         }
@@ -284,6 +286,7 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
         stats: {
           dayShifts,
           nightShifts,
+          dailyShifts,
           attendances,
           totalShiftIncome,
           shiftEarnings,

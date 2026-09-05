@@ -82,6 +82,7 @@ export default function PayrollPage() {
       "Lavozim": item.user.role,
       "Kunduzgi smena": item.stats.dayShifts,
       "Tungi smena": item.stats.nightShifts,
+      "Sutkalik smena": item.stats.dailyShifts || 0,
       "Kassa tushumi (so'm)": item.stats.totalShiftIncome,
       "KPI (%)": item.user.kpiPercentage || 0,
       "Asosiy oylik (so'm)": item.stats.baseSalary,
@@ -313,15 +314,16 @@ export default function PayrollPage() {
                           )}
 
                           {/* Smenalar */}
-                          {(item.stats.dayShifts > 0 || item.stats.nightShifts > 0) && (
-                            <div className="flex gap-2 justify-center">
+                          {(item.stats.dayShifts > 0 || item.stats.nightShifts > 0 || item.stats.dailyShifts > 0) && (
+                            <div className="flex gap-2 justify-center flex-wrap">
                               {item.stats.dayShifts > 0 && <span className="text-amber-500 font-medium" title="Kunduzgi smena">☀️ {item.stats.dayShifts}</span>}
                               {item.stats.nightShifts > 0 && <span className="text-indigo-500 font-medium" title="Tungi smena">🌙 {item.stats.nightShifts}</span>}
+                              {item.stats.dailyShifts > 0 && <span className="text-emerald-600 font-medium" title="Sutkalik smena">🕒 {item.stats.dailyShifts} sutka</span>}
                             </div>
                           )}
 
                           {/* Agar hech narsa bo'lmasa */}
-                          {!item.stats.attendances && !item.stats.cleanedRoomsCount && !item.stats.dayShifts && !item.stats.nightShifts && (
+                          {!item.stats.attendances && !item.stats.cleanedRoomsCount && !item.stats.dayShifts && !item.stats.nightShifts && !item.stats.dailyShifts && (
                             <span className="text-slate-500">{item.user.salaryType === 'static' ? 'Statik oylik' : '—'}</span>
                           )}
                         </div>
