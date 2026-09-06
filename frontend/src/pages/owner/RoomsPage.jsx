@@ -101,6 +101,26 @@ export default function RoomsPage() {
 
   // Create Room Modal States
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedRoomModal, setSelectedRoomModal] = useState(null);
+  const [changingStatus, setChangingStatus] = useState(false);
+
+  const handleUpdateRoomStatus = async (roomId, newStatus) => {
+    setChangingStatus(true);
+    try {
+      const res = await api.put(`/rooms/${roomId}/status`, { status: newStatus });
+      if (res.data?.success) {
+        const label = newStatus === 'cleaning' ? 'Tozalanishi kerak 🧹' : newStatus === 'available' ? 'Bo\'sh / Tayyor 🟢' : 'Ta\'mirlashda 🛠';
+        toast.success(`Xona holati "${label}" rejimiga o'tkazildi!`);
+        setSelectedRoomModal(null);
+        fetchRooms();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Xona holatini o\'zgartirishda xatolik');
+    } finally {
+      setChangingStatus(false);
+    }
+  };
+
   const [newRoomForm, setNewRoomForm] = useState({
     branchId: '',
     roomNumber: '',
@@ -315,11 +335,12 @@ export default function RoomsPage() {
                 return (
                   <div
                     key={room.id}
-                    className={`bg-white rounded-3xl border p-5 shadow-xs transition-all space-y-4 relative overflow-hidden ${
-                      isAvailable ? 'border-emerald-200' :
-                      isPartial ? 'border-amber-200' :
-                      isCleaning ? 'border-orange-200' :
-                      'border-rose-200'
+                    onClick={() => setSelectedRoomModal(room)}
+                    className={`bg-white rounded-3xl border p-5 shadow-xs hover:shadow-md cursor-pointer transition-all space-y-4 relative overflow-hidden ${
+                      isAvailable ? 'border-emerald-200 hover:border-emerald-400' :
+                      isPartial ? 'border-amber-200 hover:border-amber-400' :
+                      isCleaning ? 'border-orange-200 hover:border-orange-400' :
+                      'border-rose-200 hover:border-rose-400'
                     }`}
                   >
                     {/* Top Status Stripe */}
@@ -411,6 +432,33 @@ export default function RoomsPage() {
                         <span className="text-[11px] text-emerald-600 font-semibold">
                           Tayyor xona ✨
                         </span>
+                      )}
+                    </div>
+
+                    {/* Quick Status Action Button */}
+                    <div className="pt-2 border-t border-slate-100 flex gap-2">
+                      {room.status !== 'cleaning' ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateRoomStatus(room.id, 'cleaning');
+                          }}
+                          disabled={changingStatus}
+                          className="w-full py-2 px-3 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Sparkles size={14} className="text-amber-600" /> Tozalashga o'tkazish
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateRoomStatus(room.id, 'available');
+                          }}
+                          disabled={changingStatus}
+                          className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <CheckCircle2 size={14} className="text-emerald-600" /> Bo'sh (Tayyor) qilish
+                        </button>
                       )}
                     </div>
                   </div>
@@ -549,6 +597,103 @@ export default function RoomsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ROOM INSPECTOR & STATUS CONTROL MODAL */}
+      {selectedRoomModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center font-bold text-lg">
+                  #{selectedRoomModal.roomNumber}
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">
+                    Xona #{selectedRoomModal.roomNumber} boshqaruvi
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {selectedRoomModal.floor}-qavat · {selectedRoomModal.roomType ? selectedRoomModal.roomType.replace(/_/g, ' ') : 'Standart'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedRoomModal(null)}
+                className="w-8 h-8 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5 text-xs">
+              {/* Current Status Badge */}
+              <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="font-bold text-slate-600">Hozirgi holati:</span>
+                <span className={`px-3 py-1 rounded-xl text-xs font-bold border ${
+                  selectedRoomModal.status === 'available' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                  selectedRoomModal.status === 'cleaning' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                  selectedRoomModal.status === 'maintenance' ? 'bg-slate-100 text-slate-700 border-slate-300' :
+                  'bg-rose-50 text-rose-700 border-rose-200'
+                }`}>
+                  {selectedRoomModal.status === 'available' ? '🟢 Bo\'sh / Tayyor' :
+                   selectedRoomModal.status === 'cleaning' ? '🧹 Tozalanmoqda' :
+                   selectedRoomModal.status === 'maintenance' ? '🛠 Ta\'mirda' :
+                   '🔴 Band'}
+                </span>
+              </div>
+
+              {/* Status Action Buttons */}
+              <div className="space-y-2">
+                <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Holatni o'zgartirish (Status):</p>
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    onClick={() => handleUpdateRoomStatus(selectedRoomModal.id, 'cleaning')}
+                    disabled={changingStatus || selectedRoomModal.status === 'cleaning'}
+                    className="w-full py-2.5 px-4 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-800 border border-amber-300 rounded-2xl font-bold transition-all flex items-center justify-between cursor-pointer disabled:opacity-50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-amber-600" /> Tozalashga o'tkazish (Farroshga yuborish)
+                    </span>
+                    <span>🧹</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleUpdateRoomStatus(selectedRoomModal.id, 'available')}
+                    disabled={changingStatus || selectedRoomModal.status === 'available'}
+                    className="w-full py-2.5 px-4 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-300 rounded-2xl font-bold transition-all flex items-center justify-between cursor-pointer disabled:opacity-50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 size={16} className="text-emerald-600" /> Bo'sh / Tayyor qilish
+                    </span>
+                    <span>🟢</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleUpdateRoomStatus(selectedRoomModal.id, 'maintenance')}
+                    disabled={changingStatus || selectedRoomModal.status === 'maintenance'}
+                    className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-2xl font-bold transition-all flex items-center justify-between cursor-pointer disabled:opacity-50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Building2 size={16} className="text-slate-600" /> Ta'mirlash rejimiga o'tkazish
+                    </span>
+                    <span>🛠</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRoomModal(null)}
+                  className="btn bg-slate-100 text-slate-700 hover:bg-slate-200 w-full"
+                >
+                  Yopish
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
