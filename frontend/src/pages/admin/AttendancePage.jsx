@@ -278,7 +278,7 @@ export default function AttendancePage() {
                       <tr key={cleaner.id} className="hover:bg-slate-50/80 transition-colors divide-x divide-slate-200">
                         <td className="px-4 py-3 sticky left-0 z-10 bg-white font-bold text-slate-900 shadow-sm border-r border-slate-200">
                           <div>{cleaner.name}</div>
-                          <div className="text-[10px] text-slate-500 font-normal uppercase">{cleaner.role}</div>
+                          <div className="text-[10px] text-primary-600 font-semibold uppercase tracking-wider">{cleaner.branch?.name || "Filialsiz"}</div>
                         </td>
                         <td className="px-3 py-3 text-center text-xs font-medium text-slate-600">
                           {cleaner.branch?.name || "—"}
