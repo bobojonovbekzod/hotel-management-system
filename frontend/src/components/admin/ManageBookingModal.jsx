@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import api from '../../lib/api';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
-import { DoorOpen, ArrowRightLeft, CreditCard, Banknote, Smartphone, Plus, Trash2 } from 'lucide-react';
+import { DoorOpen, ArrowRightLeft, CreditCard, Banknote, Smartphone, Plus, Trash2 , Loader2 } from 'lucide-react';
 
 const paymentMethods = [
   { value: 'cash', label: 'Naqd' },
@@ -21,8 +21,6 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
   // Payment state
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [paymentPeriodStart, setPaymentPeriodStart] = useState('');
-  const [paymentPeriodEnd, setPaymentPeriodEnd] = useState('');
   
   // Transfer state
   const [freeRooms, setFreeRooms] = useState([]);
@@ -32,8 +30,8 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
 
   // Extend state
   const [extendDate, setExtendDate] = useState('');
-  const [extendPrice, setExtendPrice] = useState('');
-  const [extendPaymentAmount, setExtendPaymentAmount] = useState('');
+  const [extendAmount, setExtendAmount] = useState('');
+  const [extendIsPaid, setExtendIsPaid] = useState(true);
   const [extendPaymentMethod, setExtendPaymentMethod] = useState('cash');
 
   // Companion state
@@ -44,6 +42,14 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
   const [penaltyDescription, setPenaltyDescription] = useState('');
   const [penaltyMethod, setPenaltyMethod] = useState('cash');
 
+  // Button submitting states to prevent duplicate clicks
+  const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [submittingExtend, setSubmittingExtend] = useState(false);
+  const [submittingTransfer, setSubmittingTransfer] = useState(false);
+  const [submittingCompanion, setSubmittingCompanion] = useState(false);
+  const [submittingPenalty, setSubmittingPenalty] = useState(false);
+  const [submittingCheckout, setSubmittingCheckout] = useState(false);
+
   useEffect(() => {
     fetchBooking();
   }, [bookingId]);
@@ -52,10 +58,20 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
     try {
       const res = await api.get(`/bookings/${bookingId}`);
       setBooking(res.data.data);
-      if (res.data.data.branchId) {
         const roomsRes = await api.get('/rooms');
-        setFreeRooms(roomsRes.data.data.filter(r => r.status === 'available' && r.branchId === res.data.data.branchId));
-      }
+        const currentBookingRoomId = res.data.data.roomId;
+        const currentBranchId = res.data.data.branchId;
+
+        const availableRoomsForTransfer = roomsRes.data.data.filter(r => {
+          if (r.branchId !== currentBranchId) return false;
+          if (r.id === currentBookingRoomId) return false;
+          if (r.status === 'maintenance' || r.status === 'cleaning') return false;
+          const totalBeds = r.capacity || r.totalBeds || 1;
+          const occupied = r.occupiedBeds !== undefined ? r.occupiedBeds : (r.status === 'occupied' ? totalBeds : 0);
+          return r.status === 'available' || occupied < totalBeds;
+        });
+
+        setFreeRooms(availableRoomsForTransfer);
       if (res.data.data.checkOutExpected) {
         const d = new Date(res.data.data.checkOutExpected);
         d.setDate(d.getDate() + 1);
@@ -70,25 +86,29 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
   };
 
   const handleCheckOut = async () => {
+    if (submittingCheckout) return;
+    setSubmittingCheckout(true);
     try {
       await api.put(`/bookings/${bookingId}/checkout`);
       toast.success('Check-out muvaffaqiyatli');
       onSuccess();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Xato yuz berdi');
+    } finally {
+      setSubmittingCheckout(false);
     }
   };
 
   const handleAddPayment = async (e) => {
     e.preventDefault();
+    if (submittingPayment) return;
     const parsedAmount = parseFloat(parseNumberInput(paymentAmount));
     if (!parsedAmount || parsedAmount <= 0) return;
+    setSubmittingPayment(true);
     try {
       await api.post(`/bookings/${bookingId}/payments`, {
         amount: parsedAmount,
-        method: paymentMethod,
-        periodStart: paymentPeriodStart || undefined,
-        periodEnd: paymentPeriodEnd || undefined
+        method: paymentMethod
       });
       toast.success('To\'lov qabul qilindi');
       fetchBooking();
@@ -96,12 +116,16 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
       onSuccess();
     } catch (err) {
       toast.error('To\'lov qabul qilishda xato');
+    } finally {
+      setSubmittingPayment(false);
     }
   };
 
   const handleTransfer = async (e) => {
     e.preventDefault();
+    if (submittingTransfer) return;
     if (!selectedRoomId) return;
+    setSubmittingTransfer(true);
     try {
       await api.put(`/bookings/${bookingId}/transfer`, {
         newRoomId: selectedRoomId,
@@ -112,12 +136,16 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
       onSuccess();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Xato yuz berdi');
+    } finally {
+      setSubmittingTransfer(false);
     }
   };
 
   const handleAddCompanion = async (e) => {
     e.preventDefault();
+    if (submittingCompanion) return;
     if (!companion.firstName || !companion.lastName) return;
+    setSubmittingCompanion(true);
     try {
       await api.post(`/bookings/${bookingId}/guests`, companion);
       toast.success('Hamroh qo\'shildi');
@@ -126,6 +154,8 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
       onSuccess();
     } catch (err) {
       toast.error('Xato yuz berdi');
+    } finally {
+      setSubmittingCompanion(false);
     }
   };
 
@@ -142,26 +172,33 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
 
   const handleExtend = async (e) => {
     e.preventDefault();
+    if (submittingExtend) return;
     if (!extendDate) return;
+    const parsedAmount = extendAmount ? parseFloat(parseNumberInput(extendAmount)) : 0;
+    setSubmittingExtend(true);
     try {
       await api.post(`/bookings/${bookingId}/extend`, {
         newCheckOutDate: extendDate,
-        additionalPrice: extendPrice ? parseFloat(parseNumberInput(extendPrice)) : 0,
-        paymentAmount: extendPaymentAmount ? parseFloat(parseNumberInput(extendPaymentAmount)) : 0,
+        additionalPrice: parsedAmount,
+        paymentAmount: extendIsPaid ? parsedAmount : 0,
         paymentMethod: extendPaymentMethod,
       });
-      toast.success('Muddat uzaytirildi');
+      toast.success('Muddat muvaffaqiyatli uzaytirildi');
       fetchBooking();
       onSuccess();
     } catch (err) {
       toast.error('Xato yuz berdi');
+    } finally {
+      setSubmittingExtend(false);
     }
   };
 
   const handlePenalty = async (e) => {
     e.preventDefault();
+    if (submittingPenalty) return;
     const parsedPenalty = parseFloat(parseNumberInput(penaltyAmount));
     if (!parsedPenalty || parsedPenalty <= 0) return;
+    setSubmittingPenalty(true);
     try {
       await api.post(`/bookings/${bookingId}/penalty`, {
         amount: parsedPenalty,
@@ -175,6 +212,8 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
       onSuccess();
     } catch (err) {
       toast.error('Xatolik');
+    } finally {
+      setSubmittingPenalty(false);
     }
   };
 
@@ -235,7 +274,7 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 <div className="bg-slate-50 p-3 rounded-lg">
                   <p className="text-slate-600 mb-1">Qarz (Qoldiq):</p>
                   <p className={`font-bold ${remaining > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {remaining > 0 ? remaining.toLocaleString() + " so'm" : 'Yo\'q'}
+                    {remaining > 0 ? remaining.toLocaleString() + " so'm" : "Yo\'q"}
                   </p>
                 </div>
               )}
@@ -245,8 +284,12 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 <p className="text-red-400 text-sm font-medium mb-2">Mehmon {remaining.toLocaleString()} so'm qarz. "To'lov qo'shish" bo'limidan pulni qabul qiling.</p>
               </div>
             )}
-            <button onClick={handleCheckOut} className="w-full btn-primary py-3 flex justify-center items-center gap-2 mt-4 text-lg">
-              <DoorOpen /> Check-out (Xonadan chiqarish)
+            <button 
+              onClick={handleCheckOut} 
+              disabled={submittingCheckout}
+              className="w-full btn-primary py-3 flex justify-center items-center gap-2 mt-4 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submittingCheckout ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : <><DoorOpen /> Check-out (Xonadan chiqarish)</>}
             </button>
           </div>
         )}
@@ -268,39 +311,56 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 {paymentMethods.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
-            
-            {booking.bookingType === 'monthly' && (
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <div className="space-y-1">
-                  <label className="text-sm text-slate-600">Qaysi sanadan (Period Start)</label>
-                  <input type="date" value={paymentPeriodStart} onChange={(e) => setPaymentPeriodStart(e.target.value)} className="input-field" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm text-slate-600">Qaysi sanagacha (Period End)</label>
-                  <input type="date" value={paymentPeriodEnd} onChange={(e) => setPaymentPeriodEnd(e.target.value)} className="input-field" />
-                </div>
-              </div>
-            )}
 
-            <button type="submit" className="w-full btn-primary py-2 mt-4">To'lovni qabul qilish</button>
+            <button 
+              type="submit" 
+              disabled={submittingPayment}
+              className="w-full btn-primary py-2 mt-4 flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submittingPayment ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "To'lovni qabul qilish"}
+            </button>
 
             {booking.payments && booking.payments.length > 0 && (
               <div className="mt-6">
                 <h4 className="text-sm font-semibold text-slate-800 mb-2">Qilingan to'lovlar tarixi:</h4>
-                <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
-                  {booking.payments.map(p => (
-                    <div key={p.id} className="flex flex-col bg-slate-50 px-3 py-2 rounded border border-slate-300 text-sm">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-slate-600 capitalize">{p.method}</span>
-                        <span className="text-emerald-400 font-medium">+{p.amount.toLocaleString()} so'm</span>
-                      </div>
-                      {p.periodStart && p.periodEnd && (
-                        <div className="text-xs text-slate-600">
-                          Davr: {format(new Date(p.periodStart), 'dd.MM.yy')} dan {format(new Date(p.periodEnd), 'dd.MM.yy')} gacha
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                  {booking.payments.map(p => {
+                    const isPenalty = p.type === 'penalty';
+                    return (
+                      <div key={p.id} className="flex flex-col bg-slate-50 px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                        <div className="flex justify-between items-center mb-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-700 font-medium capitalize">
+                              {paymentMethods.find(m => m.value === p.method)?.label || p.method}
+                            </span>
+                            {isPenalty && (
+                              <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-semibold text-[10px] uppercase">
+                                Jarima
+                              </span>
+                            )}
+                          </div>
+                          <span className={`font-semibold ${isPenalty ? 'text-rose-500' : 'text-emerald-500'}`}>
+                            +{p.amount?.toLocaleString()} so'm
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <div className="flex justify-between items-center text-xs text-slate-500">
+                          <span>
+                            {p.createdAt ? format(new Date(p.createdAt), 'dd.MM.yyyy HH:mm') : '—'}
+                          </span>
+                          {p.periodStart && p.periodEnd && (
+                            <span className="text-[11px] text-slate-600">
+                              Davr: {format(new Date(p.periodStart), 'dd.MM.yy')} dan {format(new Date(p.periodEnd), 'dd.MM.yy')} gacha
+                            </span>
+                          )}
+                        </div>
+                        {p.description && (
+                          <div className="text-xs text-slate-500 mt-0.5 italic">
+                            Izoh: {p.description}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -309,35 +369,66 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
 
         {activeTab === 'extend' && (
           <form onSubmit={handleExtend} className="space-y-4">
-            <div className="bg-slate-50 p-3 rounded-lg text-sm mb-4">
-              <span className="text-slate-600 block mb-1">Joriy chiqish vaqti:</span>
-              <span className="text-slate-900 font-medium">{format(new Date(booking.checkOutExpected), 'dd.MM.yyyy HH:mm')}</span>
+            <div className="bg-slate-50 p-3 rounded-lg text-sm mb-4 border border-slate-200">
+              <span className="text-slate-500 block mb-0.5 text-xs">Joriy chiqish vaqti:</span>
+              <span className="text-slate-900 font-bold">{format(new Date(booking.checkOutExpected), 'dd.MM.yyyy HH:mm')}</span>
             </div>
             
-            <div className="space-y-2">
-              <label className="text-sm text-slate-600">Yangi chiqish vaqti</label>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Yangi chiqish vaqti</label>
               <input type="datetime-local" value={extendDate} onChange={(e) => setExtendDate(e.target.value)} className="input-field" required />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm text-slate-600">Qo'shiladigan hisob (so'm)</label>
-                <input type="text" inputMode="decimal" value={formatNumberInput(extendPrice)} onChange={(e) => setExtendPrice(parseNumberInput(e.target.value))} className="input-field" placeholder="Masalan: 500000" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-600">Hozir to'lanadigan summa</label>
-                <input type="text" inputMode="decimal" value={formatNumberInput(extendPaymentAmount)} onChange={(e) => setExtendPaymentAmount(parseNumberInput(e.target.value))} className="input-field" placeholder="Masalan: 500000" />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Uzaytirish summasi (so'm)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={formatNumberInput(extendAmount)}
+                onChange={(e) => setExtendAmount(parseNumberInput(e.target.value))}
+                className="input-field font-bold text-base text-primary-700"
+                placeholder="Masalan: 300000"
+                required
+              />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm text-slate-600">To'lov usuli</label>
-              <select value={extendPaymentMethod} onChange={(e) => setExtendPaymentMethod(e.target.value)} className="input-field">
-                {paymentMethods.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-              </select>
+            <div className="pt-1">
+              <label className="flex items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={extendIsPaid}
+                  onChange={(e) => setExtendIsPaid(e.target.checked)}
+                  className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-slate-900 block">
+                    To'lov hozir qabul qilindi
+                  </span>
+                  <span className="text-xs text-slate-500 block">
+                    {extendIsPaid
+                      ? (extendAmount ? `Kassaga ${parseFloat(parseNumberInput(extendAmount) || 0).toLocaleString()} so'm kirim qilinadi` : 'Kassaga kirim qilinadi')
+                      : 'To\'lov olinmadi (Qarzdorlik sifatida saqlanadi)'}
+                  </span>
+                </div>
+              </label>
             </div>
 
-            <button type="submit" className="w-full btn-primary py-2 mt-4">Muddatni uzaytirish</button>
+            {extendIsPaid && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-600">To'lov usuli</label>
+                <select value={extendPaymentMethod} onChange={(e) => setExtendPaymentMethod(e.target.value)} className="input-field">
+                  {paymentMethods.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              disabled={submittingExtend}
+              className="w-full btn-primary py-2.5 mt-4 font-semibold text-sm shadow-md shadow-primary-500/20 flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submittingExtend ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Muddatni uzaytirishni saqlash"}
+            </button>
           </form>
         )}
 
@@ -347,9 +438,16 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
               <label className="text-sm text-slate-600 font-medium">Qaysi xonaga ko'chiriladi?</label>
               <select value={selectedRoomId} onChange={e => setSelectedRoomId(e.target.value)} className="input-field" required>
                 <option value="">Tanlang...</option>
-                {freeRooms.map(r => (
-                  <option key={r.id} value={r.id}>Xona #{r.roomNumber} ({r.roomType}) - {r.pricePerNight.toLocaleString()} so'm</option>
-                ))}
+                {freeRooms.map(r => {
+                  const totalBeds = r.capacity || r.totalBeds || 1;
+                  const availBeds = r.availableBeds !== undefined ? r.availableBeds : (r.status === 'available' ? totalBeds : 0);
+                  const spaceLabel = r.status === 'available' ? "Bo'sh" : `${availBeds}/${totalBeds} ta bo'sh o'rin`;
+                  return (
+                    <option key={r.id} value={r.id}>
+                      Xona #{r.roomNumber} ({r.roomType}) - {spaceLabel} ({r.pricePerNight.toLocaleString()} so'm)
+                    </option>
+                  );
+                })}
               </select>
             </div>
             
@@ -372,8 +470,12 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
               <p className="text-xs text-slate-500">Agar xona narxlari farq qilsa, hisobga va faol smenaga tanlangan to'lov turi bo'yicha summa qo'shiladi.</p>
             </div>
 
-            <button type="submit" className="w-full btn-primary py-2 mt-4 flex items-center justify-center gap-2">
-              <ArrowRightLeft size={18} /> Ko'chirish
+            <button 
+              type="submit" 
+              disabled={submittingTransfer}
+              className="w-full btn-primary py-2 mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submittingTransfer ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : <><ArrowRightLeft size={18} /> Ko'chirish</>}
             </button>
           </form>
         )}
@@ -392,8 +494,12 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
               <label className="text-sm text-slate-600">Pasport / JSHSHIR</label>
               <input type="text" value={companion.passportNumber} onChange={e => setCompanion({...companion, passportNumber: e.target.value})} className="input-field" />
             </div>
-            <button type="submit" className="w-full btn-primary py-2 mt-4 flex justify-center items-center gap-2">
-              <Plus size={18} /> Qo'shish
+            <button 
+              type="submit" 
+              className="w-full btn-primary py-2 mt-4 flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" 
+              disabled={submittingCompanion}
+            >
+              {submittingCompanion ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Qo'shish"}
             </button>
             
             {booking.additionalGuests && booking.additionalGuests.length > 0 && (
@@ -437,7 +543,13 @@ function ManageBookingModal({ bookingId, onClose, onSuccess }) {
                 ))}
               </div>
             </div>
-            <button type="submit" className="w-full btn-primary bg-red-500 hover:bg-red-600 shadow-red-500/20 py-3 mt-4">Jarimani kiritish</button>
+            <button 
+              type="submit" 
+              disabled={submittingPenalty}
+              className="w-full btn-primary bg-red-500 hover:bg-red-600 shadow-red-500/20 py-3 mt-4 flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submittingPenalty ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Jarimani kiritish"}
+            </button>
           </form>
         )}
       </div>

@@ -40,19 +40,34 @@ function initCron(io) {
             },
           });
 
-          // 2. Xonani cleaning holatiga o'tkazish
+          // 2. Qolgan faol bronlar borligini tekshirish
+          const remainingActiveCount = await prisma.booking.count({
+            where: {
+              roomId: booking.roomId,
+              status: 'active',
+              id: { not: booking.id }
+            }
+          });
+
+          const capacity = booking.room?.capacity || 1;
+          let newRoomStatus = 'cleaning';
+          if (remainingActiveCount > 0) {
+            newRoomStatus = remainingActiveCount >= capacity ? 'occupied' : 'available';
+          }
+
+          // Xona holatini yangilash
           await prisma.room.update({
             where: { id: booking.roomId },
-            data: { status: 'cleaning' },
+            data: { status: newRoomStatus },
           });
 
           // 3. Real vaqtda yangilash (frontend ga xabar yuborish)
           if (io) {
             io.to(`branch-${booking.branchId}`).emit('booking-checked-out', { bookingId: booking.id, roomId: booking.roomId });
-            io.to(`branch-${booking.branchId}`).emit('room-status-changed', { roomId: booking.roomId, status: 'cleaning' });
+            io.to(`branch-${booking.branchId}`).emit('room-status-changed', { roomId: booking.roomId, status: newRoomStatus });
           }
 
-          console.log(`[AutoCheckout] Booking ID ${booking.id} muvaffaqiyatli check-out qilindi. (Xona: ${booking.room?.roomNumber})`);
+          console.log(`[AutoCheckout] Booking ID ${booking.id} muvaffaqiyatli check-out qilindi. (Xona: ${booking.room?.roomNumber}, Yangi holat: ${newRoomStatus})`);
         }
       }
       }

@@ -18,12 +18,14 @@ router.post('/login', async (req, res) => {
 
     const normalizedUsername = username.trim().toLowerCase();
 
+    const cleanedPhone = normalizedUsername.replace(/\D/g, '');
     const user = await prisma.user.findFirst({
       where: { 
-        username: {
-          equals: normalizedUsername,
-          mode: 'insensitive' // case-insensitive izlash
-        }
+        OR: [
+          { username: { equals: normalizedUsername, mode: 'insensitive' } },
+          { phone: { equals: normalizedUsername } },
+          ...(cleanedPhone && cleanedPhone.length >= 9 ? [{ phone: { contains: cleanedPhone.slice(-9) } }] : [])
+        ]
       },
       include: { branch: true, company: true },
     });

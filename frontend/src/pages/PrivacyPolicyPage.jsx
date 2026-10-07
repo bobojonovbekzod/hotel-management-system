@@ -1,6 +1,5 @@
 import React from 'react';
 import { ShieldCheck, Lock, FileText, CheckCircle2, Building2, Mail, Phone, Globe } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export default function PrivacyPolicyPage() {
   return (
@@ -87,10 +86,10 @@ export default function PrivacyPolicyPage() {
               <Globe className="w-4 h-4 text-blue-400" /> Veb-sayt: <a href="https://hotelbase.uz" className="text-blue-400 hover:underline">https://hotelbase.uz</a>
             </p>
             <p className="flex items-center gap-2 text-slate-400">
-              <Mail className="w-4 h-4 text-blue-400" /> Email: <span className="text-slate-200">support@hotelbase.uz</span>
+              <Mail className="w-4 h-4 text-blue-400" /> Email: <a href="mailto:bobojonovbekzod5@gmail.com" className="text-slate-200 hover:text-blue-400 transition-colors">bobojonovbekzod5@gmail.com</a>
             </p>
             <p className="flex items-center gap-2 text-slate-400">
-              <Phone className="w-4 h-4 text-blue-400" /> Qo'llab-quvvatlash: <span className="text-slate-200">+998 71 200 00 00</span>
+              <Phone className="w-4 h-4 text-blue-400" /> Qo'llab-quvvatlash: <a href="tel:+998977183925" className="text-slate-200 hover:text-blue-400 transition-colors">+998 97 718 39 25</a>
             </p>
           </div>
 
@@ -99,9 +98,6 @@ export default function PrivacyPolicyPage() {
         {/* Footer */}
         <div className="text-center pt-4 text-xs text-slate-500">
           <p>© 2026 HotelBase Management System. Barcha huquqlar himoyalangan.</p>
-          <div className="mt-2">
-            <Link to="/login" className="text-blue-400 hover:underline">Kirish sahifasiga qaytish</Link>
-          </div>
         </div>
 
       </div>

@@ -25,7 +25,7 @@ import {
   CreditCard,
   Receipt,
   Pencil
-} from 'lucide-react';
+, Loader2 } from 'lucide-react';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
@@ -49,6 +49,9 @@ export default function ExpensesPage() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
   const [activeShift, setActiveShift] = useState(null);
   
   const todayStr = new Date().toISOString().split('T')[0];
@@ -276,6 +279,30 @@ export default function ExpensesPage() {
 
   };
 
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    try {
+      setAddingCategory(true);
+      const res = await api.post('/expense-categories', { name: newCategoryName.trim() });
+      if (res.data?.success) {
+        toast.success(res.data.message || "Yangi turkum qo'shildi");
+        setNewCategoryName('');
+        setShowAddCategoryModal(false);
+        const catRes = await api.get('/expense-categories');
+        const updatedCat = catRes.data?.data || [];
+        setCategories(updatedCat);
+        if (res.data.data?.id) {
+          setForm(prev => ({ ...prev, categoryId: res.data.data.id }));
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Xatolik yuz berdi");
+    } finally {
+      setAddingCategory(false);
+    }
+  };
+
   // Sort expenses by shift effective date
   const sortedExpenses = [...expenses].sort((a, b) => {
     const dateA = new Date(a.effectiveDate || a.expenseDate || a.createdAt).getTime();
@@ -491,9 +518,7 @@ export default function ExpensesPage() {
           </p>
         </div>
       ) : loading ? (
-        <div className="card p-12 text-center text-slate-500">
-          Yuklanmoqda...
-        </div>
+        <div className="card p-12 text-center text-slate-500"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>
       ) : (
         <div className="space-y-6">
           {/* IXCHAM UMUMIY STATISTIKA QATORI */}
@@ -938,9 +963,18 @@ export default function ExpensesPage() {
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  Xarajat turkumi <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-semibold text-slate-700">
+                    Xarajat turkumi <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCategoryModal(true)}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
+                  >
+                    <Plus size={14} /> Turkum qo'shish
+                  </button>
+                </div>
                 <select
                   value={form.categoryId}
                   onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
@@ -1003,7 +1037,51 @@ export default function ExpensesPage() {
                   Bekor qilish
                 </button>
                 <button type="submit" className="btn-primary" disabled={submitting}>
-                  {submitting ? 'Saqlanmoqda...' : 'Saqlash'}
+                  {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Saqlash'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Adding New Category */}
+      {showAddCategoryModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm card">
+            <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <Tag size={18} className="text-indigo-600" /> Yangi Xarajat Turkumi Qo'shish
+            </h3>
+            <form onSubmit={handleAddCategory} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Turkum nomi <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="input-field"
+                  placeholder="Masalan: Pastel xarajatlari"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCategoryModal(false)}
+                  className="btn-secondary text-xs py-1.5 px-3"
+                  disabled={addingCategory}
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary text-xs py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  disabled={addingCategory}
+                >
+                  {addingCategory ? 'Qo\'shilmoqda...' : "Qo\'shish"}
                 </button>
               </div>
             </form>

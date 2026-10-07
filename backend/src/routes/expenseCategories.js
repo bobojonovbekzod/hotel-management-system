@@ -30,8 +30,8 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/expense-categories - Yangi xarajat turini qo'shish (Faqat owner)
-router.post('/', authenticate, authorize('owner', 'superadmin'), async (req, res) => {
+// POST /api/expense-categories - Yangi xarajat turini qo'shish
+router.post('/', authenticate, authorize('owner', 'superadmin', 'admin'), async (req, res) => {
   try {
     const { name } = req.body;
     
@@ -67,7 +67,7 @@ router.post('/', authenticate, authorize('owner', 'superadmin'), async (req, res
 });
 
 // DELETE /api/expense-categories/:id - Kategoriyani o'chirish (yoki nofaol qilish)
-router.delete('/:id', authenticate, authorize('owner', 'superadmin'), async (req, res) => {
+router.delete('/:id', authenticate, authorize('owner', 'superadmin', 'admin'), async (req, res) => {
   try {
     const categoryId = parseInt(req.params.id);
     

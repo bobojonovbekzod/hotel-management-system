@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldAlert, Plus, Trash2, Server, Key, Network } from 'lucide-react';
+import { ShieldAlert, Plus, Trash2, Server, Key, Network , Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -72,7 +72,7 @@ export default function DevicesPage() {
     }
   };
 
-  if (loading) return <div className="text-center p-10 text-slate-600">Yuklanmoqda...</div>;
+  if (loading) return <div className="text-center p-10 text-slate-600"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>;
 
   return (
     <div className="space-y-6">
@@ -173,7 +173,7 @@ export default function DevicesPage() {
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">Bekor qilish</button>
-                <button type="submit" className="btn-primary flex-1 justify-center">Saqlash</button>
+                <button type="submit" className="btn-primary flex-1 justify-center" disabled={loading}>{loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Saqlash'}</button>
               </div>
             </form>
           </div>

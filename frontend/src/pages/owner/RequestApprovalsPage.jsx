@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { ClipboardList, CheckCircle2, XCircle, Clock , Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -48,7 +48,7 @@ export default function RequestApprovalsPage() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center">Yuklanmoqda...</div>;
+  if (loading) return <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>;
 
   const pendingRequests = requests.filter(r => r.status === 'pending');
   const historyRequests = requests.filter(r => r.status !== 'pending');
@@ -58,7 +58,7 @@ export default function RequestApprovalsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-            <ClipboardList className="text-primary-500" size={32} /> Filiallar So'rovlari
+            <ClipboardList className="text-primary-500" size={32} /> Filiallar so'rovlari
           </h1>
           <p className="text-slate-600 mt-1">Filiallardan kelgan tovar so'rovlarini ko'rib chiqing</p>
         </div>

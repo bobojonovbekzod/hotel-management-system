@@ -367,8 +367,8 @@ export default function OwnerDashboard() {
                   tickLine={false}
                   tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
                   label={{ value: "Xonalar bo'yicha % bandlik", angle: -90, position: 'insideLeft', offset: -5, style: { textAnchor: 'middle', fill: '#475569', fontSize: 12, fontWeight: 600 } }}
-                  ticks={[0, 25, 50, 75, 100]}
-                  domain={[0, 100]}
+                  ticks={[0, 25, 50, 75, 100, 125, 150]}
+                  domain={[0, 150]}
                 />
                 <Tooltip
                   contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}

@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, UserCheck, User, Printer, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, Trash2, Headset } from 'lucide-react';
+import { Building2, UserPlus, Users, Edit2, ShieldCheck, UserCog, UserCheck, User, Printer, Image as ImageIcon, Upload, Eye, EyeOff, Wallet, Trash2, Headset , Loader2 } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
-import FullScreenLoader from '../../components/common/FullScreenLoader';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 import { FinanceActionModal } from '../owner/PayrollPage';
 
@@ -383,12 +382,11 @@ export default function StaffPage() {
       {showForm && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowForm(false)}>
           <div className="modal-content max-w-2xl">
-            {submitting && <FullScreenLoader />}
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white shadow-sm">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
                   {editUser ? <Edit2 size={20} className="text-primary-400" /> : <UserPlus size={20} className="text-primary-400" />}
-                  {editUser ? 'Xodimni tahrirlash' : 'Yangi xodim qo\'shish'}
+                  {editUser ? 'Xodimni tahrirlash' : "Yangi xodim qo\'shish"}
                 </h2>
                 {editUser && <p className="text-slate-600 text-sm mt-1">@{form.username}</p>}
               </div>
@@ -612,22 +610,22 @@ export default function StaffPage() {
 
                 {/* Info box for quick password copy */}
                 {!editUser && form.username && form.password && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-                    <p className="text-[11px] uppercase tracking-wider font-bold text-emerald-400 mb-2 flex items-center gap-2">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                    <p className="text-[11px] uppercase tracking-wider font-bold text-emerald-700 mb-2 flex items-center gap-2">
                       <ShieldCheck size={14} /> Xodimga quyidagi ma'lumotlarni yuboring:
                     </p>
-                    <div className="space-y-1 bg-white shadow-sm p-3 rounded-lg border border-emerald-500/10">
+                    <div className="space-y-1 bg-white shadow-sm p-3 rounded-lg border border-emerald-100">
                       <p className="text-sm text-slate-800 flex justify-between">
-                        <span className="text-slate-600">Sayt:</span>
-                        <span className="font-mono text-emerald-300">https://hotelbase.uz/login</span>
+                        <span className="text-slate-500">Sayt:</span>
+                        <span className="font-mono text-emerald-700 font-medium">https://hotelbase.uz/login</span>
                       </p>
                       <p className="text-sm text-slate-800 flex justify-between">
-                        <span className="text-slate-600">Username:</span>
-                        <span className="font-mono text-emerald-300 font-bold">{form.username}</span>
+                        <span className="text-slate-500">Username:</span>
+                        <span className="font-mono text-emerald-700 font-bold">{form.username}</span>
                       </p>
                       <p className="text-sm text-slate-800 flex justify-between">
-                        <span className="text-slate-600">Parol:</span>
-                        <span className="font-mono text-emerald-300 font-bold">{form.password}</span>
+                        <span className="text-slate-500">Parol:</span>
+                        <span className="font-mono text-emerald-700 font-bold">{form.password}</span>
                       </p>
                     </div>
                   </div>
@@ -645,7 +643,7 @@ export default function StaffPage() {
                   >
                     {submitting ? (
                       <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : editUser ? 'Saqlash' : 'Xodimni qo\'shish'}
+                    ) : editUser ? 'Saqlash' : "Xodimni qo\'shish"}
                   </button>
                 </div>
               </form>
@@ -680,7 +678,7 @@ export default function StaffPage() {
                 <div className="flex gap-3 w-full">
                   <button type="button" onClick={() => setShowFaceModal(false)} className="btn-secondary flex-1">Bekor qilish</button>
                   <button type="submit" disabled={uploadingFace} className="btn-primary flex-1 justify-center">
-                    {uploadingFace ? 'Yuklanmoqda...' : <><Upload size={18} /> Yuklash</>}
+                    {uploadingFace ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : <><Upload size={18} /> Yuklash</>}
                   </button>
                 </div>
                 {faceUser?.photoUrl && (

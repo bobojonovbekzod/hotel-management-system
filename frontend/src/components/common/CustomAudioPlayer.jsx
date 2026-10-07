@@ -146,9 +146,7 @@ export default function CustomAudioPlayer({ src, className = '', compact = false
         </div>
 
         {isLoading ? (
-          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 animate-pulse shrink-0">
-            Yuklanmoqda...
-          </span>
+          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 animate-pulse shrink-0"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></span>
         ) : (
           <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 shrink-0">
             {formatTime(currentTime)} {duration > 0 && `/ ${formatTime(duration)}`}

@@ -138,49 +138,182 @@ router.post('/stock/kirim', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Faqat owner kirim qila oladi' });
     }
 
-    const { productId, quantity, purchasePrice } = req.body;
-    
-    if (!productId || !quantity || quantity <= 0) {
-      return res.status(400).json({ success: false, message: "Ma'lumotlar noto'g'ri" });
+    let itemsToProcess = [];
+    if (Array.isArray(req.body.items) && req.body.items.length > 0) {
+      itemsToProcess = req.body.items.map(i => ({
+        productId: parseInt(i.productId),
+        quantity: parseFloat(i.quantity),
+        purchasePrice: i.purchasePrice ? parseFloat(i.purchasePrice) : null
+      })).filter(i => i.productId && i.quantity > 0);
+    } else if (req.body.productId && req.body.quantity) {
+      itemsToProcess.push({
+        productId: parseInt(req.body.productId),
+        quantity: parseFloat(req.body.quantity),
+        purchasePrice: req.body.purchasePrice ? parseFloat(req.body.purchasePrice) : null
+      });
     }
 
-    const product = await prisma.inventoryProduct.findUnique({ where: { id: parseInt(productId) } });
-    if (!product) return res.status(404).json({ success: false, message: 'Mahsulot topilmadi' });
-
-    let expirationDate = null;
-    if (product.hasLifespan && product.lifespanDays) {
-      expirationDate = new Date();
-      expirationDate.setDate(expirationDate.getDate() + product.lifespanDays);
+    if (itemsToProcess.length === 0) {
+      return res.status(400).json({ success: false, message: "Ma'lumotlar noto'g'ri yoki mahsulot tanlanmagan" });
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const newBatch = await tx.inventoryBatch.create({
-        data: {
-          companyId,
-          branchId: null, // Bosh ombor
-          productId: product.id,
-          quantity: parseFloat(quantity),
-          purchasePrice: purchasePrice ? parseFloat(purchasePrice) : null,
-          expirationDate
-        }
-      });
+      const createdBatches = [];
 
-      await tx.inventoryTransaction.create({
-        data: {
-          companyId,
-          branchId: null,
-          productId: product.id,
-          type: 'IN',
-          quantity: parseFloat(quantity),
-          adminId,
-          notes: 'Bosh omborga kirim qilingan'
-        }
-      });
+      for (const item of itemsToProcess) {
+        const product = await tx.inventoryProduct.findUnique({ where: { id: item.productId } });
+        if (!product) continue;
 
-      return newBatch;
+        let expirationDate = null;
+        if (product.hasLifespan && product.lifespanDays) {
+          expirationDate = new Date();
+          expirationDate.setDate(expirationDate.getDate() + product.lifespanDays);
+        }
+
+        const newBatch = await tx.inventoryBatch.create({
+          data: {
+            companyId,
+            branchId: null, // Bosh ombor
+            productId: product.id,
+            quantity: item.quantity,
+            purchasePrice: item.purchasePrice,
+            expirationDate
+          }
+        });
+
+        await tx.inventoryTransaction.create({
+          data: {
+            companyId,
+            branchId: null,
+            productId: product.id,
+            type: 'IN',
+            quantity: item.quantity,
+            adminId,
+            notes: req.body.notes || 'Bosh omborga kirim qilingan'
+          }
+        });
+
+        createdBatches.push(newBatch);
+      }
+
+      return createdBatches;
     });
 
-    res.json({ success: true, data: result });
+    res.json({ success: true, data: result, message: `${itemsToProcess.length} ta mahsulot Bosh omborga kirim qilindi` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server xatosi' });
+  }
+});
+
+
+// --- BOSH OMBORDAN FILIALGA TO'G'RIDAN-TO'G'RI O'TKAZISH (TRANSFER) ---
+
+router.post('/stock/transfer', async (req, res) => {
+  try {
+    const { companyId, id: adminId, role } = req.user;
+    if (role !== 'owner' && role !== 'superadmin') {
+      return res.status(403).json({ success: false, message: 'Faqat owner filialga o\'tkaza oladi' });
+    }
+
+    const { branchId, notes } = req.body;
+    let itemsToProcess = [];
+
+    if (Array.isArray(req.body.items) && req.body.items.length > 0) {
+      itemsToProcess = req.body.items.map(item => ({
+        productId: parseInt(item.productId),
+        quantity: parseFloat(item.quantity)
+      })).filter(i => i.productId && i.quantity > 0);
+    } else if (req.body.productId && req.body.quantity) {
+      itemsToProcess.push({
+        productId: parseInt(req.body.productId),
+        quantity: parseFloat(req.body.quantity)
+      });
+    }
+
+    if (!branchId || itemsToProcess.length === 0) {
+      return res.status(400).json({ success: false, message: "Filial tanlanmagan yoki mahsulotlar kiritilmagan" });
+    }
+
+    // Har bir mahsulot uchun bosh omborda yetarli qoldiq borligini oldindan tekshirish
+    for (const item of itemsToProcess) {
+      const mainBatches = await prisma.inventoryBatch.findMany({
+        where: {
+          companyId,
+          branchId: null,
+          productId: item.productId,
+          quantity: { gt: 0 },
+          status: { in: ['active'] }
+        }
+      });
+      const totalAvailable = mainBatches.reduce((sum, b) => sum + b.quantity, 0);
+      if (totalAvailable < item.quantity) {
+        const prod = await prisma.inventoryProduct.findUnique({ where: { id: item.productId } });
+        return res.status(400).json({ 
+          success: false, 
+          message: `"${prod?.name || 'Mahsulot'}" uchun Bosh omborda yetarli qoldiq yo'q. Mavjud: ${totalAvailable}, So'ralgan: ${item.quantity}` 
+        });
+      }
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const createdBatches = [];
+
+      for (const item of itemsToProcess) {
+        const mainBatches = await tx.inventoryBatch.findMany({
+          where: {
+            companyId,
+            branchId: null,
+            productId: item.productId,
+            quantity: { gt: 0 },
+            status: { in: ['active'] }
+          },
+          orderBy: { purchaseDate: 'asc' }
+        });
+
+        let quantityToDeduct = item.quantity;
+        let lastExpDate = null;
+
+        for (const batch of mainBatches) {
+          if (quantityToDeduct <= 0) break;
+          const deductAmount = Math.min(batch.quantity, quantityToDeduct);
+          await tx.inventoryBatch.update({
+            where: { id: batch.id },
+            data: { quantity: batch.quantity - deductAmount }
+          });
+          quantityToDeduct -= deductAmount;
+          lastExpDate = batch.expirationDate;
+        }
+
+        const newBatch = await tx.inventoryBatch.create({
+          data: {
+            companyId,
+            branchId: parseInt(branchId),
+            productId: item.productId,
+            quantity: item.quantity,
+            expirationDate: lastExpDate
+          }
+        });
+
+        await tx.inventoryTransaction.create({
+          data: {
+            companyId,
+            branchId: parseInt(branchId),
+            productId: item.productId,
+            type: 'TRANSFER',
+            quantity: item.quantity,
+            adminId,
+            notes: notes || "Filialga berildi"
+          }
+        });
+
+        createdBatches.push(newBatch);
+      }
+
+      return createdBatches;
+    });
+
+    res.json({ success: true, data: result, message: `${itemsToProcess.length} ta mahsulot filialga muvaffaqiyatli o'tkazildi` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server xatosi' });

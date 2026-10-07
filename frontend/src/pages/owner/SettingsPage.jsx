@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Settings, Upload, Image as ImageIcon } from 'lucide-react';
+import { Settings, Upload, Image as ImageIcon , Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function SettingsPage() {
@@ -136,7 +136,7 @@ export default function SettingsPage() {
                 className="btn-primary flex items-center gap-2"
               >
                 <Upload size={18} />
-                {loading ? 'Yuklanmoqda...' : 'Yangi logo yuklash'}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Yangi logo yuklash'}
               </button>
               <p className="text-xs text-slate-600 text-center max-w-[250px]">
                 Tavsiya etiladigan o'lcham: 200x200px. Kvadrat formatdagi rasm yuklang.

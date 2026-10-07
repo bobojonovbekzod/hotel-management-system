@@ -326,7 +326,7 @@ export default function CandidatesPage() {
                   }`}>
                     <Award size={15} />
                     <span>{c.score} / {c.totalQuestions || 10} Ball</span>
-                    <span className="text-[10px] font-normal text-slate-500">({c.score === 10 ? 'Ideal' : 'A\'lo'})</span>
+                    <span className="text-[10px] font-normal text-slate-500">({c.score === 10 ? 'Ideal' : "A\'lo"})</span>
                   </div>
 
                   <button

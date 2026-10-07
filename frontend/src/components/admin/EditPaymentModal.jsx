@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { X, Save, ShieldAlert } from 'lucide-react';
+import { X, Save, ShieldAlert , Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -105,7 +105,7 @@ export default function EditPaymentModal({ isOpen, onClose, transaction, onUpdat
               disabled={loading}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? 'Saqlanmoqda...' : <><Save size={16}/> Saqlash</>}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : <><Save size={16}/> Saqlash</>}
             </button>
           </div>
         </form>

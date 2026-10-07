@@ -41,6 +41,9 @@ model Company {
   leads                 Lead[]
   leadCallLogs          LeadCallLog[]
   candidates            Candidate[]
+  guestRequests         GuestRequest[]
+  guestChatMessages     GuestChatMessage[]
+  receipts              Receipt[]
 
   @@map("companies")
 }
@@ -85,6 +88,9 @@ model Branch {
   tasks                 Task[]
   leads                 Lead[]
   candidates            Candidate[]
+  guestRequests         GuestRequest[]
+  guestChatMessages     GuestChatMessage[]
+  receipts              Receipt[]
 
   @@map("branches")
 }
@@ -132,6 +138,7 @@ model User {
   assignedLeads             Lead[]                 @relation("AssignedLeads")
   operatorCallLogs          LeadCallLog[]          @relation("OperatorCallLogs")
   salaryHistories           UserSalaryHistory[]
+  resolvedGuestRequests     GuestRequest[]         @relation("ResolvedGuestRequests")
 
   @@map("users")
 }
@@ -248,6 +255,7 @@ model Booking {
   shift            Shift?         @relation(fields: [shiftId], references: [id])
   additionalGuests BookingGuest[]
   payments         Payment[]
+  receipts         Receipt[]
 
   @@map("bookings")
 }
@@ -594,18 +602,22 @@ enum TaskPriority {
 }
 
 model Task {
-  id          Int          @id @default(autoincrement())
-  companyId   Int
-  branchId    Int
-  title       String
-  description String?      @db.Text
-  status      TaskStatus   @default(TODO)
-  priority    TaskPriority @default(MEDIUM)
-  dueDate     DateTime?
-  creatorId   Int
-  assigneeId  Int
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id              Int          @id @default(autoincrement())
+  companyId       Int
+  branchId        Int
+  title           String
+  description     String?      @db.Text
+  taskImageUrl    String?      @db.Text
+  resultImageUrl  String?      @db.Text
+  resultComment   String?      @db.Text
+  status          TaskStatus   @default(TODO)
+  priority        TaskPriority @default(MEDIUM)
+  isPhotoRequired Boolean      @default(false)
+  dueDate         DateTime?
+  creatorId       Int
+  assigneeId      Int
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   company  Company @relation(fields: [companyId], references: [id])
   branch   Branch  @relation(fields: [branchId], references: [id])
@@ -692,4 +704,84 @@ model Candidate {
 
   @@map("candidates")
 }
+
+// --- GUEST PORTAL & AI CONCIERGE (QR KODLI XONA XIZMATLARI VA AI CHAT) ---
+model GuestRequest {
+  id                  Int       @id @default(autoincrement())
+  companyId           Int       @default(1)
+  branchId            Int
+  roomNumber          String
+  category            String    @default("general") // 'housekeeping', 'maintenance', 'amenities', 'dining', 'general', 'chat'
+  guestName           String?
+  guestLanguage       String    @default("en")
+  originalMessage     String    @db.Text
+  translatedMessageUz String    @db.Text
+  photoUrl            String?   @db.Text
+  status              String    @default("pending") // 'pending', 'in_progress', 'resolved', 'cancelled'
+  resolvedAt          DateTime?
+  resolvedById        Int?
+  adminNotes          String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  company    Company  @relation(fields: [companyId], references: [id])
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  resolvedBy User?    @relation("ResolvedGuestRequests", fields: [resolvedById], references: [id])
+
+  @@map("guest_requests")
+}
+
+model GuestChatMessage {
+  id                Int      @id @default(autoincrement())
+  companyId         Int      @default(1)
+  branchId          Int
+  roomNumber        String
+  sessionId         String   // e.g. "branch_1_room_105_2026-09-09"
+  sender            String   // 'guest', 'staff', 'ai'
+  senderName        String?
+  originalText      String   @db.Text
+  translatedText    String   @db.Text
+  sourceLang        String?  @default("auto")
+  targetLang        String?  @default("uz")
+  isRead            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  company   Company  @relation(fields: [companyId], references: [id])
+  branch    Branch   @relation(fields: [branchId], references: [id])
+
+  @@map("guest_chat_messages")
+}
+
+// --- KVITANSIYA / YASHAGANLIK TO'G'RISIDA MA'LUMOTNOMA (RECEIPTS & INVOICES) ---
+model Receipt {
+  id             Int       @id @default(autoincrement())
+  companyId      Int       @default(1)
+  branchId       Int
+  receiptNumber  String    @unique // e.g. "KV-20260929-1001"
+  companyName    String    // e.g. "TRIPLET" MCHJ
+  companyAddress String?   // e.g. "Samarqand sh., O'zbekistanskiy, Atoy ko'chasi 14-uy"
+  companyPhone   String?   // e.g. "+998 33 718 05 55"
+  guestName      String    // Ismi va familiyasi
+  passportNumber String?   // Pasport seriya / raqam
+  roomNumber     String?   // Yashagan xonasi
+  checkInDate    DateTime?
+  checkOutDate   DateTime?
+  receiptDate    DateTime  @default(now())
+  adminName      String?   // Administrator FIO
+  services       Json      // Array of { name, quantity, price, total }
+  totalAmount    Float     // Jami summa
+  amountInWords  String?   // "Olti yuz ming so'm"
+  notes          String?
+  bookingId      Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  company        Company   @relation(fields: [companyId], references: [id])
+  branch         Branch    @relation(fields: [branchId], references: [id])
+  booking        Booking?  @relation(fields: [bookingId], references: [id])
+
+  @@map("receipts")
+}
+
+
 

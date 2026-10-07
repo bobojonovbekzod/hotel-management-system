@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, ShieldCheck, X, Activity, CalendarDays } from 'lucide-react';
+import { Plus, Edit2, ShieldCheck, X, Activity, CalendarDays , Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function CompaniesPage() {
@@ -129,7 +129,7 @@ export default function CompaniesPage() {
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto custom-scrollbar">
           {loading ? (
-            <div className="p-12 text-center text-slate-600">Yuklanmoqda...</div>
+            <div className="p-12 text-center text-slate-600"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>
           ) : companies.length === 0 ? (
             <div className="p-12 text-center text-slate-600">Hech qanday kompaniya topilmadi.</div>
           ) : (
@@ -235,7 +235,7 @@ export default function CompaniesPage() {
                 <div className="pt-4 flex justify-end gap-3">
                   <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Bekor qilish</button>
                   <button type="submit" disabled={submitting} className="btn-primary">
-                    {submitting ? 'Yaratilmoqda...' : 'Yaratish'}
+                    {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Yaratish'}
                   </button>
                 </div>
               </form>
@@ -278,7 +278,7 @@ export default function CompaniesPage() {
                 <div className="pt-4 mt-4 border-t border-slate-200 flex justify-end gap-3">
                   <button type="button" onClick={() => setShowEditModal(false)} className="btn-secondary">Bekor qilish</button>
                   <button type="submit" disabled={submitting} className="btn-primary">
-                    {submitting ? 'Saqlanmoqda...' : 'Saqlash'}
+                    {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Saqlash'}
                   </button>
                 </div>
               </form>

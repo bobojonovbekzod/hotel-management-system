@@ -1,6 +1,7 @@
 import ModalPortal from '../common/ModalPortal';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
@@ -177,8 +178,8 @@ function ReserveModal({ onClose, onSuccess, shift }) {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-300">
             <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg text-slate-800 hover:bg-slate-100">Bekor qilish</button>
-            <button type="submit" disabled={loading} className="btn-primary px-8">
-              {loading ? 'Kuting...' : 'Bron qilish'}
+            <button type="submit" disabled={loading} className="btn-primary px-8 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Bron qilish'}
             </button>
           </div>
         </form>

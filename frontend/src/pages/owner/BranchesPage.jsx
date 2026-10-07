@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { Building2, Plus, MapPin, Phone, Users, BedDouble, Edit2, Trash2 } from 'lucide-react';
-import FullScreenLoader from '../../components/common/FullScreenLoader';
 
 export default function BranchesPage() {
   const [branches, setBranches] = useState([]);
@@ -201,7 +200,6 @@ export default function BranchesPage() {
       {isModalOpen && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setIsModalOpen(false)}>
           <div className="modal-content">
-            {submitting && <FullScreenLoader />}
             <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white shadow-sm">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 {editingId ? <Edit2 className="text-primary-400" /> : <Plus className="text-primary-400" />}

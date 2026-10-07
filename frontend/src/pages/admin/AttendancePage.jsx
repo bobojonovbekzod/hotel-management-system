@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalendarClock, Search, Filter, Check, TableProperties, Pencil } from 'lucide-react';
+import { CalendarClock, Search, Filter, Check, TableProperties, Pencil, Loader2, CheckCircle2, XCircle, AlertCircle, X, User as UserIcon, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,6 +23,7 @@ export default function AttendancePage() {
   const [matrixData, setMatrixData] = useState(null);
   const [matrixLoading, setMatrixLoading] = useState(false);
   const [togglingCell, setTogglingCell] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null);
 
   const fetchData = async () => {
     if (activeTab === 'cleaner_matrix') {
@@ -104,6 +105,13 @@ export default function AttendancePage() {
     }
   };
 
+  const handleConfirmToggle = async () => {
+    if (!confirmModal) return;
+    const { cleanerId, dateStr, currentStatus } = confirmModal;
+    setConfirmModal(null);
+    await handleToggleCell(cleanerId, dateStr, currentStatus);
+  };
+
   const handleEditDailySalary = async (cleaner) => {
     const inputVal = window.prompt(
       `${cleaner.name} ning ${matrixMonth} oyi uchun kunlik smena narxini kiriting (masalan: 200000 yoki 250000):`,
@@ -130,7 +138,6 @@ export default function AttendancePage() {
     }
   };
 
-
   const formatTime = (isoString) => {
     if (!isoString) return '—';
     return new Date(isoString).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
@@ -138,45 +145,47 @@ export default function AttendancePage() {
 
   const calculateHours = (checkIn, checkOut) => {
     if (!checkIn || !checkOut) return '—';
-    const start = new Date(checkIn).getTime();
-    const end = new Date(checkOut).getTime();
-    if (isNaN(start) || isNaN(end) || end < start) return '—';
-
-    const diff = end - start;
+    const diff = new Date(checkOut) - new Date(checkIn);
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}s ${minutes}d`;
+    return `${hours}s ${minutes}m`;
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* HEADER CONTROLS */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <CalendarClock className="text-primary-600" /> Davomat (Tabel)
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <CalendarClock className="text-primary-600" size={26} />
+            Davomat va Smenalar
           </h1>
-          <p className="text-slate-600 text-sm mt-1">
+          <p className="text-sm text-slate-500 mt-1">
             {activeTab === 'cleaner_matrix' 
-              ? "Tozalik xodimlarining oylik davomat jadvali (Tabel)"
-              : "Xodimlarning kelib-ketish vaqtlari"}
+              ? "Tozalik xodimlarining oylik davomat tabeli (tabel matritsasi)"
+              : "Xodimlarning kunlik kirish/chiqish va smena qaydlari"}
           </p>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="bg-slate-100 p-1 rounded-xl flex gap-1 shadow-inner">
+
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
             <button
               onClick={() => setActiveTab('cleaner_matrix')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-1.5 ${activeTab === 'cleaner_matrix' ? 'bg-primary-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-1.5 ${
+                activeTab === 'cleaner_matrix' ? 'bg-primary-600 shadow-sm text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              <TableProperties size={16} /> Farroshlar Tabeli
+              <TableProperties size={16} />
+              Tozalik Tabeli (Oylik)
             </button>
-            {user?.role !== 'admin' && (
+
+            {user?.role !== 'cleaner' && (
               <>
                 <button
                   onClick={() => setActiveTab('attendance')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'attendance' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  Kunlik Rasm/Vaqt
+                  Kundalik Davomat
                 </button>
                 <button
                   onClick={() => setActiveTab('shifts')}
@@ -285,7 +294,7 @@ export default function AttendancePage() {
                         </td>
                         <td className="px-3 py-3 text-center text-xs font-mono text-slate-700">
                           <div className="flex items-center justify-center gap-1.5">
-                            <span>{cleaner.salary ? `${cleaner.salary.toLocaleString('ru-RU')} so'm` : '0 so\'m'}</span>
+                            <span>{cleaner.salary ? `${cleaner.salary.toLocaleString('ru-RU')} so'm` : "0 so\'m"}</span>
                             {['owner', 'director', 'supervisor'].includes(user?.role) && (
                               <button
                                 type="button"
@@ -308,8 +317,16 @@ export default function AttendancePage() {
                               <button
                                 type="button"
                                 disabled={isToggling}
-                                onClick={() => handleToggleCell(cleaner.id, d.dateStr, isChecked)}
-                                title={`${cleaner.name} - ${d.dateStr}: ${isChecked ? 'Keldi' : 'Kelmadi'}`}
+                                onClick={() => setConfirmModal({
+                                  cleanerId: cleaner.id,
+                                  cleanerName: cleaner.name,
+                                  branchName: cleaner.branch?.name || 'Filialsiz',
+                                  dateStr: d.dateStr,
+                                  dayNum: d.dayNum,
+                                  dayName: d.dayName,
+                                  currentStatus: isChecked
+                                })}
+                                title={`${cleaner.name} - ${d.dateStr}: ${isChecked ? 'Keldi (Bekor qilish uchun bosing)' : 'Kelmadi (Belgilash uchun bosing)'}`}
                                 className={`w-7 h-7 rounded-md flex items-center justify-center mx-auto transition-all ${
                                   isChecked 
                                     ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300 hover:bg-emerald-700' 
@@ -348,7 +365,7 @@ export default function AttendancePage() {
         /* DAILY ATTENDANCE & SHIFTS VIEW */
         <div className="card p-0 overflow-hidden">
           {loading ? (
-            <div className="p-10 text-center text-slate-600">Yuklanmoqda...</div>
+            <div className="p-10 text-center text-slate-600"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-800">
@@ -438,9 +455,121 @@ export default function AttendancePage() {
         </div>
       )}
 
+      {/* CONFIRMATION MODAL FOR ATTENDANCE TOGGLE */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setConfirmModal(null)}>
+          <div 
+            className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6 space-y-5 relative transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setConfirmModal(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Header Icon & Title */}
+            <div className="flex items-start gap-4">
+              <div className={`p-3 rounded-2xl shrink-0 ${
+                !confirmModal.currentStatus 
+                  ? 'bg-emerald-100 text-emerald-600 ring-4 ring-emerald-50' 
+                  : 'bg-rose-100 text-rose-600 ring-4 ring-rose-50'
+              }`}>
+                {!confirmModal.currentStatus ? (
+                  <CheckCircle2 size={28} />
+                ) : (
+                  <AlertCircle size={28} />
+                )}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {!confirmModal.currentStatus ? "Ishga kelganini tasdiqlash" : "Davomatni bekor qilish"}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {!confirmModal.currentStatus 
+                    ? "Xodimni tanlangan sanada 'Keldi' deb qayd etish" 
+                    : "Xodimning ushbu sanadagi davomatini oʻchirish"}
+                </p>
+              </div>
+            </div>
+
+            {/* Info Card */}
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200/80 space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                  <UserIcon size={14} className="text-slate-400" />
+                  Xodim:
+                </span>
+                <span className="font-bold text-slate-900 text-sm">{confirmModal.cleanerName}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                  <Building2 size={14} className="text-slate-400" />
+                  Filial:
+                </span>
+                <span className="font-semibold text-slate-700">{confirmModal.branchName}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200">
+                <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                  <CalendarClock size={14} className="text-slate-400" />
+                  Sana:
+                </span>
+                <span className="font-bold text-primary-700 bg-primary-50 px-2 py-0.5 rounded border border-primary-200">
+                  {confirmModal.dateStr} ({confirmModal.dayName})
+                </span>
+              </div>
+            </div>
+
+            {/* Question Text */}
+            <p className="text-sm text-slate-600 leading-relaxed">
+              {!confirmModal.currentStatus ? (
+                <>Haqiqatan ham <strong>{confirmModal.cleanerName}</strong>ni <strong>{confirmModal.dateStr}</strong> sanasida ishga keldi deb belgilamoqchimisiz?</>
+              ) : (
+                <>Haqiqatan ham <strong>{confirmModal.cleanerName}</strong>ning <strong>{confirmModal.dateStr}</strong> sanasidagi davomatini oʻchirib (kelmadi qilib) qoʻymoqchimisiz?</>
+              )}
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition-colors"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmToggle}
+                className={`px-5 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 ${
+                  !confirmModal.currentStatus
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 active:scale-95'
+                    : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20 active:scale-95'
+                }`}
+              >
+                {!confirmModal.currentStatus ? (
+                  <>
+                    <Check size={16} className="stroke-[3]" />
+                    Ha, keldi deb belgilansin
+                  </>
+                ) : (
+                  <>
+                    <XCircle size={16} />
+                    Ha, davomat oʻchirilsin
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PHOTO PREVIEW MODAL */}
       {selectedPhoto && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedPhoto(null)}>
-          <div className="relative max-w-2xl w-full">
+          <div className="relative max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
             <img 
               src={selectedPhoto?.startsWith('/uploads') ? `/api${selectedPhoto}` : selectedPhoto} 
               alt="Kamera rasmi" 

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
@@ -73,6 +74,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Socket.io ni req ga ulash
 app.use((req, res, next) => {
@@ -110,13 +112,30 @@ app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/leads', require('./routes/leads'));
 app.use('/api/candidates', require('./routes/candidates'));
 app.use('/api/investor', require('./routes/investor'));
+app.use('/api/guest', require('./routes/guestPortal'));
+app.use('/api/guest-requests', require('./routes/guestPortal'));
+app.use('/api/instagram', require('./routes/instagramWebhook'));
+app.use('/api/receipts', require('./routes/receipts'));
 
-// Dynamic Audio Streamer from Asterisk PBX Server
+const RECORDINGS_CACHE_DIR = path.join(__dirname, '../recordings_cache');
+if (!fs.existsSync(RECORDINGS_CACHE_DIR)) {
+  try { fs.mkdirSync(RECORDINGS_CACHE_DIR, { recursive: true }); } catch (e) {}
+}
+
+// Dynamic Audio Streamer from Asterisk PBX Server with Disk Caching
 app.get('/api/recordings/fetch', async (req, res) => {
   try {
     const { filename, phone } = req.query;
     const safeFilename = filename ? path.basename(filename) : '';
     const cleanPhone = (phone || '').replace(/\D/g, '');
+
+    // 1. Check local cache first (instant response in 1-2ms)
+    if (safeFilename) {
+      const cachedPath = path.join(RECORDINGS_CACHE_DIR, safeFilename);
+      if (fs.existsSync(cachedPath)) {
+        return res.sendFile(cachedPath);
+      }
+    }
 
     const { NodeSSH } = require('node-ssh');
     const ssh = new NodeSSH();
@@ -124,7 +143,7 @@ app.get('/api/recordings/fetch', async (req, res) => {
       host: '89.126.208.59',
       username: 'root',
       password: 'Je%K8$Q42R7H%IH',
-      readyTimeout: 15000
+      readyTimeout: 20000
     });
 
     let remoteFile = '';
@@ -139,14 +158,17 @@ app.get('/api/recordings/fetch', async (req, res) => {
       remoteFile = lsRes.stdout.trim();
     }
 
-    // If file exists on PBX disk, stream it!
+    // If file exists on PBX disk, download to local cache and stream!
     if (remoteFile) {
-      const isWav = remoteFile.endsWith('.wav') && !remoteFile.endsWith('.mp3');
-      const base64Res = await ssh.execCommand(`cat "${remoteFile}" | base64 -w 0`);
-      const buffer = Buffer.from(base64Res.stdout.trim(), 'base64');
-      res.set('Content-Type', isWav ? 'audio/wav' : 'audio/mpeg');
+      const actualFilename = path.basename(remoteFile);
+      const localFilePath = path.join(RECORDINGS_CACHE_DIR, actualFilename);
+
+      if (!fs.existsSync(localFilePath)) {
+        await ssh.getFile(localFilePath, remoteFile);
+      }
       ssh.dispose();
-      return res.send(buffer);
+
+      return res.sendFile(localFilePath);
     }
 
     ssh.dispose();

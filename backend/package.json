@@ -19,7 +19,7 @@
   "description": "",
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "axios": "^1.18.0",
+    "axios": "^1.20.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -31,6 +31,7 @@
     "node-cron": "^4.4.1",
     "node-ssh": "^13.2.1",
     "node-telegram-bot-api": "^1.1.2",
+    "openai": "^7.15.0",
     "pg": "^8.21.0",
     "socket.io": "^4.8.3",
     "urllib": "^4.9.0"

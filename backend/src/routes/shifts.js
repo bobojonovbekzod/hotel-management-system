@@ -188,13 +188,14 @@ router.put('/:id/close', authenticate, authorize('admin', 'director'), async (re
       return res.status(400).json({ success: false, message: 'Smena yopilgan yoki topilmadi.' });
     }
 
-    // O'zboshimchalik (Anti-fraud): Tekshiramiz, vaqti o'tib ketgan (overstay) xonalar bormi?
+    // O'zboshimchalik (Anti-fraud): Tekshiramiz, vaqti o'tib ketgan (overstay) kunlik xonalar bormi? (Oylik ijarachilar bundan mustasno)
     const now = new Date();
     const overstayBookings = await prisma.booking.findMany({
       where: {
         branchId: shift.branchId,
         status: 'active',
-        checkOutExpected: { lt: now }
+        checkOutExpected: { lt: now },
+        bookingType: { not: 'monthly' }
       }
     });
 
@@ -255,6 +256,27 @@ router.get('/my/active', authenticate, authorize('admin', 'director', 'superviso
     });
     res.json({ success: true, data: shift });
   } catch (error) {
+    res.status(500).json({ success: false, message: 'Server xatosi.' });
+  }
+});
+
+// GET /api/shifts/branch-active/:branchId - Filialdagi faol smena
+router.get('/branch-active/:branchId', authenticate, authorize('admin', 'director', 'supervisor', 'owner'), async (req, res) => {
+  try {
+    const branchId = parseInt(req.params.branchId);
+    if (!branchId) return res.status(400).json({ success: false, message: 'Filial ID noto\'g\'ri' });
+
+    const shift = await prisma.shift.findFirst({
+      where: { branchId, status: 'active', companyId: req.user.companyId },
+      include: {
+        admin: { select: { id: true, name: true, username: true } },
+        _count: { select: { bookings: true } },
+      },
+      orderBy: { startTime: 'desc' }
+    });
+    res.json({ success: true, data: shift });
+  } catch (error) {
+    console.error('branch-active error:', error);
     res.status(500).json({ success: false, message: 'Server xatosi.' });
   }
 });

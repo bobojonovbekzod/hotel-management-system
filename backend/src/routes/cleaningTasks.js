@@ -234,9 +234,126 @@ router.post('/finish', authenticate, authorize('cleaner', 'admin', 'director', '
       }
     }
 
+    if (req.io) {
+      req.io.to(`branch-${task.branchId}`).emit('cleaning-task-completed', { roomId: task.roomId, taskId: task.id });
+    }
+
     res.json({ success: true, task: updatedTask });
   } catch (error) {
     console.error('Task finish error:', error);
+    res.status(500).json({ success: false, message: 'Server xatosi' });
+  }
+});
+router.get('/active-rooms', authenticate, authorize('cleaner', 'admin', 'director', 'supervisor', 'owner'), async (req, res) => {
+  try {
+    const branchId = req.user.branchId || req.query.branchId;
+    if (!branchId) return res.json({ success: true, activeRoomIds: [] });
+
+    const activeTasks = await prisma.cleaningTask.findMany({
+      where: {
+        branchId: parseInt(branchId),
+        status: { in: ['pending', 'in_progress'] },
+        roomId: { not: null }
+      },
+      select: { roomId: true, id: true, status: true }
+    });
+
+    const dirtyRooms = await prisma.room.findMany({
+      where: {
+        branchId: parseInt(branchId),
+        status: 'cleaning'
+      },
+      select: { id: true }
+    });
+
+    const roomIds = Array.from(new Set([
+      ...activeTasks.map(t => t.roomId),
+      ...dirtyRooms.map(r => r.id)
+    ]));
+
+    res.json({ success: true, activeRoomIds: roomIds, activeTasks });
+  } catch (error) {
+    console.error('Active rooms error:', error);
+    res.status(500).json({ success: false, message: 'Server xatosi' });
+  }
+});
+
+// POST /api/cleaning-tasks/request - Direktor / Admin xonani tozalashga yuborishi (Ijarachilar yoki band xonalar uchun)
+router.post('/request', authenticate, authorize('director', 'owner', 'supervisor', 'admin'), async (req, res) => {
+  try {
+    const { roomId } = req.body;
+    if (!roomId) return res.status(400).json({ success: false, message: 'Xona tanlanmagan' });
+
+    const room = await prisma.room.findUnique({
+      where: { id: parseInt(roomId) }
+    });
+
+    if (!room) return res.status(404).json({ success: false, message: 'Xona topilmadi' });
+
+    // Filial mosligi tekshiruvi (direktor faqat o'z filialini yuborishi mumkin)
+    if (req.user.role === 'director' && req.user.branchId && room.branchId !== req.user.branchId) {
+      return res.status(403).json({ success: false, message: "Siz faqat o'z filialingizdagi xonalarni tozalashga bera olasiz" });
+    }
+
+    // Allaqachon tozalash navbatida bor-yo'qligini tekshirish
+    const existingTask = await prisma.cleaningTask.findFirst({
+      where: {
+        roomId: room.id,
+        status: { in: ['pending', 'in_progress'] }
+      }
+    });
+
+    if (existingTask) {
+      return res.status(400).json({ success: false, message: `Xona #${room.roomNumber} allaqachon tozalash navbatida turibdi` });
+    }
+
+    const task = await prisma.cleaningTask.create({
+      data: {
+        companyId: req.user.companyId,
+        branchId: room.branchId,
+        roomId: room.id,
+        cleanerId: req.user.id, // Farrosh qabul qilguncha yaratuvchi biriktiriladi
+        taskType: 'room',
+        status: 'pending'
+      },
+      include: { room: true }
+    });
+
+    if (req.io) {
+      req.io.to(`branch-${room.branchId}`).emit('cleaning-task-created', task);
+    }
+
+    res.json({ success: true, message: `Xona #${room.roomNumber} tozalash navbatiga yuborildi`, task });
+  } catch (error) {
+    console.error('Request cleaning error:', error);
+    res.status(500).json({ success: false, message: 'Server xatosi' });
+  }
+});
+
+// POST /api/cleaning-tasks/cancel-room - Direktor navbatdagi tozalash topshirig'ini bekor qilishi
+router.post('/cancel-room', authenticate, authorize('director', 'owner', 'supervisor', 'admin'), async (req, res) => {
+  try {
+    const { roomId } = req.body;
+    if (!roomId) return res.status(400).json({ success: false, message: 'Xona tanlanmagan' });
+
+    const task = await prisma.cleaningTask.findFirst({
+      where: { roomId: parseInt(roomId), status: 'pending' },
+      orderBy: { id: 'desc' }
+    });
+
+    if (!task) {
+      return res.status(400).json({ success: false, message: 'Navbatda turgan tozalash topshirigʻi topilmadi yoki u allaqachon boshlangan' });
+    }
+
+    await prisma.cleaningTask.delete({ where: { id: task.id } });
+
+    if (req.io) {
+      req.io.to(`branch-${task.branchId}`).emit('cleaning-task-cancelled', { roomId: task.roomId, taskId: task.id });
+    }
+
+    res.json({ success: true, message: 'Tozalash topshirigʻi bekor qilindi' });
+  } catch (error) {
+    console.error('Cancel room cleaning error:', error);
     res.status(500).json({ success: false, message: 'Server xatosi' });
   }
 });
@@ -255,11 +372,16 @@ router.post('/cancel', authenticate, authorize('cleaner', 'admin', 'director', '
       });
     }
 
-    if (!task || (task.cleanerId !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'owner')) {
+    if (!task || (task.cleanerId !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'owner' && req.user.role !== 'director')) {
       return res.status(400).json({ success: false, message: 'Bekor qilinadigan tozalash ishi topilmadi' });
     }
 
     await prisma.cleaningTask.delete({ where: { id: task.id } });
+
+    if (req.io) {
+      req.io.to(`branch-${task.branchId}`).emit('cleaning-task-cancelled', { roomId: task.roomId, taskId: task.id });
+    }
+
     res.json({ success: true, message: 'Tozalash ishi bekor qilindi' });
   } catch (error) {
     console.error('Task cancel error:', error);

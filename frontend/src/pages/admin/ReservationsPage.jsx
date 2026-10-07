@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import api from '../../lib/api';
-import { CalendarClock, PlusCircle, AlertTriangle } from 'lucide-react';
+import { CalendarClock, PlusCircle, AlertTriangle , Loader2 } from 'lucide-react';
 import ConfirmModal from '../../components/ConfirmModal';
 import ReserveModal from '../../components/admin/ReserveModal';
 
@@ -86,7 +86,7 @@ export default function ReservationsPage() {
 
       <div className="card">
         {loading ? (
-          <div className="py-10 text-center text-slate-600">Yuklanmoqda...</div>
+          <div className="py-10 text-center text-slate-600"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>
         ) : reservations.length === 0 ? (
           <div className="py-10 text-center flex flex-col items-center">
             <CalendarClock size={48} className="text-slate-700 mb-4" />

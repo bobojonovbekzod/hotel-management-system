@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { Banknote, Building2, Calendar as CalendarIcon, Search, Clock, User, CheckCircle2, AlertCircle, Edit2 } from 'lucide-react';
+import { Banknote, Building2, Calendar as CalendarIcon, Search, Clock, User, CheckCircle2, AlertCircle, Edit2 , Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import EditPaymentModal from '../../components/admin/EditPaymentModal';
 
@@ -159,7 +159,7 @@ export default function TransactionsPage() {
             <p>Tranzaksiyalarni ko'rish uchun yuqoridan qaysi filial kamerasini ko'rmoqchi bo'lsangiz, o'shani tanlang.</p>
           </div>
         ) : loading ? (
-          <div className="p-8 text-center text-slate-600">Yuklanmoqda...</div>
+          <div className="p-8 text-center text-slate-600"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>
         ) : groupedData.length === 0 ? (
           <div className="card p-12 text-center text-slate-600 flex flex-col items-center">
             <Search size={48} className="mb-4 text-slate-300" />

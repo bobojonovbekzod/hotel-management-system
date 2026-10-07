@@ -8,25 +8,56 @@ const prisma = new PrismaClient();
 // GET /api/bookings - Bronlar ro'yxati
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { branchId, status, date, bookingType, overdue } = req.query;
+    const { branchId, status, date, startDate, endDate, bookingType, overdue } = req.query;
     
     const where = { companyId: req.user.companyId };
     if (req.user.role === 'admin' || req.user.role === 'director') {
       where.branchId = req.user.branchId;
-    } else if (branchId) {
+    } else if (branchId && branchId !== 'all') {
       where.branchId = parseInt(branchId);
     }
-    if (status) where.status = status;
+    if (status === 'active_shift') {
+      const targetBranchId = (req.user.role === 'admin' || req.user.role === 'director') ? req.user.branchId : (branchId && branchId !== 'all' ? parseInt(branchId) : null);
+      if (targetBranchId) {
+        const activeShift = await prisma.shift.findFirst({
+          where: { branchId: targetBranchId, status: 'active', companyId: req.user.companyId }
+        });
+        if (activeShift) {
+          where.OR = [
+            { shiftId: activeShift.id },
+            { status: 'active' }
+          ];
+        } else {
+          where.status = 'active';
+        }
+      } else {
+        where.status = 'active';
+      }
+    } else if (status) {
+      where.status = status;
+    }
     if (bookingType) where.bookingType = bookingType;
     if (overdue === 'true') {
       where.checkOutExpected = { lt: new Date() };
     }
-    if (date) {
-      const startDate = new Date(date);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(date);
-      endDate.setHours(23, 59, 59, 999);
-      where.createdAt = { gte: startDate, lte: endDate };
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        const sDate = new Date(startDate);
+        sDate.setHours(0, 0, 0, 0);
+        where.createdAt.gte = sDate;
+      }
+      if (endDate) {
+        const eDate = new Date(endDate);
+        eDate.setHours(23, 59, 59, 999);
+        where.createdAt.lte = eDate;
+      }
+    } else if (date) {
+      const sDate = new Date(date);
+      sDate.setHours(0, 0, 0, 0);
+      const eDate = new Date(date);
+      eDate.setHours(23, 59, 59, 999);
+      where.createdAt = { gte: sDate, lte: eDate };
     }
 
     const bookings = await prisma.booking.findMany({
@@ -485,46 +516,86 @@ router.post('/:id/penalty', authenticate, authorize('admin', 'director', 'owner'
     const bookingId = parseInt(req.params.id);
     const { amount, method, description } = req.body;
     
-    let currentShiftId = null;
-    const activeShift = await prisma.shift.findFirst({ where: { adminId: req.user.id, status: 'active' } });
-    if (activeShift) currentShiftId = activeShift.id;
+    const penaltyAmount = parseFloat(amount);
+    if (!penaltyAmount || isNaN(penaltyAmount) || penaltyAmount <= 0) {
+      return res.status(400).json({ success: false, message: "Jarima summasi noto'g'ri kiritildi." });
+    }
 
     const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
     if (!booking) return res.status(404).json({ success: false, message: 'Bron topilmadi' });
 
-    // Jarima narxini umumiy narxga qo'shamiz va payment qilamiz
-    const payment = await prisma.payment.create({
-      data: {
-        bookingId,
-        amount: parseFloat(amount),
-        method,
-        shiftId: currentShiftId,
-        type: 'penalty',
-        description
-      }
+    // Hozirgi adminga tegishli faol smenani aniqlaymiz
+    let activeShift = await prisma.shift.findFirst({
+      where: { adminId: req.user.id, status: 'active' }
     });
 
-    const updatedBooking = await prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        totalPrice: { increment: parseFloat(amount) },
-        paidAmount: { increment: parseFloat(amount) }
-      }
-    });
-
-    // Update shift penalty income
-    if (currentShiftId) {
-      await prisma.shift.update({
-        where: { id: currentShiftId },
-        data: { 
-          totalIncome: { increment: parseFloat(amount) },
-          totalPenalties: { increment: parseFloat(amount) }
-        },
+    // Agar direktor/egasi bo'lsa va o'zida smena bo'lmasa, filialdagi faol smenani olamiz
+    if (!activeShift && (req.user.role === 'director' || req.user.role === 'owner')) {
+      activeShift = await prisma.shift.findFirst({
+        where: { branchId: booking.branchId, status: 'active' }
       });
     }
 
-    res.json({ success: true, data: updatedBooking, message: "Jarima qabul qilindi" });
+    if (!activeShift && req.user.role === 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: "Sizda hozir faol smena ochilmagan! Jarimani kassa tushumiga kiritish uchun avval smenangizni oching."
+      });
+    }
+
+    const currentShiftId = activeShift ? activeShift.id : null;
+
+    // Jarima narxini va to'lovni tranzaksiya ichida yangilaymiz
+    const [payment, updatedBooking] = await prisma.$transaction(async (tx) => {
+      const p = await tx.payment.create({
+        data: {
+          bookingId,
+          amount: penaltyAmount,
+          method: method || 'cash',
+          shiftId: currentShiftId,
+          type: 'penalty',
+          description: description || null
+        }
+      });
+
+      const b = await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          totalPrice: { increment: penaltyAmount },
+          paidAmount: { increment: penaltyAmount }
+        },
+        include: {
+          room: true,
+          primaryGuest: true,
+          admin: { select: { name: true, username: true } },
+          branch: { select: { name: true } },
+          additionalGuests: { include: { guest: true } },
+          shift: true,
+          payments: true
+        }
+      });
+
+      if (currentShiftId) {
+        await tx.shift.update({
+          where: { id: currentShiftId },
+          data: {
+            totalIncome: { increment: penaltyAmount },
+            totalPenalties: { increment: penaltyAmount }
+          }
+        });
+      }
+
+      return [p, b];
+    });
+
+    res.json({
+      success: true,
+      data: updatedBooking,
+      payment,
+      message: "Jarima qabul qilindi va joriy smena kassasiga kiritildi."
+    });
   } catch (error) {
+    console.error('Penalty error:', error);
     res.status(500).json({ success: false, message: 'Server xatosi.' });
   }
 });
@@ -633,15 +704,9 @@ router.put('/:id/transfer', authenticate, authorize('admin', 'director', 'owner'
     if (!booking) return res.status(404).json({ success: false, message: 'Bron topilmadi.' });
 
     const newRoom = await prisma.room.findUnique({ where: { id: parseInt(newRoomId) } });
-    if (!newRoom || newRoom.status === 'occupied') {
-      return res.status(400).json({ success: false, message: "Tanlangan xona band yoki mavjud emas." });
+    if (!newRoom || newRoom.status === 'maintenance' || newRoom.status === 'cleaning') {
+      return res.status(400).json({ success: false, message: "Tanlangan xona ta'mirlashda/tozalashda yoki mavjud emas." });
     }
-
-    // Eski xonani tozalashga o'tkazish
-    await prisma.room.update({
-      where: { id: booking.roomId },
-      data: { status: 'cleaning' }
-    });
 
     // Yangi xonadagi mehmonlar va o'rinlar sonini aniqlash
     const currentGuestsCount = 1 + (booking.additionalGuests ? booking.additionalGuests.length : 0);
@@ -652,15 +717,27 @@ router.put('/:id/transfer', authenticate, authorize('admin', 'director', 'owner'
 
     const existingGuestsCount = activeBookingsInNewRoom.reduce((sum, b) => sum + 1 + (b.additionalGuests ? b.additionalGuests.length : 0), 0);
     const totalGuestsInNewRoom = existingGuestsCount + currentGuestsCount;
+    const maxCapacity = newRoom.capacity || 1;
 
-    // Agar kunlik bron bo'lsa yoki barcha o'rinlar to'lsa — occupied qilamiz
-    const isNowOccupied = booking.bookingType !== 'hostel' || (totalGuestsInNewRoom >= newRoom.capacity);
-    const newRoomStatus = isNowOccupied ? 'occupied' : 'available';
+    if (totalGuestsInNewRoom > maxCapacity) {
+      return res.status(400).json({ success: false, message: `Tanlangan xonada yetarli bo'sh o'rin yo'q (${existingGuestsCount}/${maxCapacity} to'la).` });
+    }
 
-    // Yangi xonani holatini yangilash
+    // Eski xonada boshqa aktiv mehmon bor-yo'qligini tekshirish
+    const activeBookingsInOldRoom = await prisma.booking.findMany({
+      where: { roomId: booking.roomId, status: 'active', id: { not: bookingId } }
+    });
+    if (activeBookingsInOldRoom.length === 0) {
+      await prisma.room.update({
+        where: { id: booking.roomId },
+        data: { status: 'cleaning' }
+      });
+    }
+
+    // Yangi xonaning holatini yangilash
     await prisma.room.update({
       where: { id: parseInt(newRoomId) },
-      data: { status: newRoomStatus }
+      data: { status: 'occupied' }
     });
 
     const extraAmount = parseFloat(additionalPrice || 0);
@@ -702,8 +779,11 @@ router.put('/:id/transfer', authenticate, authorize('admin', 'director', 'owner'
       }
     }
 
-    req.io.to(`branch-${booking.branchId}`).emit('room-status-changed', { roomId: booking.roomId, status: 'cleaning' });
-    req.io.to(`branch-${booking.branchId}`).emit('room-status-changed', { roomId: parseInt(newRoomId), status: newRoomStatus });
+    if (req.io) {
+      const oldRoomStatus = activeBookingsInOldRoom.length === 0 ? 'cleaning' : 'occupied';
+      req.io.to(`branch-${booking.branchId}`).emit('room-status-changed', { roomId: booking.roomId, status: oldRoomStatus });
+      req.io.to(`branch-${booking.branchId}`).emit('room-status-changed', { roomId: parseInt(newRoomId), status: 'occupied' });
+    }
 
     res.json({ success: true, data: updatedBooking, message: "Xona muvaffaqiyatli almashtirildi!" });
   } catch (error) {
@@ -731,14 +811,29 @@ router.put('/:id/checkout', authenticate, authorize('admin', 'director', 'owner'
       },
     });
 
-    // Xonani "cleaning" holatiga o'tkazish
+    // Qolgan faol bronlar borligini tekshirish
+    const remainingActiveCount = await prisma.booking.count({
+      where: {
+        roomId: booking.roomId,
+        status: 'active',
+        id: { not: bookingId }
+      }
+    });
+
+    const capacity = booking.room?.capacity || 1;
+    let newRoomStatus = 'cleaning';
+    if (remainingActiveCount > 0) {
+      newRoomStatus = remainingActiveCount >= capacity ? 'occupied' : 'available';
+    }
+
+    // Xona holatini yangilash
     await prisma.room.update({
       where: { id: booking.roomId },
-      data: { status: 'cleaning' },
+      data: { status: newRoomStatus },
     });
 
     req.io.to(`branch-${booking.branchId}`).emit('booking-checked-out', { bookingId, roomId: booking.roomId });
-    req.io.to(`branch-${booking.branchId}`).emit('room-status-changed', { roomId: booking.roomId, status: 'cleaning' });
+    req.io.to(`branch-${booking.branchId}`).emit('room-status-changed', { roomId: booking.roomId, status: newRoomStatus });
 
     res.json({ success: true, data: updatedBooking, message: 'Mehmon muvaffaqiyatli chiqdi!' });
   } catch (error) {

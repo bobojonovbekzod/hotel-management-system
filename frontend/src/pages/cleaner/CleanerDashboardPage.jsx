@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -36,6 +37,26 @@ export default function CleanerDashboardPage() {
   useEffect(() => {
     if (selectedBranch) {
       fetchPendingRooms();
+
+      const s = io();
+      s.emit('join-branch', selectedBranch);
+
+      s.on('cleaning-task-created', () => {
+        fetchPendingRooms();
+        fetchStatus();
+      });
+
+      s.on('cleaning-task-completed', () => {
+        fetchPendingRooms();
+        fetchStatus();
+      });
+
+      s.on('cleaning-task-cancelled', () => {
+        fetchPendingRooms();
+        fetchStatus();
+      });
+
+      return () => s.disconnect();
     }
   }, [selectedBranch]);
 
@@ -594,7 +615,7 @@ export default function CleanerDashboardPage() {
                         </div>
                         <div className="text-left">
                           <span className="block font-bold text-slate-800">Xona #{t.room?.roomNumber}</span>
-                          <span className="block text-xs text-primary-600 font-medium">Kutayotgan vazifa</span>
+                          <span className="block text-xs text-primary-600 font-medium">Oraliq tozalash topshirig&apos;i</span>
                         </div>
                       </div>
                       <Camera className="w-5 h-5 text-slate-400" />

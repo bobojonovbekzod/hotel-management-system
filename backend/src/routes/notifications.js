@@ -34,6 +34,10 @@ router.put('/read-all', async (req, res) => {
       data: { isRead: true }
     });
 
+    if (req.io) {
+      req.io.emit('notifications_read', { userId });
+    }
+
     res.json({ success: true, message: "Barchasi o'qilgan qilib belgilandi" });
   } catch (error) {
     console.error(error);

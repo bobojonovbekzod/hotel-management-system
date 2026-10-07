@@ -95,27 +95,98 @@ router.post('/', authenticate, authorize('owner', 'director', 'hr'), async (req,
 // PUT /api/users/:id
 router.put('/:id', authenticate, authorize('owner', 'director', 'hr'), async (req, res) => {
   try {
-    const { name, phone, salary, salaryType, kpiPercentage, investorSharePercentage, investorBranchIds, isActive, role, birthDate, gender, telegram } = req.body;
-    const user = await prisma.user.update({
-      where: { id: parseInt(req.params.id), companyId: req.user.companyId },
-      data: { 
-        name, 
-        phone, 
-        salaryType: salaryType || undefined, 
-        salary: salary !== undefined && salary !== null && salary !== '' ? parseFloat(salary) : undefined, 
-        kpiPercentage: kpiPercentage !== undefined && kpiPercentage !== null && kpiPercentage !== '' ? parseFloat(kpiPercentage) : undefined, 
-        investorSharePercentage: investorSharePercentage !== undefined && investorSharePercentage !== null && investorSharePercentage !== '' ? parseFloat(investorSharePercentage) : undefined,
-        investorBranchIds: investorBranchIds !== undefined ? (typeof investorBranchIds === 'string' ? investorBranchIds : JSON.stringify(investorBranchIds)) : undefined,
-        isActive, 
-        role,
-        birthDate: birthDate ? new Date(birthDate) : null,
-        gender: gender || null,
-        telegram: telegram || null
-      },
-      select: { id: true, name: true, username: true, role: true, phone: true, salaryType: true, salary: true, kpiPercentage: true, investorSharePercentage: true, investorBranchIds: true, isActive: true, isFaceRegistered: true, photoUrl: true, birthDate: true, gender: true, telegram: true },
+    const { 
+      name, 
+      username, 
+      password, 
+      phone, 
+      salary, 
+      salaryType, 
+      kpiPercentage, 
+      investorSharePercentage, 
+      investorBranchIds, 
+      isActive, 
+      role, 
+      branchId, 
+      birthDate, 
+      gender, 
+      telegram 
+    } = req.body;
+
+    const targetUserId = parseInt(req.params.id);
+
+    // Xodimni tekshirish (kompaniyasi va kerak bo'lsa filiali bo'yicha)
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        id: targetUserId,
+        companyId: req.user.companyId,
+        ...(req.user.role === 'director' ? { branchId: req.user.branchId } : {})
+      }
     });
-    res.json({ success: true, data: user });
+
+    if (!existingUser) {
+      return res.status(404).json({ success: false, message: 'Foydalanuvchi topilmadi.' });
+    }
+
+    const dataToUpdate = {
+      name,
+      phone,
+      salaryType: salaryType || undefined,
+      salary: salary !== undefined && salary !== null && salary !== '' ? parseFloat(salary) : undefined,
+      kpiPercentage: kpiPercentage !== undefined && kpiPercentage !== null && kpiPercentage !== '' ? parseFloat(kpiPercentage) : undefined,
+      investorSharePercentage: investorSharePercentage !== undefined && investorSharePercentage !== null && investorSharePercentage !== '' ? parseFloat(investorSharePercentage) : undefined,
+      investorBranchIds: investorBranchIds !== undefined ? (typeof investorBranchIds === 'string' ? investorBranchIds : JSON.stringify(investorBranchIds)) : undefined,
+      isActive,
+      role,
+      birthDate: birthDate ? new Date(birthDate) : (birthDate === null ? null : undefined),
+      gender: gender !== undefined ? (gender || null) : undefined,
+      telegram: telegram !== undefined ? (telegram || null) : undefined
+    };
+
+    if (username && username.trim() !== '') {
+      dataToUpdate.username = username.trim().toLowerCase();
+    }
+
+    // Parol berilgan bo'lsa yangi parolni hash qilib saqlash
+    if (password && typeof password === 'string' && password.trim() !== '') {
+      dataToUpdate.password = await bcrypt.hash(password.trim(), 10);
+    }
+
+    if (branchId !== undefined && req.user.role !== 'director') {
+      dataToUpdate.branchId = branchId ? parseInt(branchId) : null;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: targetUserId },
+      data: dataToUpdate,
+      select: { 
+        id: true, 
+        name: true, 
+        username: true, 
+        role: true, 
+        phone: true, 
+        salaryType: true, 
+        salary: true, 
+        kpiPercentage: true, 
+        investorSharePercentage: true, 
+        investorBranchIds: true, 
+        isActive: true, 
+        isFaceRegistered: true, 
+        photoUrl: true, 
+        birthDate: true, 
+        gender: true, 
+        telegram: true,
+        branchId: true,
+        branch: { select: { id: true, name: true } }
+      },
+    });
+
+    res.json({ success: true, data: user, message: 'Xodim ma\'lumotlari muvaffaqiyatli yangilandi.' });
   } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ success: false, message: 'Bu username allaqachon mavjud.' });
+    }
+    console.error('[PUT /api/users/:id Error]:', error);
     res.status(500).json({ success: false, message: 'Server xatosi.' });
   }
 });

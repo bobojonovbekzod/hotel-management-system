@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { Sparkles, Image as ImageIcon, MapPin, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Image as ImageIcon, MapPin, CheckCircle2 , Loader2 } from 'lucide-react';
 
 export default function CleaningTasksPage() {
   const { user } = useAuth();
@@ -100,7 +100,7 @@ export default function CleaningTasksPage() {
 
       <div className="card p-0 overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-slate-600">Yuklanmoqda...</div>
+          <div className="p-10 text-center text-slate-600"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>
         ) : tasks.length === 0 ? (
           <div className="p-16 text-center">
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">

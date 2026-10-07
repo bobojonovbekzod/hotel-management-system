@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   Sparkles
 } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 export default function PendingTasksBanner() {
   const { user } = useAuth();
@@ -31,14 +32,44 @@ export default function PendingTasksBanner() {
         setPendingTasks(myTasks);
       }
     } catch (err) {
-      console.error('Error fetching pending tasks banner:', err);
+      // Quiet fail on network
     }
   };
 
   useEffect(() => {
     fetchMyPendingTasks();
-    const interval = setInterval(fetchMyPendingTasks, 15000); // refresh every 15s
-    return () => clearInterval(interval);
+
+    // Socket.io real-time connection
+    const socket = io();
+    socket.on('new_task', (task) => {
+      if (task?.assigneeId === user?.id) {
+        toast('Sizga yangi vazifa biriktirildi! 📋', { icon: '📌', duration: 4000 });
+        fetchMyPendingTasks();
+      }
+    });
+    socket.on('task_created', (task) => {
+      if (task?.assigneeId === user?.id) {
+        fetchMyPendingTasks();
+      }
+    });
+    socket.on('task_updated', () => {
+      fetchMyPendingTasks();
+    });
+    socket.on('task_deleted', () => {
+      fetchMyPendingTasks();
+    });
+
+    const handleFocus = () => {
+      if (!document.hidden) {
+        fetchMyPendingTasks();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      socket.disconnect();
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user?.id]);
 
   if (!user || pendingTasks.length === 0) return null;

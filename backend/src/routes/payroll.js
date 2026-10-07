@@ -18,7 +18,7 @@ router.get('/', authenticate, authorize('owner', 'director'), async (req, res) =
 
     const whereUser = { 
       companyId: req.user.companyId, 
-      role: { not: 'owner' }
+      role: { notIn: ['owner', 'investor'] }
     };
 
     const allUsers = await prisma.user.findMany({
@@ -502,13 +502,12 @@ router.delete('/:id', authenticate, async (req, res) => {
       const relatedExpense = await prisma.expense.findFirst({
         where: {
           companyId: tx.companyId,
+          branchId: tx.branchId,
           amount: tx.amount,
           description: { startsWith: descPrefix },
-          createdAt: {
-            gte: new Date(tx.date.getTime() - 60000), // 1 daqiqa farq bilan qidirish
-            lte: new Date(tx.date.getTime() + 60000)
-          }
-        }
+          expenseDate: tx.date
+        },
+        orderBy: { createdAt: 'desc' }
       });
 
       if (relatedExpense) {

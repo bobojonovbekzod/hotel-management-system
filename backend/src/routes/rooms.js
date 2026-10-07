@@ -77,10 +77,11 @@ router.get('/', authenticate, async (req, res) => {
       const availableBeds = Math.max(0, totalBeds - occupiedBeds);
 
       let computedStatus = room.status;
-      if (room.status !== 'cleaning' && room.status !== 'maintenance') {
-        if (occupiedBeds === 0) computedStatus = 'available';
-        else if (occupiedBeds < totalBeds) computedStatus = 'partial';
+      if (occupiedBeds > 0) {
+        if (occupiedBeds < totalBeds) computedStatus = 'partial';
         else computedStatus = 'occupied';
+      } else if (room.status !== 'cleaning' && room.status !== 'maintenance') {
+        computedStatus = 'available';
       }
 
       return {

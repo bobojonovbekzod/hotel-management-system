@@ -340,12 +340,17 @@ router.delete('/:id', authenticate, async (req, res) => {
 router.get('/stats', authenticate, async (req, res) => {
   try {
     const companyId = req.user.companyId || 1;
-    const { period } = req.query; // 'today', 'week', 'month', 'year'
+    const { period, month, year } = req.query; // 'today', 'week', 'month', 'year'
 
     const now = new Date();
     let startDate = new Date(now.getFullYear(), now.getMonth(), 1); // default month start
+    let endDate = new Date();
 
-    if (period === 'today') {
+    if (month !== undefined && year !== undefined) {
+      // Specific month selected
+      startDate = new Date(parseInt(year), parseInt(month), 1, 0, 0, 0);
+      endDate = new Date(parseInt(year), parseInt(month) + 1, 1, 0, 0, 0);
+    } else if (period === 'today') {
       startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
     } else if (period === 'week') {
       const day = now.getDay() || 7;
@@ -354,8 +359,29 @@ router.get('/stats', authenticate, async (req, res) => {
 
     const whereTime = {
       companyId,
-      createdAt: { gte: startDate }
+      createdAt: { gte: startDate, ...(month !== undefined && year !== undefined ? { lt: endDate } : {}) }
     };
+
+    // Calculate Monthly Leads for Chart
+    const targetYear = year ? parseInt(year) : now.getFullYear();
+    const monthlyLeads = [];
+    const monthNames = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+    
+    // We can run this in parallel for speed
+    const monthlyPromises = [];
+    for (let i = 0; i < 12; i++) {
+      const mStart = new Date(targetYear, i, 1);
+      const mEnd = new Date(targetYear, i + 1, 1);
+      monthlyPromises.push(
+        prisma.lead.count({
+          where: {
+            companyId,
+            createdAt: { gte: mStart, lt: mEnd }
+          }
+        }).then(count => ({ month: monthNames[i], count }))
+      );
+    }
+    const monthlyLeadsData = await Promise.all(monthlyPromises);
 
     // 1. Leads by Stage
     const leads = await prisma.lead.findMany({ where: whereTime });
@@ -447,7 +473,8 @@ router.get('/stats', authenticate, async (req, res) => {
         totalLeads,
         targetRevenue,
         targetProgress,
-        sourceBreakdown
+        sourceBreakdown,
+        monthlyLeads: monthlyLeadsData
       }
     });
   } catch (error) {

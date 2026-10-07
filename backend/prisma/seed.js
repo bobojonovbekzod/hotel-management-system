@@ -174,7 +174,7 @@ async function main() {
   console.log(`✅ ${roomsData.length} ta xona yaratildi`);
 
   // Xarajat kategoriyalarini yaratish
-  const expenseCategoriesData = ['food', 'cleaning', 'repair', 'utilities', 'other'];
+  const expenseCategoriesData = ['food', 'cleaning', 'repair', 'utilities', 'other', 'Pastel xarajatlari'];
   const expenseCategories = [];
   for (const catName of expenseCategoriesData) {
     const cat = await prisma.expenseCategory.create({

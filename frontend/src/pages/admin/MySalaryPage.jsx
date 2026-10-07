@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { format } from 'date-fns';
-import { UserCheck, Clock, TrendingDown, TrendingUp, DollarSign } from 'lucide-react';
+import { UserCheck, Clock, TrendingDown, TrendingUp, DollarSign , Loader2 } from 'lucide-react';
 
 export default function MySalaryPage() {
   const [data, setData] = useState(null);
@@ -26,7 +26,7 @@ export default function MySalaryPage() {
   };
 
   if (loading) {
-    return <div className="text-center text-slate-600 py-10">Yuklanmoqda...</div>;
+    return <div className="text-center text-slate-600 py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>;
   }
 
   if (!data) return null;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Plus, History, Archive, AlertTriangle, Building2, ArrowDownLeft, ArrowUpRight, CheckCircle2, Info } from 'lucide-react';
+import { Package, Plus, History, Archive, AlertTriangle, Building2, ArrowDownLeft, ArrowUpRight, CheckCircle2, Info, Loader2, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -31,11 +31,20 @@ export default function InventoryPage() {
     lifespanDays: ''
   });
 
-  const [kirimForm, setKirimForm] = useState({
-    productId: '',
-    quantity: '',
-    purchasePrice: ''
-  });
+  const [branches, setBranches] = useState([]);
+
+  // Multi-item Kirim Form
+  const [kirimNotes, setKirimNotes] = useState('');
+  const [kirimItems, setKirimItems] = useState([
+    { productId: '', quantity: '', purchasePrice: '' }
+  ]);
+
+  // Multi-item Transfer Form
+  const [transferBranchId, setTransferBranchId] = useState('');
+  const [transferNotes, setTransferNotes] = useState('');
+  const [transferItems, setTransferItems] = useState([
+    { productId: '', quantity: '' }
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -50,10 +59,11 @@ export default function InventoryPage() {
       const prodRes = await api.get('/inventory/products');
       setProducts(prodRes.data.data);
 
-      if (activeTab === 'stock') {
-        const stockRes = await api.get('/inventory/stock');
-        setBatches(stockRes.data.data);
-      }
+      const branchRes = await api.get('/branches');
+      setBranches(branchRes.data?.data || []);
+
+      const stockRes = await api.get('/inventory/stock');
+      setBatches(stockRes.data.data);
 
       if (activeTab === 'history') {
         const txRes = await api.get('/inventory/transactions');
@@ -64,6 +74,13 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getProductStock = (prodId) => {
+    if (!prodId) return 0;
+    return batches
+      .filter(b => b.productId === parseInt(prodId))
+      .reduce((sum, b) => sum + b.quantity, 0);
   };
 
   const handleCreateCategory = async (e) => {
@@ -92,17 +109,110 @@ export default function InventoryPage() {
     }
   };
 
+  // Kirim row management
+  const addKirimRow = () => {
+    setKirimItems([...kirimItems, { productId: '', quantity: '', purchasePrice: '' }]);
+  };
+
+  const removeKirimRow = (index) => {
+    if (kirimItems.length === 1) return;
+    setKirimItems(kirimItems.filter((_, i) => i !== index));
+  };
+
+  const updateKirimRow = (index, field, value) => {
+    const updated = kirimItems.map((item, i) => i === index ? { ...item, [field]: value } : item);
+    setKirimItems(updated);
+  };
+
   const handleKirim = async (e) => {
     e.preventDefault();
     try {
+      const validItems = kirimItems
+        .filter(item => item.productId && parseFloat(parseNumberInput(item.quantity)) > 0)
+        .map(item => ({
+          productId: parseInt(item.productId),
+          quantity: parseFloat(parseNumberInput(item.quantity)),
+          purchasePrice: item.purchasePrice ? parseFloat(parseNumberInput(item.purchasePrice)) : undefined
+        }));
+
+      if (validItems.length === 0) {
+        toast.error("Kamida bitta mahsulot va miqdorini kiriting");
+        return;
+      }
+
       const payload = {
-        ...kirimForm,
-        quantity: parseFloat(parseNumberInput(kirimForm.quantity)),
-        purchasePrice: kirimForm.purchasePrice ? parseFloat(parseNumberInput(kirimForm.purchasePrice)) : undefined
+        items: validItems,
+        notes: kirimNotes || 'Bosh omborga kirim qilingan'
       };
-      await api.post('/inventory/stock/kirim', payload);
-      toast.success('Bosh omborga kirim qilindi');
-      setKirimForm({ productId: '', quantity: '', purchasePrice: '' });
+
+      const res = await api.post('/inventory/stock/kirim', payload);
+      toast.success(res.data?.message || 'Bosh omborga kirim qilindi');
+      setKirimItems([{ productId: '', quantity: '', purchasePrice: '' }]);
+      setKirimNotes('');
+      fetchData();
+      setActiveTab('stock');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Xatolik');
+    }
+  };
+
+  // Transfer row management
+  const addTransferRow = () => {
+    setTransferItems([...transferItems, { productId: '', quantity: '' }]);
+  };
+
+  const removeTransferRow = (index) => {
+    if (transferItems.length === 1) return;
+    setTransferItems(transferItems.filter((_, i) => i !== index));
+  };
+
+  const updateTransferRow = (index, field, value) => {
+    const updated = transferItems.map((item, i) => i === index ? { ...item, [field]: value } : item);
+    setTransferItems(updated);
+  };
+
+  const handleTransfer = async (e) => {
+    e.preventDefault();
+    if (!transferBranchId) {
+      toast.error("Iltimos, filialni tanlang");
+      return;
+    }
+
+    try {
+      const validItems = transferItems
+        .filter(item => item.productId && parseFloat(parseNumberInput(item.quantity)) > 0)
+        .map(item => ({
+          productId: parseInt(item.productId),
+          quantity: parseFloat(parseNumberInput(item.quantity))
+        }));
+
+      if (validItems.length === 0) {
+        toast.error("Kamida bitta mahsulot va miqdorini kiriting");
+        return;
+      }
+
+      // Check stock client-side for immediate feedback
+      for (const it of validItems) {
+        const available = getProductStock(it.productId);
+        if (available < it.quantity) {
+          const prod = products.find(p => p.id === it.productId);
+          toast.error(`"${prod?.name || 'Mahsulot'}" uchun omborda yetarli qoldiq yo'q! Mavjud: ${available}, So'ralgan: ${it.quantity}`);
+          return;
+        }
+      }
+
+      const payload = {
+        branchId: parseInt(transferBranchId),
+        items: validItems,
+        notes: transferNotes || 'Filialga berildi'
+      };
+
+      const res = await api.post('/inventory/stock/transfer', payload);
+      toast.success(res.data?.message || "Filialga muvaffaqiyatli o'tkazildi");
+      setTransferItems([{ productId: '', quantity: '' }]);
+      setTransferBranchId('');
+      setTransferNotes('');
+      fetchData();
       setActiveTab('stock');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Xatolik');
@@ -111,7 +221,7 @@ export default function InventoryPage() {
 
   // UI Render functions
   const renderStock = () => {
-    if (loading) return <div className="p-10 text-center">Yuklanmoqda...</div>;
+    if (loading) return <div className="p-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-500" /></div>;
 
     // Guruhlash productId bo'yicha
     const grouped = {};
@@ -205,86 +315,226 @@ export default function InventoryPage() {
 
   const renderKirim = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white p-6 border border-slate-200 rounded-2xl shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <ArrowDownLeft className="text-primary-500" /> Bosh omborga kirim qilish
-        </h3>
-        
-        <form onSubmit={handleKirim} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Mahsulotni tanlang</label>
-            <div className="flex gap-2">
-              <select 
-                className="input-field flex-1"
-                value={kirimForm.productId}
-                onChange={e => setKirimForm({...kirimForm, productId: e.target.value})}
-                required
-              >
-                <option value="">-- Tanlang --</option>
-                {products.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.category?.name})</option>
-                ))}
-              </select>
-              <button 
+      {/* Multi-item Kirim Form */}
+      <div className="bg-white p-6 border border-slate-200 rounded-2xl shadow-sm flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <ArrowDownLeft className="text-emerald-500" /> Bosh omborga kirim qilish
+            </h3>
+            <button 
+              type="button"
+              onClick={() => setShowProductModal(true)}
+              className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 bg-primary-50 px-2.5 py-1 rounded-lg"
+            >
+              <Plus size={14} /> Yangi tovar
+            </button>
+          </div>
+          
+          <form onSubmit={handleKirim} className="space-y-4">
+            <div className="space-y-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                Kirim qilinadigan mahsulotlar ({kirimItems.length} ta)
+              </label>
+
+              {kirimItems.map((item, index) => (
+                <div key={index} className="p-3 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600">#{index + 1}-tovar</span>
+                    {kirimItems.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeKirimRow(index)}
+                        className="text-rose-500 hover:text-rose-700 text-xs font-semibold flex items-center gap-1"
+                      >
+                        <Trash2 size={13} /> O'chirish
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <select 
+                      className="input-field w-full text-sm"
+                      value={item.productId}
+                      onChange={e => updateKirimRow(index, 'productId', e.target.value)}
+                      required
+                    >
+                      <option value="">-- Mahsulotni tanlang --</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.category?.name || 'Kategoriyasiz'})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Miqdori</label>
+                      <input 
+                        type="text" 
+                        inputMode="decimal"
+                        className="input-field text-sm" 
+                        value={formatNumberInput(item.quantity)}
+                        onChange={e => updateKirimRow(index, 'quantity', parseNumberInput(e.target.value))}
+                        placeholder="Masalan: 100"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">Xarid narxi (ixtiyoriy)</label>
+                      <input 
+                        type="text" 
+                        inputMode="decimal"
+                        className="input-field text-sm" 
+                        value={formatNumberInput(item.purchasePrice)}
+                        onChange={e => updateKirimRow(index, 'purchasePrice', parseNumberInput(e.target.value))}
+                        placeholder="Jami so'm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <button
                 type="button"
-                onClick={() => setShowProductModal(true)}
-                className="btn-secondary px-3"
-                title="Yangi mahsulot qo'shish"
+                onClick={addKirimRow}
+                className="w-full py-2.5 px-4 border border-dashed border-primary-300 text-primary-600 hover:bg-primary-50 rounded-xl font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
-                <Plus size={20} />
+                <Plus size={16} /> Yana mahsulot qo'shish
               </button>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Miqdori</label>
+            <div className="pt-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Kirim izohi (ixtiyoriy)</label>
               <input 
                 type="text" 
-                inputMode="decimal"
                 className="input-field" 
-                value={formatNumberInput(kirimForm.quantity)}
-                onChange={e => setKirimForm({...kirimForm, quantity: parseNumberInput(e.target.value)})}
-                required
+                value={kirimNotes}
+                onChange={e => setKirimNotes(e.target.value)}
+                placeholder="Masalan: Bozordan sotib olindi yoki yetkazib beruvchidan keldi"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Xarid narxi (Jami so'm, ixtiyoriy)</label>
-              <input 
-                type="text" 
-                inputMode="decimal"
-                className="input-field" 
-                value={formatNumberInput(kirimForm.purchasePrice)}
-                onChange={e => setKirimForm({...kirimForm, purchasePrice: parseNumberInput(e.target.value)})}
-              />
-            </div>
-          </div>
 
-          <button type="submit" className="btn-primary w-full mt-6">
-            Kirim qilish
-          </button>
-        </form>
+            <button type="submit" className="btn-primary w-full mt-4 font-bold justify-center text-center shadow-md shadow-primary-500/20">
+              Kirim qilish
+            </button>
+          </form>
+        </div>
       </div>
 
-      {/* Info card */}
-      <div className="bg-slate-800 p-6 rounded-2xl text-white shadow-xl shadow-slate-900/20">
-        <h4 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
-          <Info size={24} className="text-primary-400" /> Bosh Ombor qanday ishlaydi?
-        </h4>
-        <ul className="space-y-4 text-slate-300">
-          <li className="flex gap-3">
-            <span className="w-6 h-6 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center flex-shrink-0 text-sm">1</span>
-            <p>Siz yangi sochiq, sovun yoki idish sotib olganingizda <strong>shu yerdan</strong> kirim qilasiz.</p>
-          </li>
-          <li className="flex gap-3">
-            <span className="w-6 h-6 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center flex-shrink-0 text-sm">2</span>
-            <p>Filial direktorlari sizga o'z filialidan turib <strong>"So'rov"</strong> yuborishadi.</p>
-          </li>
-          <li className="flex gap-3">
-            <span className="w-6 h-6 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center flex-shrink-0 text-sm">3</span>
-            <p>Siz so'rovni <strong>Tasdiqlaganingizda</strong> u Bosh ombordan ayrilib, filialga o'tadi.</p>
-          </li>
-        </ul>
+      {/* Multi-item Filialga Chiqim qilish (Transfer) Form */}
+      <div className="bg-white p-6 border border-slate-200 rounded-2xl shadow-sm flex flex-col justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <ArrowUpRight className="text-blue-500" /> Filialga chiqim qilish (nakladnoy usulida)
+          </h3>
+          
+          <form onSubmit={handleTransfer} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Qaysi filialga jo'natiladi?</label>
+              <select 
+                className="input-field font-semibold text-slate-800"
+                value={transferBranchId}
+                onChange={e => setTransferBranchId(e.target.value)}
+                required
+              >
+                <option value="">-- Filialni tanlang --</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                Beriladigan mahsulotlar ({transferItems.length} ta)
+              </label>
+
+              {transferItems.map((item, index) => {
+                const currentStock = getProductStock(item.productId);
+                return (
+                  <div key={index} className="p-3 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-600">#{index + 1}-tovar</span>
+                      {transferItems.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeTransferRow(index)}
+                          className="text-rose-500 hover:text-rose-700 text-xs font-semibold flex items-center gap-1"
+                        >
+                          <Trash2 size={13} /> O'chirish
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <select 
+                        className="input-field w-full text-sm"
+                        value={item.productId}
+                        onChange={e => updateTransferRow(index, 'productId', e.target.value)}
+                        required
+                      >
+                        <option value="">-- Mahsulotni tanlang --</option>
+                        {products.map(p => {
+                          const stock = getProductStock(p.id);
+                          return (
+                            <option key={p.id} value={p.id}>
+                              {p.name} (Omborda: {stock} {p.measurementUnit})
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="block text-xs font-medium text-slate-600">Miqdori</label>
+                          {item.productId && (
+                            <span className={`text-[11px] font-semibold ${currentStock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                              Mavjud: {currentStock} dona
+                            </span>
+                          )}
+                        </div>
+                        <input 
+                          type="text" 
+                          inputMode="decimal"
+                          className="input-field text-sm" 
+                          value={formatNumberInput(item.quantity)}
+                          onChange={e => updateTransferRow(index, 'quantity', parseNumberInput(e.target.value))}
+                          placeholder="Masalan: 50"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={addTransferRow}
+                className="w-full py-2.5 px-4 border border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 rounded-xl font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Plus size={16} /> Yana mahsulot qo'shish
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Umumiy izoh (ixtiyoriy)</label>
+              <input 
+                type="text" 
+                className="input-field" 
+                value={transferNotes}
+                onChange={e => setTransferNotes(e.target.value)}
+                placeholder="Masalan: 05.10 yuk mashinasida haydovchi orqali berib yuborildi"
+              />
+            </div>
+
+            <button type="submit" className="btn-primary bg-blue-600 hover:bg-blue-700 w-full mt-4 font-bold justify-center text-center shadow-md shadow-blue-500/20">
+              Chiqim qilish
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -305,9 +555,9 @@ export default function InventoryPage() {
           onChange={e => setFilterType(e.target.value)}
         >
           <option value="ALL">Barcha amaliyotlar</option>
-          <option value="IN">Faqat Kirimlar</option>
-          <option value="TRANSFER">Faqat Filialga berish</option>
-          <option value="OUT">Faqat Chiqimlar (Brak)</option>
+          <option value="IN">Faqat kirimlar</option>
+          <option value="TRANSFER">Faqat filialga berish</option>
+          <option value="OUT">Faqat chiqimlar (brak)</option>
         </select>
         <input 
           type="month" 
@@ -342,9 +592,9 @@ export default function InventoryPage() {
                   {format(new Date(tx.createdAt), 'dd.MM.yyyy HH:mm')}
                 </td>
                 <td className="px-6 py-4">
-                  {tx.type === 'IN' && <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-xs font-bold flex inline-flex items-center gap-1"><ArrowDownLeft size={12}/> Kirim</span>}
-                  {tx.type === 'OUT' && <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold flex inline-flex items-center gap-1"><ArrowUpRight size={12}/> Chiqim</span>}
-                  {tx.type === 'TRANSFER' && <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs font-bold flex inline-flex items-center gap-1"><Building2 size={12}/> Filialga berildi</span>}
+                  {tx.type === 'IN' && <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-xs font-bold inline-flex items-center gap-1"><ArrowDownLeft size={12}/> Kirim</span>}
+                  {tx.type === 'OUT' && <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold inline-flex items-center gap-1"><ArrowUpRight size={12}/> Chiqim</span>}
+                  {tx.type === 'TRANSFER' && <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs font-bold inline-flex items-center gap-1"><Building2 size={12}/> Filialga berildi</span>}
                 </td>
                 <td className="px-6 py-4 font-medium text-slate-900">{tx.product?.name}</td>
                 <td className="px-6 py-4 text-slate-600">{tx.branch?.name || 'Bosh ombor'}</td>
@@ -379,21 +629,21 @@ export default function InventoryPage() {
           className={`px-4 py-3 font-medium text-sm transition-colors relative ${activeTab === 'stock' ? 'text-primary-600' : 'text-slate-500 hover:text-slate-800'}`}
           onClick={() => setActiveTab('stock')}
         >
-          <span className="flex items-center gap-2"><Package size={18}/> Bosh Ombor Qoldig'i</span>
+          <span className="flex items-center gap-2"><Package size={18}/> Bosh ombor qoldig'i</span>
           {activeTab === 'stock' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 rounded-t-full" />}
         </button>
         <button
           className={`px-4 py-3 font-medium text-sm transition-colors relative ${activeTab === 'incoming' ? 'text-primary-600' : 'text-slate-500 hover:text-slate-800'}`}
           onClick={() => setActiveTab('incoming')}
         >
-          <span className="flex items-center gap-2"><ArrowDownLeft size={18}/> Kirim Qilish</span>
+          <span className="flex items-center gap-2"><ArrowDownLeft size={18}/> Kirim qilish</span>
           {activeTab === 'incoming' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 rounded-t-full" />}
         </button>
         <button
           className={`px-4 py-3 font-medium text-sm transition-colors relative ${activeTab === 'history' ? 'text-primary-600' : 'text-slate-500 hover:text-slate-800'}`}
           onClick={() => setActiveTab('history')}
         >
-          <span className="flex items-center gap-2"><History size={18}/> Kirim-Chiqim Tarixi</span>
+          <span className="flex items-center gap-2"><History size={18}/> Kirim-chiqim tarixi</span>
           {activeTab === 'history' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 rounded-t-full" />}
         </button>
       </div>
@@ -406,7 +656,7 @@ export default function InventoryPage() {
       {showCategoryModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4">Yangi Kategoriya</h2>
+            <h2 className="text-xl font-bold mb-4">Yangi kategoriya</h2>
             <form onSubmit={handleCreateCategory}>
               <input
                 type="text"
@@ -418,7 +668,7 @@ export default function InventoryPage() {
               />
               <div className="flex gap-3 justify-end">
                 <button type="button" onClick={() => setShowCategoryModal(false)} className="btn-secondary">Bekor qilish</button>
-                <button type="submit" className="btn-primary">Saqlash</button>
+                <button type="submit" className="btn-primary" disabled={loading}>{loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Saqlash'}</button>
               </div>
             </form>
           </div>
@@ -429,7 +679,7 @@ export default function InventoryPage() {
       {showProductModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4">Yangi Mahsulot Turini Qo'shish</h2>
+            <h2 className="text-xl font-bold mb-4">Yangi mahsulot turini qo'shish</h2>
             <form onSubmit={handleCreateProduct} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Kategoriya</label>
@@ -468,6 +718,7 @@ export default function InventoryPage() {
                     <option value="litr">Litr</option>
                     <option value="metr">Metr</option>
                     <option value="quti">Quti</option>
+                    <option value="pachka">Pachka</option>
                   </select>
                 </div>
                 
@@ -502,7 +753,7 @@ export default function InventoryPage() {
 
               <div className="flex gap-3 justify-end mt-6">
                 <button type="button" onClick={() => setShowProductModal(false)} className="btn-secondary">Bekor qilish</button>
-                <button type="submit" className="btn-primary">Qo'shish</button>
+                <button type="submit" className="btn-primary" disabled={loading}>{loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Qo'shish"}</button>
               </div>
             </form>
           </div>

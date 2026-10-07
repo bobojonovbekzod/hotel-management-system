@@ -128,7 +128,7 @@ export default function FrontDeskPage() {
       setConfirmDialog({
         isOpen: true,
         title: "Xona holatini o'zgartirish",
-        message: `Xona hozir "${room.status === 'cleaning' ? 'Tozalanmoqda' : 'Ta\'mirda'}" holatida. Uni "Bo'sh" (tayyor) deb belgilaysizmi?`,
+        message: `Xona hozir "${room.status === 'cleaning' ? 'Tozalanmoqda' : "Ta\'mirda"}" holatida. Uni "Bo'sh" (tayyor) deb belgilaysizmi?`,
         action: async () => {
           try {
             const targetStatus = (roomActiveBookings.length >= room.capacity) ? 'occupied' : 'available';
@@ -152,6 +152,16 @@ export default function FrontDeskPage() {
     if (roomActiveBookings.length === 0) {
       if (room.status === 'available') {
         setCheckInRoom(room);
+      } else if (room.status === 'occupied') {
+        setConfirmDialog({
+          isOpen: true,
+          title: "Xona holati",
+          message: `Xonada faol bron topilmadi. Yangi mehmon kiritishni (Check-in) xohlaysizmi?`,
+          action: async () => {
+            setCheckInRoom(room);
+            setConfirmDialog({ isOpen: false });
+          }
+        });
       }
     } else if (roomActiveBookings.length === 1 && room.status === 'occupied') {
       setManageBookingId(roomActiveBookings[0].id);

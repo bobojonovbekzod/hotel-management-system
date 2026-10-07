@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { 
   BedDouble, Building2, Search, 
   User, CheckCircle2, Sparkles
-} from 'lucide-react';
+, Loader2 } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 export default function RoomsPage() {
@@ -593,7 +593,7 @@ export default function RoomsPage() {
                   disabled={submittingRoom}
                   className="btn-primary flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {submittingRoom ? "Saqlanmoqda..." : "Saqlash va qo'shish"}
+                  {submittingRoom ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Saqlash va qo'shish"}
                 </button>
               </div>
             </form>

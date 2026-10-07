@@ -123,6 +123,53 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
 
     const occupancyRate = totalRooms > 0 ? Math.round((activeBookings / totalRooms) * 100) : 0;
 
+    // 6. Daily Occupancy dynamics (Occupancy line chart)
+    const occupancyStats = [];
+    const overlappingBookings = await prisma.booking.findMany({
+      where: {
+        companyId: req.user.companyId || 1,
+        ...branchWhere,
+        status: { in: ['active', 'checked_out'] },
+        checkIn: { lte: endDate },
+        OR: [
+          { checkOutActual: { gte: startDate } },
+          { checkOutExpected: { gte: startDate }, status: 'active' }
+        ]
+      },
+      select: { roomId: true, checkIn: true, checkOutActual: true, checkOutExpected: true, status: true }
+    });
+
+    const nowMoment = new Date();
+    const daysInTargetMonth = new Date(year, mStr, 0).getDate();
+    let loopDate = new Date(year, mStr - 1, 1, 12, 0, 0);
+    const finalLoopDate = new Date(year, mStr - 1, daysInTargetMonth, 12, 0, 0);
+
+    while (loopDate <= finalLoopDate) {
+      const curDayStart = new Date(loopDate.getFullYear(), loopDate.getMonth(), loopDate.getDate(), 0, 0, 0);
+      const curDayEnd = new Date(loopDate.getFullYear(), loopDate.getMonth(), loopDate.getDate(), 23, 59, 59, 999);
+
+      let bandVal = null;
+      if (curDayStart <= nowMoment) {
+        const occupiedRooms = new Set();
+        for (const b of overlappingBookings) {
+          const checkIn = new Date(b.checkIn);
+          const checkOut = b.status === 'checked_out' && b.checkOutActual ? new Date(b.checkOutActual) : new Date(b.checkOutExpected);
+
+          if (checkIn <= curDayEnd && checkOut >= curDayStart) {
+            occupiedRooms.add(b.roomId);
+          }
+        }
+        bandVal = occupiedRooms.size;
+      }
+
+      occupancyStats.push({
+        date: loopDate.getDate().toString().padStart(2, '0') + '.' + (loopDate.getMonth() + 1).toString().padStart(2, '0'),
+        band: bandVal
+      });
+
+      loopDate.setDate(loopDate.getDate() + 1);
+    }
+
     res.json({
       success: true,
       data: {
@@ -140,6 +187,7 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
           activeBookings,
           occupancyRate
         },
+        occupancyStats,
         expenses: formattedExpenses.slice(0, 10) // Recent 10 expenses for transparency
       }
     });

@@ -64,13 +64,12 @@ import {
   CheckCheck,
   Layers,
   CircleDot
-} from 'lucide-react';
+, Loader2 } from 'lucide-react';
 import IntegrationsPage from '../admin/IntegrationsPage';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { io } from 'socket.io-client';
-import { UserAgent, Registerer, Inviter, SessionState } from 'sip.js';
-import { SIP_AUDIO_CONSTRAINTS, SIP_SDH_OPTIONS } from '../../lib/sipAudioConfig';
+import { useSip } from '../../contexts/SipContext';
 
 // Helper to clean dummy strings and format names/phones cleanly
 const cleanText = (str, fallback = '') => {
@@ -166,33 +165,25 @@ export default function OperatorDashboardPage() {
     return 'ws://89.126.208.59:8088/ws';
   };
 
-  const [sipConfig, setSipConfig] = useState({
-    wsServer: getWsServerUrl(),
-    sipUser: '1001w',
-    sipPass: 'aa1001aa',
-    sipDomain: '89.126.208.59'
-  });
-
-  const [sipRegistered, setSipRegistered] = useState(false);
-  const [sipConnecting, setSipConnecting] = useState(false);
-  const [showSipSettingsModal, setShowSipSettingsModal] = useState(false);
-
-  // SIP References
-  const userAgentRef = useRef(null);
-  const registererRef = useRef(null);
-  const activeSessionRef = useRef(null);
-  const remoteAudioRef = useRef(null);
-  const ringbackAudioContextRef = useRef(null);
-  const ringbackTimerRef = useRef(null);
-
-  // Softphone Dialpad State
-  const [softphoneOpen, setSoftphoneOpen] = useState(false);
-  const [dialNumber, setDialNumber] = useState('');
-  const [inCall, setInCall] = useState(false);
-  const [callTimer, setCallTimer] = useState(0);
-
-  // Incoming Call State
-  const [incomingCall, setIncomingCall] = useState(null);
+  // Use Global SIP Context
+  const {
+    sipRegistered,
+    softphoneOpen,
+    setSoftphoneOpen,
+    dialNumber,
+    setDialNumber,
+    inCall,
+    callTimer,
+    incomingCall,
+    makeCall,
+    answerCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+    isMuted,
+    sendDTMF,
+    formatTimer
+  } = useSip();
 
   // Selected Lead for amoCRM 2-Column Detail Modal
   const [activeLeadModal, setActiveLeadModal] = useState(null);
@@ -361,81 +352,7 @@ export default function OperatorDashboardPage() {
     }
   };
 
-  useEffect(() => {
-    connectSIP();
-    return () => {
-      disconnectSIP();
-    };
-  }, []);
 
-  const connectSIP = async () => {
-    setSipConnecting(true);
-    try {
-      const targetURI = UserAgent.makeURI(`sip:${sipConfig.sipUser}@${sipConfig.sipDomain}`);
-      if (!targetURI) return;
-
-      const ua = new UserAgent({
-        uri: targetURI,
-        transportOptions: {
-          server: sipConfig.wsServer
-        },
-        authorizationUsername: sipConfig.sipUser,
-        authorizationPassword: sipConfig.sipPass,
-        logLevel: 'error'
-      });
-
-      ua.delegate = {
-        onInvite(invitation) {
-          activeSessionRef.current = invitation;
-
-          const callerNum = invitation.remoteIdentity.uri.user || 'Noma\'lum';
-          setIncomingCall({
-            phone: callerNum,
-            name: `Mijoz (${callerNum})`,
-            location: 'Uztelecom Liniyasi',
-            previousStays: 0,
-            status: "Kiruvchi Qo'ng'iroq",
-            invitation: invitation
-          });
-
-          invitation.stateChange.addListener((state) => {
-            if (state === SessionState.Terminated) {
-              setInCall(false);
-              setOperatorStatus('online');
-              setIncomingCall(null);
-              activeSessionRef.current = null;
-              toast.error("Qo'ng'iroq yakunlandi");
-            }
-          });
-        }
-      };
-
-      await ua.start();
-      userAgentRef.current = ua;
-
-      const registerer = new Registerer(ua);
-      await registerer.register();
-      registererRef.current = registerer;
-
-      setSipRegistered(true);
-      setSipConnecting(false);
-      toast.success(`SIP Uztelecom Serverga ulandi (1001w@${sipConfig.sipDomain})`, { id: 'sip-connected' });
-    } catch (err) {
-      console.log('SIP Connection Error:', err);
-      setSipRegistered(false);
-      setSipConnecting(false);
-    }
-  };
-
-  const disconnectSIP = () => {
-    if (registererRef.current) {
-      registererRef.current.unregister();
-    }
-    if (userAgentRef.current) {
-      userAgentRef.current.stop();
-    }
-    setSipRegistered(false);
-  };
 
   // Call Timer Effect
   useEffect(() => {
@@ -548,124 +465,15 @@ export default function OperatorDashboardPage() {
     return digits || String(phone).replace(/[\s+()-]/g, '');
   };
 
-  const handleStartCall = async (targetPhone = null) => {
+  const handleStartCall = (targetPhone = null, leadName = null) => {
     const rawNumber = targetPhone || dialNumber || '';
     const cleanedDigits = cleanPhoneForDial(rawNumber);
     const numberToCall = cleanedDigits || rawNumber.replace(/[\s+()-]/g, '');
-    
     if (numberToCall) {
-      setDialNumber(numberToCall);
-    }
-    setSoftphoneOpen(true);
-    
-    if (!numberToCall) {
-      toast.error('Iltimos, telefon raqamini kiriting!');
-      return;
-    }
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast.error("Mikrofon ruxsati berilmadi!", { duration: 5000 });
-      return;
-    }
-
-    try {
-      await navigator.mediaDevices.getUserMedia(SIP_AUDIO_CONSTRAINTS);
-    } catch (mErr) {
-      toast.error("Mikrofonga ruxsat berilmadi! Iltimos brauzerda mikrofoningizni yoqing.");
-      return;
-    }
-
-    if (!userAgentRef.current || !sipRegistered) {
-      toast.error("Uztelecom SIP ulanishi tayyorlanmoqda...");
-      setInCall(true);
-      setOperatorStatus('incall');
+      makeCall(numberToCall, leadName);
+    } else {
       setSoftphoneOpen(true);
-      return;
     }
-
-    try {
-      const target = UserAgent.makeURI(`sip:${numberToCall}@${sipConfig.sipDomain}`);
-      if (!target) {
-        toast.error("Raqam formati noto'g'ri");
-        return;
-      }
-
-      const inviter = new Inviter(userAgentRef.current, target, {
-        sessionDescriptionHandlerOptions: SIP_SDH_OPTIONS
-      });
-
-      startRingback();
-      let wasConnected = false;
-
-      inviter.stateChange.addListener(async (state) => {
-        if (state === SessionState.Establishing) {
-          toast.loading("Gudok ketmoqda...", { id: 'call-status' });
-        } else if (state === SessionState.Established) {
-          wasConnected = true;
-          stopRingback();
-          setInCall(true);
-          setOperatorStatus('incall');
-          setSoftphoneOpen(true);
-          toast.success(`Uztelecom muloqoti boshlandi: ${numberToCall}`, { id: 'call-status' });
-
-          if (remoteAudioRef.current && inviter.sessionDescriptionHandler) {
-            const mediaStream = inviter.sessionDescriptionHandler.remoteMediaStream;
-            remoteAudioRef.current.srcObject = mediaStream;
-            remoteAudioRef.current.play().catch(e => console.log('Audio play err:', e));
-          }
-        } else if (state === SessionState.Terminated) {
-          stopRingback();
-          setInCall(false);
-          setOperatorStatus('online');
-          activeSessionRef.current = null;
-
-          if (wasConnected) {
-            toast.error("Qo'ng'iroq yakunlandi.", { id: 'call-status' });
-          } else {
-            toast.error("🔴 Abonent band yoki telefoni o'chirilgan", { id: 'call-status', duration: 4000 });
-          }
-
-          // Save call to backend
-          try {
-            const matchedLead = leads.find(l => l.phone.includes(numberToCall) || numberToCall.includes(l.phone));
-            await api.post('/leads/calls', {
-              leadId: matchedLead ? matchedLead.dbId : null,
-              phone: numberToCall,
-              direction: 'outgoing',
-              duration: callTimer || (wasConnected ? 15 : 0),
-              status: wasConnected ? 'Muloqot yakunlandi' : "Ko'tarmadi / O'chirilgan",
-              audioUrl: wasConnected ? `/api/recordings/fetch?phone=${encodeURIComponent(numberToCall)}` : null
-            });
-            fetchCalls();
-            fetchStats();
-          } catch (err) {
-            console.error('Error saving call log:', err);
-          }
-        }
-      });
-
-      await inviter.invite();
-      activeSessionRef.current = inviter;
-
-      setInCall(true);
-      setOperatorStatus('incall');
-      setSoftphoneOpen(true);
-    } catch (err) {
-      stopRingback();
-      console.log('Outbound call error:', err);
-      toast.error("Qo'ng'iroqni amalga oshirib bo'lmadi", { id: 'call-status' });
-    }
-  };
-
-  const handleEndCall = () => {
-    stopRingback();
-    if (activeSessionRef.current) {
-      activeSessionRef.current.dispose();
-      activeSessionRef.current = null;
-    }
-    setInCall(false);
-    setOperatorStatus('online');
-    toast.error("Qo'ng'iroq yakunlandi.", { id: 'call-status' });
   };
 
   const handleAddNote = async (e) => {
@@ -746,9 +554,6 @@ export default function OperatorDashboardPage() {
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-800 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
       
-      {/* Hidden Audio Element for WebRTC Stream */}
-      <audio ref={remoteAudioRef} autoPlay />
-
       {/* TOP HEADER BAR */}
       <div className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-30 shadow-xs">
         
@@ -1187,7 +992,7 @@ export default function OperatorDashboardPage() {
                                 {/* Revenue & Quick Stage Select */}
                                 <div className="pl-1.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                                   <span className="font-extrabold text-emerald-600 text-xs">
-                                    {lead.revenue > 0 ? `${Number(lead.revenue).toLocaleString()} so'm` : '0 so\'m'}
+                                    {lead.revenue > 0 ? `${Number(lead.revenue).toLocaleString()} so'm` : "0 so\'m"}
                                   </span>
 
                                   <select
@@ -1301,94 +1106,7 @@ export default function OperatorDashboardPage() {
         </div>
       )}
 
-      {/* FLOATING DIALPAD KEYPAD POPOVER */}
-      {softphoneOpen && (
-        <div className="fixed bottom-20 left-6 z-50 bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200 shadow-2xl p-5 w-80 space-y-4 animate-in fade-in slide-in-from-bottom-5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-              <Headset className="w-4 h-4 text-blue-600" /> Dialpad (Uztelecom)
-            </h3>
-            <button
-              onClick={() => setSoftphoneOpen(false)}
-              className="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs"
-            >
-              ✕
-            </button>
-          </div>
 
-          <div className="relative">
-            <input
-              type="text"
-              readOnly
-              value={dialNumber || 'Raqam kiring...'}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-center text-lg font-mono font-extrabold text-slate-900 focus:outline-none"
-            />
-            {dialNumber && (
-              <button
-                onClick={() => setDialNumber(prev => prev.slice(0, -1))}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 font-bold"
-                title="O'chirish"
-              >
-                ⌫
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { num: '1', sub: '' },
-              { num: '2', sub: 'ABC' },
-              { num: '3', sub: 'DEF' },
-              { num: '4', sub: 'GHI' },
-              { num: '5', sub: 'JKL' },
-              { num: '6', sub: 'MNO' },
-              { num: '7', sub: 'PQRS' },
-              { num: '8', sub: 'TUV' },
-              { num: '9', sub: 'WXYZ' },
-              { num: '*', sub: '' },
-              { num: '0', sub: '+' },
-              { num: '#', sub: '' }
-            ].map((item) => (
-              <button
-                key={item.num}
-                onClick={() => handleDialClick(item.num)}
-                className="h-12 rounded-2xl bg-slate-50 hover:bg-blue-50 hover:border-blue-300 border border-slate-200 flex flex-col items-center justify-center active:scale-95 transition-all group"
-              >
-                <span className="font-extrabold text-base text-slate-800 group-hover:text-blue-600">{item.num}</span>
-                {item.sub && <span className="text-[8px] text-slate-400 font-mono -mt-1 font-bold">{item.sub}</span>}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={() => setDialNumber('')}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl"
-            >
-              Tozalash
-            </button>
-
-            {inCall ? (
-              <button
-                onClick={handleEndCall}
-                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all"
-              >
-                <PhoneOff className="w-4 h-4" /> Tugatish
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setSoftphoneOpen(false);
-                  handleStartCall();
-                }}
-                className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 active:scale-95 transition-all"
-              >
-                <PhoneCall className="w-4 h-4" /> Qo'ng'iroq
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* BOTTOM FLOATING DIALING BAR */}
       <div className="bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-2.5 flex items-center justify-between gap-4 sticky bottom-0 z-30 shadow-lg">
@@ -1413,7 +1131,7 @@ export default function OperatorDashboardPage() {
 
         {inCall ? (
           <button
-            onClick={handleEndCall}
+            onClick={endCall}
             className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow flex items-center gap-2 active:scale-95 transition-all"
           >
             <PhoneOff className="w-4 h-4" /> Tugatish ({Math.floor(callTimer / 60)}:{(callTimer % 60).toString().padStart(2, '0')})
@@ -1575,9 +1293,7 @@ export default function OperatorDashboardPage() {
                   <button
                     type="submit"
                     className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 active:scale-95 transition-all"
-                  >
-                    <Send className="w-4 h-4" /> Saqlash
-                  </button>
+                   disabled={loading}>{loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Saqlash'}</button>
                 </form>
               </div>
 

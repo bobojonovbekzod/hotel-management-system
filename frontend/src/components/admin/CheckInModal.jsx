@@ -1,6 +1,6 @@
 import ModalPortal from '../common/ModalPortal';
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, UserPlus, CreditCard, Smartphone, Banknote, Search, Repeat, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, UserPlus, CreditCard, Smartphone, Banknote, Search, Repeat, AlertTriangle , Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
@@ -434,7 +434,7 @@ function CheckInModal({ room, shift, onClose, onSuccess }) {
           <div className="flex justify-end gap-3 pt-6">
             <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>Bekor qilish</button>
             <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Bajarilmoqda...' : 'Tasdiqlash'}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Tasdiqlash'}
             </button>
           </div>
         </form>

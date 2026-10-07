@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, X, RefreshCw } from 'lucide-react';
+import { Camera, X, RefreshCw , Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CameraModal({ onCapture, onClose }) {
@@ -158,7 +158,7 @@ export default function CameraModal({ onCapture, onClose }) {
                 disabled={isCapturing}
                 className="flex-1 btn-primary flex items-center justify-center gap-2"
               >
-                {isCapturing ? 'Yuklanmoqda...' : 'Tasdiqlash'}
+                {isCapturing ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Tasdiqlash'}
               </button>
             </>
           ) : (

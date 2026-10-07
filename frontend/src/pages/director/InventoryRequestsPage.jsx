@@ -158,7 +158,7 @@ export default function InventoryRequestsPage() {
           <tr className="bg-slate-50 border-b border-slate-200 text-left text-xs font-semibold text-slate-500 uppercase">
             <th className="px-6 py-3">Sana</th>
             <th className="px-6 py-3">Mahsulot</th>
-            <th className="px-6 py-3 text-right">So'ralgan Miqdor</th>
+            <th className="px-6 py-3 text-right">So'ralgan miqdor</th>
             <th className="px-6 py-3 text-center">Holati</th>
             <th className="px-6 py-3">Owner izohi</th>
           </tr>
@@ -207,21 +207,21 @@ export default function InventoryRequestsPage() {
           className={`px-4 py-3 font-medium text-sm transition-colors relative ${activeTab === 'stock' ? 'text-primary-600' : 'text-slate-500 hover:text-slate-800'}`}
           onClick={() => setActiveTab('stock')}
         >
-          Filial Qoldig'i
+          Filial qoldig'i
           {activeTab === 'stock' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 rounded-t-full" />}
         </button>
         <button
           className={`px-4 py-3 font-medium text-sm transition-colors relative ${activeTab === 'request' ? 'text-primary-600' : 'text-slate-500 hover:text-slate-800'}`}
           onClick={() => setActiveTab('request')}
         >
-          Yangi So'rov
+          Yangi so'rov
           {activeTab === 'request' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 rounded-t-full" />}
         </button>
         <button
           className={`px-4 py-3 font-medium text-sm transition-colors relative ${activeTab === 'my-requests' ? 'text-primary-600' : 'text-slate-500 hover:text-slate-800'}`}
           onClick={() => setActiveTab('my-requests')}
         >
-          Jo'natilgan So'rovlar
+          Jo'natilgan so'rovlar
           {activeTab === 'my-requests' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 rounded-t-full" />}
         </button>
       </div>

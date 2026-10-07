@@ -40,10 +40,12 @@ import {
   UserCog,
   Sparkles,
   Kanban,
-  History
+  History,
+  FileText
 } from 'lucide-react';
 import NotificationBell from './common/NotificationBell';
 import PendingTasksBanner from './common/PendingTasksBanner';
+import PendingGuestRequestsBanner from './common/PendingGuestRequestsBanner';
 
 
 const superadminNav = [
@@ -64,6 +66,8 @@ const adminNav = [
   { path: '/admin/attendance', icon: CalendarClock, label: 'Davomat (Tabel)' },
   { path: '/admin/salary', icon: UserCheck, label: 'Mening Oyligim' },
   { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
+  { path: '/admin/receipts', icon: FileText, label: 'Kvitansiya' },
+  { path: '/admin/guest-requests', icon: Sparkles, label: 'Xona so\'rovlari (AI)' },
 ];
 
 
@@ -86,6 +90,7 @@ const directorNavGroups = [
       { path: '/director/renters', icon: CalendarDays, label: 'Ijarachilar' },
       { path: '/director/reservations', icon: CalendarClock, label: 'Oldindan Bronlar' },
       { path: '/director/bookings', icon: ClipboardList, label: 'Mijozlar' },
+      { path: '/director/receipts', icon: FileText, label: 'Kvitansiyalar' },
     ],
   },
   {
@@ -118,8 +123,8 @@ const directorNavGroups = [
     items: [
       { path: '/director/attendance', icon: CalendarClock, label: 'Davomat' },
       { path: '/director/shifts', icon: Clock, label: 'Smenalar' },
-      { path: '/director/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
-      { path: '/director/shift-issues', icon: ShieldAlert, label: 'Smena Muammolari' },
+      { path: '/director/cleaning-tasks', icon: Sparkles, label: 'Tozalash tarixi' },
+      { path: '/director/shift-issues', icon: ShieldAlert, label: 'Smena muammolari' },
     ],
   },
   {
@@ -128,7 +133,7 @@ const directorNavGroups = [
     icon: Archive,
     key: 'ombor',
     items: [
-      { path: '/director/inventory-requests', icon: Archive, label: "Ombor So'rovlari" }
+      { path: '/director/inventory-requests', icon: Archive, label: "Ombor so'rovlari" }
     ],
   },
 ];
@@ -175,9 +180,10 @@ const ownerNavGroups = [
       { path: '/owner/branches', icon: Building2, label: 'Filiallar' },
       { path: '/owner/rooms', icon: BedDouble, label: 'Xonalar' },
       { path: '/owner/room-analytics', icon: Activity, label: 'Xonalar tahlili' },
+      { path: '/owner/bookings', icon: ClipboardList, label: 'Mijozlar' },
       { path: '/owner/attendance', icon: CalendarClock, label: 'Davomat' },
-      { path: '/owner/cleaning-tasks', icon: Sparkles, label: 'Tozalash Tarixi' },
-      { path: '/owner/shift-issues', icon: ShieldAlert, label: 'Smena Muammolari' },
+      { path: '/owner/cleaning-tasks', icon: Sparkles, label: 'Tozalash tarixi' },
+      { path: '/owner/shift-issues', icon: ShieldAlert, label: 'Smena muammolari' },
     ],
   },
   {
@@ -186,9 +192,15 @@ const ownerNavGroups = [
     icon: Archive,
     key: 'ombor',
     items: [
-      { path: '/owner/inventory', icon: Archive, label: 'Bosh Ombor' },
+      { path: '/owner/inventory', icon: Archive, label: 'Bosh ombor' },
       { path: '/owner/inventory-approvals', icon: ClipboardList, label: "So'rovlar" }
     ],
+  },
+  {
+    type: 'single',
+    path: '/admin/guest-requests',
+    icon: Sparkles,
+    label: "Xona so'rovlari (AI)",
   },
 ];
 
@@ -203,6 +215,8 @@ const supervisorNav = [
   { path: '/supervisor/attendance', icon: CalendarClock, label: 'Davomat' },
   { path: '/supervisor/branches', icon: Building2, label: 'Filiallar' },
   { path: '/tasks', icon: CheckSquare, label: 'Vazifalar' },
+  { path: '/supervisor/receipts', icon: FileText, label: 'Kvitansiya' },
+  { path: '/admin/guest-requests', icon: Sparkles, label: "Xona so'rovlari (AI)" },
 ];
 
 const hrNav = [
@@ -667,6 +681,7 @@ export default function Layout({ children }) {
         ) : (
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
             <div className="max-w-7xl mx-auto">
+              <PendingGuestRequestsBanner />
               <PendingTasksBanner />
               {children}
             </div>

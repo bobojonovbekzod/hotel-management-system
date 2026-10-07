@@ -115,7 +115,15 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
 
     const targetBranchId = branchId ? parseInt(branchId) : req.user.branchId;
 
-    let finalExpenseDate = expenseDate ? new Date(expenseDate) : new Date();
+    let finalExpenseDate = new Date();
+    if (expenseDate) {
+      if (typeof expenseDate === 'string' && expenseDate.length === 10 && expenseDate.includes('-')) {
+        const [y, m, d] = expenseDate.split('-').map(Number);
+        finalExpenseDate = new Date(Date.UTC(y, m - 1, d, 7, 0, 0));
+      } else {
+        finalExpenseDate = new Date(expenseDate);
+      }
+    }
 
     if (shiftId) {
       const activeShift = await prisma.shift.findUnique({
@@ -128,7 +136,7 @@ router.post('/', authenticate, authorize('admin', 'director', 'owner'), async (r
         if (shiftStart.getHours() < 8) {
           businessDate.setDate(businessDate.getDate() - 1);
         }
-        finalExpenseDate = new Date(businessDate.getFullYear(), businessDate.getMonth(), businessDate.getDate(), 12, 0, 0);
+        finalExpenseDate = new Date(Date.UTC(businessDate.getFullYear(), businessDate.getMonth(), businessDate.getDate(), 7, 0, 0));
       }
     }
 
@@ -174,7 +182,14 @@ router.put('/:id', authenticate, authorize('owner', 'superadmin', 'admin', 'dire
     if (categoryId) updateData.categoryId = parseInt(categoryId);
     if (amount) updateData.amount = parseFloat(amount);
     if (description !== undefined) updateData.description = description;
-    if (expenseDate) updateData.expenseDate = new Date(expenseDate);
+    if (expenseDate) {
+      if (typeof expenseDate === 'string' && expenseDate.length === 10 && expenseDate.includes('-')) {
+        const [y, m, d] = expenseDate.split('-').map(Number);
+        updateData.expenseDate = new Date(Date.UTC(y, m - 1, d, 7, 0, 0));
+      } else {
+        updateData.expenseDate = new Date(expenseDate);
+      }
+    }
     if (branchId) updateData.branchId = parseInt(branchId);
     if (isCompanyExpense !== undefined) updateData.isCompanyExpense = Boolean(isCompanyExpense);
     if (paymentSource) updateData.paymentSource = paymentSource;

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Settings, Lock, User, Save } from 'lucide-react';
+import { Settings, Lock, User, Save , Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, login } = useAuth();
@@ -155,7 +155,7 @@ export default function SettingsPage() {
           <div className="pt-4 flex justify-end">
             <button type="submit" disabled={submitting} className="btn-primary">
               <Save size={18} />
-              {submitting ? 'Saqlanmoqda...' : 'O\'zgarishlarni saqlash'}
+              {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "O\'zgarishlarni saqlash"}
             </button>
           </div>
         </form>

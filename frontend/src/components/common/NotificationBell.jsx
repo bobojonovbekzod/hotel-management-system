@@ -4,29 +4,55 @@ import api from '../../lib/api';
 import { format } from 'date-fns';
 import { uz } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { io } from 'socket.io-client';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function NotificationBell() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const fetchNotifications = async () => {
+    if (!user) return;
     try {
       const res = await api.get('/notifications');
       if (res.data.success) {
         setNotifications(res.data.data);
       }
     } catch (err) {
-      console.error('Failed to fetch notifications', err);
+      // Quiet fail on network
     }
   };
 
   useEffect(() => {
     fetchNotifications();
-    // Har 15 soniyada yangilab turadi
-    const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
-  }, []);
+
+    // Socket.io real-time connection
+    const socket = io();
+    socket.on('new_notification', (data) => {
+      if (!data?.userId || data.userId === user?.id) {
+        fetchNotifications();
+      }
+    });
+    socket.on('notifications_read', (data) => {
+      if (!data?.userId || data.userId === user?.id) {
+        fetchNotifications();
+      }
+    });
+
+    const handleFocus = () => {
+      if (!document.hidden) {
+        fetchNotifications();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      socket.disconnect();
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user?.id]);
 
   // Tashqariga bosilganda yopish
   useEffect(() => {
@@ -52,10 +78,18 @@ export default function NotificationBell() {
     }
   };
 
+  const handleToggleOpen = () => {
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    if (nextState) {
+      fetchNotifications();
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggleOpen}
         className="relative p-2 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all duration-200"
       >
         <Bell size={20} />

@@ -19,6 +19,9 @@ import CheckInsPage from './pages/admin/CheckInsPage';
 import TransactionsPage from './pages/admin/TransactionsPage';
 import SettingsPage from './pages/owner/SettingsPage';
 import RoomAnalyticsPage from './pages/owner/RoomAnalyticsPage';
+import GuestRoomPortal from './pages/guest/GuestRoomPortal';
+import GuestRequestsPage from './pages/admin/GuestRequestsPage';
+import ReceiptsPage from './pages/admin/ReceiptsPage';
 
 // Owner/Director/Admin pages
 import CompaniesPage from './pages/superadmin/CompaniesPage';
@@ -53,6 +56,7 @@ import InvestorDashboardPage from './pages/investor/InvestorDashboardPage';
 // Bot Pages
 import TelegramCameraPage from './pages/bot/TelegramCameraPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import GuestLinksPage from './pages/guest/GuestLinksPage';
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
@@ -90,7 +94,18 @@ function AppRoutes() {
       <Route path="/login" element={!user ? <LoginPage /> : <Navigate to={getDefaultRoute(user.role)} replace />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
-      <Route path="/bot-camera" element={<TelegramCameraPage />} />
+      <Route path="/data-deletion" element={<PrivacyPolicyPage />} />
+      {/* Public Guest Room QR Portal - No Auth Required */}
+      <Route path="/room/:branchId/:roomNumber" element={<GuestRoomPortal />} />
+      <Route path="/guest/:branchId/:roomNumber" element={<GuestRoomPortal />} />
+      <Route path="/guest-links" element={<GuestLinksPage />} />
+
+      {/* Admin / Reception Guest Requests & AI Concierge */}
+      <Route path="/admin/guest-requests" element={
+        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'supervisor']}>
+          <GuestRequestsPage />
+        </ProtectedRoute>
+      } />
 
       <Route path="/tasks" element={
         <ProtectedRoute allowedRoles={['owner', 'director', 'admin', 'supervisor']}>
@@ -191,9 +206,19 @@ function AppRoutes() {
           <AttendancePage />
         </ProtectedRoute>
       } />
-      <Route path="/admin/integrations" element={
-        <ProtectedRoute allowedRoles={['admin', 'director', 'owner', 'operator']}>
-          <IntegrationsPage />
+      <Route path="/admin/receipts" element={
+        <ProtectedRoute allowedRoles={['admin', 'director', 'supervisor']}>
+          <ReceiptsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/director/receipts" element={
+        <ProtectedRoute allowedRoles={['director', 'admin']}>
+          <ReceiptsPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/supervisor/receipts" element={
+        <ProtectedRoute allowedRoles={['supervisor', 'director']}>
+          <ReceiptsPage />
         </ProtectedRoute>
       } />
       <Route path="/admin/candidates" element={
@@ -358,6 +383,11 @@ function AppRoutes() {
           <OwnerDashboard />
         </ProtectedRoute>
       } />
+      <Route path="/owner/bookings" element={
+        <ProtectedRoute allowedRoles={['owner', 'superadmin']}>
+          <AdminBookingsPage />
+        </ProtectedRoute>
+      } />
       <Route path="/owner/inventory" element={
         <ProtectedRoute allowedRoles={['owner', 'superadmin']}>
           <InventoryPage />
@@ -459,26 +489,30 @@ function StaffPlaceholder() {
   );
 }
 
+import { SipProvider } from './contexts/SipContext';
+
 export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <PWAInstallPrompt />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: '#0f1629',
-                color: '#fff',
-                border: '1px solid #334155',
-                borderRadius: '12px',
-              },
-              success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-              error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
-            }}
-          />
-          <AppRoutes />
+          <SipProvider>
+            <PWAInstallPrompt />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: '#0f1629',
+                  color: '#fff',
+                  border: '1px solid #334155',
+                  borderRadius: '12px',
+                },
+                success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+                error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+              }}
+            />
+            <AppRoutes />
+          </SipProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Download, Printer, Filter, Wallet, CheckCircle, Search, TrendingUp, TrendingDown, DollarSign, X, Trash2 } from 'lucide-react';
+import { Download, Printer, Filter, Wallet, CheckCircle, Search, TrendingUp, TrendingDown, DollarSign, X, Trash2 , Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { formatNumberInput, parseNumberInput } from '../../lib/formatters';
 
@@ -659,7 +659,7 @@ export function FinanceActionModal({ user, month, onClose, currentUser }) {
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => onClose(false)} className="btn-secondary flex-1">Bekor qilish</button>
               <button type="submit" disabled={submitting} className="btn-primary flex-1 justify-center bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/30 text-white font-bold">
-                {submitting ? 'Saqlanmoqda...' : 'Tasdiqlash va Saqlash'}
+                {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Tasdiqlash va Saqlash'}
               </button>
             </div>
           </form>
