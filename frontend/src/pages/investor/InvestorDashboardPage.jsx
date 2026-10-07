@@ -73,6 +73,7 @@ export default function InvestorDashboardPage() {
   const daysWithData = data?.occupancyStats?.filter(item => item.band !== null)?.length || 1;
   const totalAvailableDays = (metrics.totalRooms || 0) * daysWithData;
   const monthlyOccupancyRate = totalAvailableDays > 0 ? ((totalBandDays / totalAvailableDays) * 100).toFixed(1) : 0;
+  const averagePrice = totalBandDays > 0 ? Math.round((metrics.totalRevenue || 0) / totalBandDays) : 0;
 
   // Owner dashboard uslubidagi gradient kartochkalar
   const kpis = [
@@ -377,7 +378,7 @@ export default function InvestorDashboardPage() {
                   <BedDouble className="text-indigo-600" size={20} /> Mehmonxonaning bandligi
                 </h3>
                 <p className="text-[13px] text-slate-500 font-medium mt-1">
-                  Xonalar bo'yicha % nisbat .... <span className="text-emerald-600 font-semibold ml-1">({monthlyOccupancyRate}% oylik bandlik)</span>
+                  Xonalar bo'yicha % nisbat .... <span className="text-emerald-600 font-semibold ml-1">({monthlyOccupancyRate}% oylik bandlik)</span> <span className="text-indigo-600 font-semibold ml-2">(O'rtacha narx: {averagePrice.toLocaleString('ru-RU')} so'm)</span>
                 </p>
               </div>
               <div className="h-72 w-full mt-4">
