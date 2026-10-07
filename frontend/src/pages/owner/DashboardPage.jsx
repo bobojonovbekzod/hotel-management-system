@@ -351,7 +351,8 @@ export default function OwnerDashboard() {
               <AreaChart
                 data={data.occupancyStats.map(item => ({
                   ...item,
-                  percentage: (item.band !== null && ov?.totalRooms) ? parseFloat(((item.band / ov.totalRooms) * 100).toFixed(1)) : null
+                  percentage: (item.band !== null && ov?.totalRooms) ? parseFloat(((item.band / ov.totalRooms) * 100).toFixed(1)) : null,
+                  avgPrice: item.avgPrice || 0
                 }))}
                 margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
               >
@@ -372,12 +373,37 @@ export default function OwnerDashboard() {
                   domain={[0, 150]}
                 />
                 <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(v, name, props) => [
-                    v !== null ? `${v}% (${props.payload.band} ta xona band)` : 'Ma\'lumot yo\'q',
-                    'Bandlik'
-                  ]}
-                  labelStyle={{ color: '#475569', fontWeight: 600, marginBottom: '4px' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const point = payload[0].payload;
+                      const pointAvgPrice = point.avgPrice > 0 ? point.avgPrice : (point.band > 0 ? averagePrice : 0);
+                      return (
+                        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1.5 min-w-[180px]">
+                          <p className="font-bold text-slate-800 border-b border-slate-100 pb-1 flex items-center justify-between">
+                            <span>Sana: {label}</span>
+                            {point.band !== null && (
+                              <span className="text-slate-500 font-normal">({point.band} ta xona band)</span>
+                            )}
+                          </p>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-slate-500 font-medium">Bandlik:</span>
+                            <span className="font-bold text-blue-600">
+                              {point.percentage !== null ? `${point.percentage}%` : "Ma'lumot yo'q"}
+                            </span>
+                          </div>
+                          {pointAvgPrice > 0 && (
+                            <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100">
+                              <span className="text-slate-500 font-medium">O'rtacha narx:</span>
+                              <span className="font-bold text-emerald-600">
+                                {pointAvgPrice.toLocaleString()} so'm
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
                 <Area
                   type="linear"

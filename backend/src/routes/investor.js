@@ -136,7 +136,15 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
           { checkOutExpected: { gte: startDate }, status: 'active' }
         ]
       },
-      select: { roomId: true, checkIn: true, checkOutActual: true, checkOutExpected: true, status: true }
+      select: {
+        roomId: true,
+        checkIn: true,
+        checkOutActual: true,
+        checkOutExpected: true,
+        status: true,
+        totalPrice: true,
+        room: { select: { pricePerNight: true } }
+      }
     });
 
     const nowMoment = new Date();
@@ -149,22 +157,33 @@ router.get('/dashboard', authenticate, authorize('investor', 'owner', 'director'
       const curDayEnd = new Date(loopDate.getFullYear(), loopDate.getMonth(), loopDate.getDate(), 23, 59, 59, 999);
 
       let bandVal = null;
+      let avgPriceVal = 0;
       if (curDayStart <= nowMoment) {
-        const occupiedRooms = new Set();
+        const occupiedRooms = new Map();
         for (const b of overlappingBookings) {
           const checkIn = new Date(b.checkIn);
           const checkOut = b.status === 'checked_out' && b.checkOutActual ? new Date(b.checkOutActual) : new Date(b.checkOutExpected);
 
           if (checkIn <= curDayEnd && checkOut >= curDayStart) {
-            occupiedRooms.add(b.roomId);
+            const nights = Math.max(1, Math.round((checkOut - checkIn) / (1000 * 60 * 60 * 24)));
+            const dailyRate = b.totalPrice > 0 ? (b.totalPrice / nights) : (b.room?.pricePerNight || 0);
+            occupiedRooms.set(b.roomId, dailyRate);
           }
         }
         bandVal = occupiedRooms.size;
+        if (bandVal > 0) {
+          let sumRates = 0;
+          for (const rate of occupiedRooms.values()) {
+            sumRates += rate;
+          }
+          avgPriceVal = Math.round(sumRates / bandVal);
+        }
       }
 
       occupancyStats.push({
         date: loopDate.getDate().toString().padStart(2, '0') + '.' + (loopDate.getMonth() + 1).toString().padStart(2, '0'),
-        band: bandVal
+        band: bandVal,
+        avgPrice: avgPriceVal
       });
 
       loopDate.setDate(loopDate.getDate() + 1);
